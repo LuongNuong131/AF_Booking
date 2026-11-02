@@ -26,8 +26,19 @@ class Settings(BaseSettings):
     db_connect_timeout_seconds: float = Field(default=5, gt=0, le=30)
     db_query_timeout_ms: int = Field(default=5000, ge=1, le=30000)
     request_timeout_seconds: float = Field(default=8, gt=0, le=60)
+    db_lock_wait_timeout_seconds: int = Field(default=5, ge=1, le=30)
+    jwt_secret_key: SecretStr | None = Field(default=None, min_length=32)
+    jwt_expire_minutes: int = Field(default=720, ge=1, le=10080)
+    jwt_issuer: str = Field(default="booking-tracker", min_length=1, max_length=100)
+    jwt_audience: str = Field(default="booking-tracker-web", min_length=1, max_length=100)
+    auth_cache_ttl_seconds: float = Field(default=12, ge=10, le=15)
+    auth_cache_max_entries: int = Field(default=1000, ge=100, le=10000)
+    login_max_failures: int = Field(default=5, ge=1, le=20)
+    login_lockout_seconds: int = Field(default=300, ge=1, le=3600)
+    auth_hash_concurrency: int = Field(default=2, ge=1, le=8)
+    ws_send_timeout_seconds: float = Field(default=5, gt=0, le=30)
 
-    @field_validator("database_url", "database_ssl_ca", mode="before")
+    @field_validator("database_url", "database_ssl_ca", "jwt_secret_key", mode="before")
     @classmethod
     def blank_to_none(cls, value: object) -> object:
         return None if value == "" else value

@@ -3,20 +3,30 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.v1.auth import router as auth_router
+from app.api.v1.health import HealthResponse, health
 from app.api.v1.health import router as health_router
 from app.core.config import Settings
 from app.core.db import create_database_engine
 from app.core.errors import ApiCORSMiddleware, ApiErrorMiddleware, register_error_handlers
+from app.core.request_context import RequestContextMiddleware
 from app.core.timeouts import RequestTimeoutMiddleware
 from app.schemas.contracts import ApiError
+from app.services.auth import AuthService
+from app.services.session_events import SessionEvents
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    *,
+    session_events: SessionEvents | None = None,
+) -> FastAPI:
     config = settings or Settings()
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         application.state.engine = create_database_engine(config)
+        application.state.auth = AuthService(application.state.engine, config, session_events)
         try:
             yield
         finally:
@@ -44,8 +54,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        expose_headers=["X-Request-ID", "Retry-After"],
     )
+    application.add_middleware(RequestContextMiddleware)
 
+    application.add_api_route(
+        "/health", health, methods=["GET"], response_model=HealthResponse, tags=["health"]
+    )
+    application.include_router(auth_router, prefix="/api/v1")
     application.include_router(health_router, prefix="/api/v1")
     return application
 

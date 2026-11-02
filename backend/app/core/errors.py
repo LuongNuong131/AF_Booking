@@ -11,6 +11,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import JSONResponse, Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core.request_context import request_id
 from app.schemas.contracts import ApiError, ErrorCode
 
 logger = logging.getLogger(__name__)
@@ -170,7 +171,11 @@ class ApiErrorMiddleware:
             if started:
                 raise
             # Log the exception class only: DB errors can contain credentials or SQL parameters.
-            logger.error("Unhandled application error (%s)", type(exc).__name__)
+            logger.error(
+                "request_id=%s Unhandled application error (%s)",
+                request_id.get(),
+                type(exc).__name__,
+            )
             await error_response(ErrorCode.INTERNAL)(scope, receive, send)
 
 

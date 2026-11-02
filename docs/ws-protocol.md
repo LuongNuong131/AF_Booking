@@ -4,6 +4,8 @@
 
 ## Connection
 
+Prompt 3 supplies `SessionEvents.force_logout(user_id, old_session_id, reason)` and a no-op default implementation. Auth calls it after session revocation commits, targeting only the old session. This is an internal transport interface for `session.force_logout`, not a new wire envelope or an active WebSocket endpoint. Inject the future manager with `create_app(..., session_events=...)`; callback failure does not restore a revoked session.
+
 - Endpoint: `WS /api/v1/ws?token=`; production uses `wss://` directly to the Render backend.
 - An active authenticated session is required. A replaced session is invalid even if its token has not expired.
 - The token must not appear in application logs, telemetry, or saved URLs. The WebSocket implementation must redact query tokens from handshake/access logging.

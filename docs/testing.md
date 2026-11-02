@@ -25,6 +25,15 @@ To test migrations, admin/status seed repeatability, query plans, rollback, and 
 
 Docker is required. The runner creates a uniquely named disposable database/container and temporary TLS certificates, then cleans them up. `tests/test_schema_database.py` is skipped during the ordinary unit run unless the runner supplies `SCHEMA_TEST_DATABASE_URL`; this variable explicitly designates a disposable writable database. Never point it at a persistent application database. CI runs this workflow separately for both engines and uploads the reports.
 
+Prompt 3 auth integration checks run separately in fresh databases:
+
+```sh
+.venv/bin/python tests/run_schema_checks.py --engine mysql --suite auth --report /tmp/auth-mysql.xml
+.venv/bin/python tests/run_schema_checks.py --engine tidb --suite auth --report /tmp/auth-tidb.xml
+```
+
+These exercise real database transactions through the ASGI auth endpoints, including one-device session replacement, inactive accounts, role guards, cached-session invalidation/TTL, rate-limit aliases, password/logout races, audit rollback, and transport failure. `tests/test_auth_database.py` is skipped without the runner's explicit disposable database configuration. Unit coverage includes JWT signature/expiry/claim validation, hashing cancellation bounds, request IDs, and database-free `/health`. See [auth.md](auth.md) for endpoint contracts, startup configuration, and curl examples.
+
 Frontend checks, from `frontend`:
 
 ```sh

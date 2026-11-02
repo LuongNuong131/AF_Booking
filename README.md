@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: deployment foundation, API contracts, and database schema.** The repository contains a Vue workspace, FastAPI health/readiness endpoints, verified-TLS TiDB connectivity, SQLAlchemy models, an initial Alembic migration, status/admin seeding, tests, and deployment configuration. Authentication APIs, booking operations, and WebSocket events are not implemented yet. The overview page reports service connectivity; it does not display invented bookings or offer unfinished actions.
+**Current scope: deployment foundation, contracts, schema, and backend auth.** The repository contains a Vue workspace, FastAPI probes/auth endpoints, verified-TLS TiDB connectivity, SQLAlchemy models, Alembic migration, status/admin seeding, tests, and deployment configuration. Backend authentication, single-session enforcement, and role dependencies are implemented. Frontend sign-in, booking operations, and WebSocket runtime are not implemented yet.
 
 ## Stack and hosting
 
@@ -22,18 +22,18 @@ Backend, in one terminal:
 cd backend
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements-dev.txt
-cp .env.example .env
-.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+test -f .env || cp .env.example .env
+.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --no-access-log
 ```
 
-The API can start without a database. `/api/v1/health` returns 200 when the process is running; `/api/v1/ready` returns 503 with `code: SERVICE_BUSY` and `details.database: not_configured` until a database is configured. Configure `DATABASE_URL` in `backend/.env` using TiDB Cloud's connection details to enable readiness. Do not commit this file.
+The API can start without database/auth credentials: `/health` (also `/api/v1/health`) returns 200 without DB access, while `/api/v1/ready` returns 503 until a database is configured. Auth fails closed until `JWT_SECRET_KEY` and the database are configured. To enable login, configure the ignored `backend/.env`, migrate, and seed an Admin using protected environment values; follow [auth.md](docs/auth.md) for startup and curl examples. Never commit real credentials.
 
 Frontend, in a second terminal:
 
 ```sh
 cd frontend
 npm ci
-cp .env.example .env
+test -f .env || cp .env.example .env
 npm run dev
 ```
 
@@ -56,7 +56,7 @@ VITE_API_BASE_URL=https://YOUR-API.onrender.com/api/v1 npm run build
 
 The production URL must use HTTPS and end in `/api/v1`. Missing or invalid production configuration fails the build. Database integration tests require `TEST_DATABASE_URL`; see [testing](docs/testing.md). GitHub Actions runs the unit tests, lint, type checking, and production build.
 
-Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.md). Frontend types are generated from Pydantic schemas with `backend/.venv/bin/python scripts/generate_contract_types.py`; run the same command with `--check` to detect drift. Business routes are reserved in the contract and remain unimplemented.
+Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.md). Frontend types are generated from Pydantic schemas with `backend/.venv/bin/python scripts/generate_contract_types.py`; run the same command with `--check` to detect drift. Auth endpoints are implemented; booking and other business routes remain reserved.
 
 Database migrate/seed/rollback commands, provisional status rules, index rationale, and real EXPLAIN reports: [docs/database-schema.md](docs/database-schema.md).
 

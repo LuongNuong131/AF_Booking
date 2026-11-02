@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the foundation, shared contract, and database schema. It does not provision provider accounts or implement authentication APIs. Run the migration and optional admin seed explicitly as described below. No live deployment is performed by committing these files.
+This guide deploys the foundation, database schema, and backend authentication. It does not provision provider accounts or implement booking workflows. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 
@@ -27,8 +27,8 @@ Connect `LuongNuong131/AF_Booking` and create a Blueprint using the root `render
 | Root directory | `backend` |
 | Python | 3.12 (`PYTHON_VERSION=3.12.12` in the Blueprint) |
 | Build | `pip install --require-hashes -r requirements.txt` |
-| Start | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1` |
-| Health path | `/api/v1/health` |
+| Start | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log` |
+| Health path | `/health` |
 
 The Blueprint selects Render's paid `starter` plan to avoid free-service sleep. Importing the file does not itself authorize or create a paid service; confirm the current plan and price in Render when deploying. A free service may be used for a demo, but cold starts cannot satisfy the responsiveness budget.
 
@@ -37,6 +37,8 @@ Required environment settings:
 | Name | Value |
 | --- | --- |
 | `APP_ENV` | `production` |
+| `JWT_SECRET_KEY` | Strong signing secret; Blueprint uses `generateValue: true` |
+| `JWT_EXPIRE_MINUTES` | `720` (optional override) |
 | `DATABASE_URL` | The TiDB connection URL, stored securely |
 | `DB_SSL` | `true` (`DATABASE_SSL` is also supported) |
 | `CORS_ORIGINS` | JSON list of exact frontend origins, for example `["https://YOUR-APP.vercel.app"]` |
@@ -46,12 +48,12 @@ Origins must use HTTPS in production and have no path or trailing slash. Add cus
 
 The connection pool defaults to 5 connections, no overflow, pre-ping, a 280-second recycle, and a 5-second pool/connect timeout. The ready probe has a bounded query deadline. Business query/transaction timeouts and route-specific export/note deadlines will be added with those features.
 
-Run **one service instance and one Uvicorn worker** until realtime state is implemented with a shared broker. Future WebSocket managers, advisory booking locks, and caches held in process memory cannot stay consistent across multiple workers or instances. A rolling deployment can still briefly overlap processes; future realtime clients must reconnect and resync from the database.
+Run **one service instance and one Uvicorn worker** while auth cache invalidation/login lockouts and future realtime coordination are in memory. Multiple instances require shared coordination. Direct database changes or another process can remain cached until the 12-second TTL; admin code must use the provided invalidation/revocation helpers. A rolling deployment can briefly overlap processes, so cross-process revocation is bounded by TTL until shared invalidation exists. Configure Uvicorn's trusted proxy IPs for the actual Render proxy when needed; the app does not blindly trust client forwarding headers.
 
 After deployment, make both requests:
 
 ```sh
-curl --fail --max-time 10 https://YOUR-API.onrender.com/api/v1/health
+curl --fail --max-time 10 https://YOUR-API.onrender.com/health
 curl --fail --max-time 10 https://YOUR-API.onrender.com/api/v1/ready
 ```
 
@@ -97,6 +99,6 @@ Import the GitHub repository into Vercel:
 - Check the browser network panel for CORS errors and mixed-content requests.
 - Confirm no database credentials appear in the frontend bundle or repository.
 
-Authentication, note saving, version conflicts, idempotency, task reminders, and realtime behavior require later implementation and must be tested before this becomes a usable internal booking application. Performance targets are goals, not measured guarantees for this foundation.
+Backend authentication is implemented; verify it with the curl flow in [auth.md](auth.md) after configuring the signing secret and seeding an account. Frontend sign-in, note saving, version conflicts, idempotency, reminders, and realtime workflows still require later implementation before this is a usable booking application. Performance targets are goals, not measured guarantees.
 
 References: [TiDB SQLAlchemy](https://docs.pingcap.com/tidb/stable/dev-guide-sample-application-python-sqlalchemy/), [TiDB MySQL compatibility](https://docs.pingcap.com/tidb/stable/mysql-compatibility/), [Render Blueprints](https://render.com/docs/blueprint-spec), [Vercel Vite](https://vercel.com/docs/frameworks/frontend/vite).

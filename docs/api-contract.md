@@ -2,11 +2,11 @@
 
 This document records the user's shared contract for all implementation prompts. Paths, JSON field names, and error codes must not change silently. Update this file and the wire models together if an approved change is needed.
 
-**Implementation status:** the foundation exposes only the infrastructure probes described below. This step adds shared schemas, generated frontend types, standard error responses, and the English copy catalogue. The business endpoints in this document are contracts for later prompts, not implemented handlers.
+**Implementation status:** infrastructure probes and the four auth endpoints are implemented through Prompt 3. Shared schemas, generated types, and English copy are available. Booking and other business endpoints remain contracts for later prompts.
 
 ## Common conventions
 
-- HTTP and WebSocket paths use the `/api/v1` prefix. The endpoint table omits this common prefix.
+- Business HTTP and WebSocket paths use `/api/v1`; the table omits that prefix. Prompt 3 also exposes the public process probe at `/health`, preserving `/api/v1/health` as an alias.
 - JSON keys use `snake_case`. Output timestamps are UTC ISO 8601 strings with milliseconds, such as `2026-11-02T08:15:30.123Z`. Naive timestamps are rejected by the shared models; aware timestamps are normalized to UTC on serialization.
 - Page pagination: `{items, total, page, size}`. Pages are one-based. Cursor pagination: `{items, next_cursor}`; `next_cursor` is explicitly `null` at the end. Cursors are opaque to the frontend.
 - Errors always use `{code, message, details?}` at the top level. Do not wrap them in `error` or FastAPI's default `detail`. Messages are English; clients branch on `code`, not message text.
@@ -16,7 +16,7 @@ This document records the user's shared contract for all implementation prompts.
 
 ## Wire types
 
-The complete executable field definitions are in [`backend/app/schemas/contracts.py`](../backend/app/schemas/contracts.py). Frontend equivalents are generated in [`frontend/src/types/api.generated.ts`](../frontend/src/types/api.generated.ts); do not edit that file manually.
+Executable field definitions are in [`backend/app/schemas/contracts.py`](../backend/app/schemas/contracts.py) and [`backend/app/schemas/auth.py`](../backend/app/schemas/auth.py). Frontend equivalents are generated in [`frontend/src/types/api.generated.ts`](../frontend/src/types/api.generated.ts); do not edit that file manually.
 
 | Type | Fields |
 | --- | --- |
@@ -55,6 +55,18 @@ backend/.venv/bin/python scripts/generate_contract_types.py --check
 CI checks that the generated file is current and runs the frontend build.
 
 ## Errors
+
+### Auth implementation details — Prompt 3
+
+- `POST /auth/login` accepts JSON `{username,password}`. Success returns `{access_token,user,token_type:"bearer",expires_in}`; the last two fields are explicit additions for bearer-token clients. `expires_in` is seconds (default 43200).
+- `user` and the direct `GET /auth/me` result contain `id`, `username`, `full_name`, `role`, `is_active`, and `settings` (JSON or null). They never include `password_hash` or `current_session_id`.
+- `POST /auth/logout` returns `{message:"Signed out."}` and revokes the current SID.
+- `POST /auth/change-password` accepts `{old_password,new_password}`. Success returns `{message:"Password changed. Please sign in again."}` and revokes the session. The client must sign in again. A wrong old password or invalid new password is `422 VALIDATION_ERROR`. New passwords have 12–1024 characters.
+- Authenticated requests use `Authorization: Bearer ...`. JWTs require valid HS256 signatures, issuer/audience, expiration, user ID, role, and UUID SID. Invalid/expired tokens and inactive/deleted users return `401 UNAUTHORIZED`; an active user's replaced/cleared SID returns `401 SESSION_REPLACED`. Permissions use the current user role, not a stale JWT role alone.
+- The first five invalid credential attempts return 401; later attempts in the lockout return `429 RATE_LIMITED` with `Retry-After`. Cache/session invalidation and in-memory scope are documented in [auth.md](auth.md).
+- Every HTTP response has `X-Request-ID`; browser CORS exposes it and `Retry-After`. Auth responses use `Cache-Control: no-store`.
+
+No registration, refresh-token, booking, or admin-management endpoint is added in Prompt 3. `session.force_logout` has an injectable internal callback only; its WebSocket wire frame remains unspecified.
 
 | Code | HTTP | Details / behavior |
 | --- | --- | --- |
@@ -186,7 +198,7 @@ Prompt 2 storage includes this contract's invoice fields/table, status task/invo
 
 `supplier_name` and `supplier_type` are conditionally required for the first note of a new CW folder. `{key}` must be the canonical full key. A partial key returns `STATION_REQUIRED`, with `details.suggested_key` when known. Other malformed new keys return `INVALID_BOOKING_KEY`. Snapshot/version updates, note insertion, and the idempotency outcome must be atomic when implemented.
 
-The exact response envelopes not fully specified by Prompt 1B (such as auth user fields, lookup aggregate fields, and administrative request bodies) remain for their implementation prompts. Do not expose placeholder routes or invent response names to fill those gaps.
+Auth bodies/user responses are specified above by Prompt 3. Remaining envelopes not fully specified by Prompt 1B, including lookup aggregates and administrative request bodies, belong to their implementation prompts. Do not expose placeholder routes to fill those gaps.
 
 ## English UI copy
 

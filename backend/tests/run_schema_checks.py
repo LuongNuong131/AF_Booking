@@ -1,4 +1,4 @@
-"""Run destructive schema checks in a new disposable Docker database with verified TLS."""
+"""Run schema or auth checks in a new disposable Docker database with verified TLS."""
 
 import argparse
 import asyncio
@@ -108,6 +108,7 @@ async def create_database(port: int, ca_file: Path, database: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", choices=["mysql", "tidb"], required=True)
+    parser.add_argument("--suite", choices=["schema", "auth"], default="schema")
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     docker_env = os.environ.copy()
@@ -191,17 +192,22 @@ def main() -> None:
                 }
             )
             args.report.resolve().parent.mkdir(parents=True, exist_ok=True)
+            test_file = (
+                "tests/test_schema_database.py"
+                if args.suite == "schema"
+                else "tests/test_auth_database.py"
+            )
+            test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]
+            if args.suite == "auth":
+                test_command.append(f"--junitxml={args.report.resolve()}")
             subprocess.run(
-                [sys.executable, "-m", "pytest", "tests/test_schema_database.py", "-q", "-x"],
+                test_command,
                 cwd=BACKEND,
                 env=test_env,
                 check=True,
                 timeout=240,
             )
-            print(
-                f"{args.engine}: migration, seed, EXPLAIN and rollback passed; "
-                f"report: {args.report}"
-            )
+            print(f"{args.engine} {args.suite}: checks passed; report: {args.report}")
         finally:
             # Remove only this runner's unique disposable container, even after a failed test.
             subprocess.run(

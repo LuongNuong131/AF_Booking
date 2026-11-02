@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Authentication/session enforcement, permission checks, booking lookup, folder/supplier services, note writes/history APIs, snapshot maintenance, optimistic concurrency, idempotent write services, notifications, WebSockets, soft locks, reminders, invoice services, reports/exports, audit recording, and recovery tools. Do not describe this foundation as the completed booking application.
+Frontend sign-in, booking lookup, folder/supplier services, note writes/history APIs, snapshot maintenance, optimistic concurrency, idempotent write services, notifications, WebSocket runtime, soft locks, reminders, invoice services, reports/exports, non-auth audit flows, and recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -30,11 +30,21 @@ Authentication/session enforcement, permission checks, booking lookup, folder/su
 - MySQL/TiDB disposable TLS tests verify migration parity, seeds/CLI, constraint behavior, eight index plans, the folder JOIN, rollback, and re-migration. Actual reports and assumptions are in docs/database-schema.md.
 - Prompt 1B invoice/status/notification storage additions are retained without implementing their APIs.
 
+## Implemented: Prompt 3 auth and authorization
+
+- Four `/api/v1/auth` endpoints with Argon2 passwords, HS256 JWTs, configured token lifetime, generic failed-login errors, and no registration route.
+- Single-device SID enforcement, active-user checks, bounded 12-second user/session cache, and immediate same-process invalidation on login/logout/password/kick/disable.
+- Shared `get_current_user`, `require_roles`, database-session dependency, and authoritative rechecks for critical session mutations.
+- Per-IP/account five-failure lockouts, safe request-ID logging/headers, DB-free `/health`, atomic auth audit records, and no-store auth responses.
+- Internal `kick_session` / `set_user_active` helpers and an injectable `session.force_logout` transport placeholder; no admin HTTP API or WebSocket runtime yet.
+- Unit tests plus disposable MySQL/TiDB auth integration suites, including cache/ACLs, concurrent login/password/logout scenarios, audit rollback, and transport failure.
+- `JWT_SECRET_KEY` is an operator requirement; Render Blueprint can generate it. No default signing key/password is stored.
+
 ## Next implementation steps
 
 1. Confirm the provisional Position/note-required status rules when the business mapping is available.
-2. Add authentication, authorization, and session invalidation APIs (Prompt 3).
-3. Implement each booking/collaboration workflow in its requested step, preserving Prompt 1B.
+2. Implement booking services/APIs in their requested prompt, preserving Prompt 1B.
+3. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
 
 ## Deployment status
 

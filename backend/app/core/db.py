@@ -13,7 +13,10 @@ def create_database_engine(settings: Settings) -> AsyncEngine | None:
     connect_args: dict[str, object] = {
         "connect_timeout": settings.db_connect_timeout_seconds,
         "charset": "utf8mb4",
-        "init_command": "SET time_zone = '+00:00'",
+        "init_command": (
+            "SET time_zone = '+00:00', "
+            f"innodb_lock_wait_timeout = {settings.db_lock_wait_timeout_seconds}"
+        ),
     }
     if settings.database_ssl:
         # The default context validates both the certificate chain and hostname.
