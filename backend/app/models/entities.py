@@ -167,6 +167,8 @@ class BookingNote(CreatedAt, Base):
     position_label: Mapped[str] = mapped_column(mysql.VARCHAR(60), nullable=False)
     note: Mapped[str | None] = mapped_column(mysql.TEXT)
     client_request_id: Mapped[str | None] = mapped_column(ascii_char(36))
+    request_fingerprint: Mapped[str | None] = mapped_column(ascii_char(64))
+    save_result: Mapped[dict[str, JsonValue] | None] = mapped_column(mysql.JSON(none_as_null=True))
     deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     deleted_by: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
     delete_reason: Mapped[str | None] = mapped_column(mysql.VARCHAR(255))

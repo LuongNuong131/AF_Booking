@@ -1,3 +1,4 @@
+import re
 from typing import Literal
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -37,6 +38,27 @@ class Settings(BaseSettings):
     login_lockout_seconds: int = Field(default=300, ge=1, le=3600)
     auth_hash_concurrency: int = Field(default=2, ge=1, le=8)
     ws_send_timeout_seconds: float = Field(default=5, gt=0, le=30)
+    lookup_timeout_seconds: float = Field(default=6, gt=0, le=60)
+    note_save_timeout_seconds: float = Field(default=12, gt=0, le=60)
+    export_timeout_seconds: float = Field(default=55, gt=0, le=300)
+    key_index_enabled: bool = True
+    key_index_batch_size: int = Field(default=1000, ge=1, le=5000)
+    key_index_reconcile_seconds: float = Field(default=600, gt=0, le=3600)
+    snapshot_cache_ttl_seconds: float = Field(default=30, gt=0, le=300)
+    snapshot_cache_max_entries: int = Field(default=2000, ge=1, le=10000)
+    stale_hours_default: int = Field(default=24, ge=1, le=8760)
+    station_code_pattern: str = r"[A-Z]{3}"
+    invoice_number_pattern: str = r"[A-Z0-9_./-]{3,40}"
+    invoice_max_per_booking: int = Field(default=20, ge=1, le=100)
+
+    @field_validator("station_code_pattern", "invoice_number_pattern")
+    @classmethod
+    def validate_pattern(cls, value: str) -> str:
+        try:
+            re.compile(value, re.ASCII)
+        except re.error:
+            raise ValueError("A valid ASCII regular expression is required") from None
+        return value
 
     @field_validator("database_url", "database_ssl_ca", "jwt_secret_key", mode="before")
     @classmethod

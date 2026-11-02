@@ -1,0 +1,651 @@
+"""Booking integration checks on disposable TLS MySQL and TiDB."""
+
+import asyncio
+import os
+import secrets
+from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from uuid import uuid4
+
+import httpx
+import pytest
+import pytest_asyncio
+from alembic.config import Config
+from argon2 import PasswordHasher
+from fastapi import Request
+from sqlalchemy import delete, event, select, text, update
+
+from alembic import command
+from app.core.config import Settings
+from app.core.timeouts import DeadlineRoute, timeout
+from app.core.unit_of_work import transaction
+from app.main import create_app
+from app.models import (
+    Attachment,
+    AuditLog,
+    Booking,
+    BookingGroup,
+    BookingInvoice,
+    BookingNote,
+    BookingTask,
+    Notification,
+    Station,
+    Status,
+    User,
+)
+from app.scripts.seed import seed_database
+
+pytestmark = pytest.mark.skipif(
+    not os.environ.get("SCHEMA_TEST_DATABASE_URL"), reason="No isolated booking test database"
+)
+KEY = "CW2154654-RDU-2609"
+ALEMBIC_CONFIG = Path(__file__).resolve().parents[1] / "alembic.ini"
+
+
+@dataclass
+class Rig:
+    app: object
+    client: httpx.AsyncClient
+    headers: dict[str, dict[str, str]] = field(repr=False)
+
+    async def save(self, key=KEY, user="agent", version=0, **values):
+        body = {
+            "status_code": "BUNDLE",
+            "note": "Checking supplier mail",
+            "expected_version": version,
+            "client_request_id": str(uuid4()),
+            "supplier_name": "Example Hotel",
+            "supplier_type": "hotel",
+        }
+        body.update(values)
+        return await self.client.post(
+            f"/api/v1/bookings/{key}/notes", headers=self.headers[user], json=body
+        )
+
+    async def get(self, path, user="agent", **params):
+        return await self.client.get("/api/v1" + path, headers=self.headers[user], params=params)
+
+
+@pytest.fixture(scope="module")
+def password_pair():
+    password = secrets.token_urlsafe(24)
+    return password, PasswordHasher().hash(password)
+
+
+@pytest_asyncio.fixture(scope="module", loop_scope="module")
+async def migrated():
+    from sqlalchemy.engine import make_url
+
+    name = make_url(os.environ["SCHEMA_TEST_DATABASE_URL"]).database
+    assert name.startswith("booking_schema_") and name.endswith("_test")
+    await asyncio.to_thread(command.upgrade, Config(str(ALEMBIC_CONFIG)), "head")
+
+
+@pytest_asyncio.fixture
+async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
+    settings = Settings(
+        _env_file=None,
+        app_env="test",
+        database_url=os.environ["SCHEMA_TEST_DATABASE_URL"],
+        database_ssl_ca=os.environ["SCHEMA_TEST_SSL_CA"],
+        jwt_secret_key=secrets.token_urlsafe(64),
+        db_pool_size=2,
+        db_pool_timeout_seconds=0.2,
+    )
+    app = create_app(settings)
+    async with app.router.lifespan_context(app):
+        await app.state.key_index.stop()
+        async with app.state.engine.begin() as connection:
+            for model in (
+                Attachment,
+                Notification,
+                BookingInvoice,
+                BookingTask,
+                BookingNote,
+                Booking,
+                BookingGroup,
+                Station,
+                Status,
+                AuditLog,
+                User,
+            ):
+                await connection.execute(delete(model))
+            await connection.execute(
+                User.__table__.insert(),
+                [
+                    {
+                        "id": identifier,
+                        "username": name,
+                        "full_name": name.title(),
+                        "role": role,
+                        "password_hash": password_pair[1],
+                        "is_active": True,
+                    }
+                    for identifier, name, role in [
+                        (1, "admin", "admin"),
+                        (3, "agent", "agent"),
+                        (5, "other", "agent"),
+                    ]
+                ],
+            )
+        await seed_database(app.state.engine, None)
+        await app.state.key_index.load()
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://testserver"
+        ) as client:
+            headers = {}
+            for name in ("admin", "agent", "other"):
+                response = await client.post(
+                    "/api/v1/auth/login", json={"username": name, "password": password_pair[0]}
+                )
+                assert response.status_code == 200, response.text
+                headers[name] = {"Authorization": "Bearer " + response.json()["access_token"]}
+                await client.get("/api/v1/auth/me", headers=headers[name])
+            yield Rig(app, client, headers)
+
+
+async def test_first_note_folder_station_canonical_snapshot(rig):
+    response = await rig.save()
+    assert response.status_code == 200, response.text
+    assert response.json()["snapshot"]["version"] == 1
+    assert response.json()["snapshot"]["display_key"] == "CW 2154654-RDU-2609"
+    async with rig.app.state.engine.connect() as connection:
+        group = (await connection.execute(select(BookingGroup))).one()
+        assert group.booking_count == 1 and group.supplier_name == "Example Hotel"
+        assert await connection.scalar(select(Station.code)) == "RDU"
+        assert await connection.scalar(select(Booking.booking_key)) == KEY
+        assert await connection.scalar(
+            select(AuditLog.action).where(AuditLog.action == "booking_note_created")
+        )
+    assert KEY in rig.app.state.key_index.keys
+    lookup = await rig.get("/bookings/lookup", key="cw 2154654 - rdu - 2609")
+    assert (
+        lookup.status_code == 200 and lookup.json()["snapshot"]["supplier_name"] == "Example Hotel"
+    )
+    assert all(
+        name in lookup.headers["server-timing"] for name in ["key_index", "snapshot", "notes"]
+    )
+
+
+async def test_takeover_notifications_and_ownership(rig):
+    await rig.save()
+    second = await rig.save(user="other", version=1)
+    assert second.status_code == 200 and second.json()["snapshot"]["version"] == 2
+    result = (await rig.get("/notifications")).json()
+    assert result["unread_count"] == 1 and result["items"][0]["type"] == "taken_over"
+    identifier = result["items"][0]["id"]
+    assert (await rig.get("/notifications", user="other")).json()["unread_count"] == 0
+    assert (
+        await rig.client.post(
+            f"/api/v1/notifications/{identifier}/read", headers=rig.headers["other"]
+        )
+    ).status_code == 404
+    assert (
+        await rig.client.post(
+            f"/api/v1/notifications/{identifier}/read", headers=rig.headers["agent"]
+        )
+    ).status_code == 200
+    assert (await rig.get("/notifications")).json()["unread_count"] == 0
+    await rig.save(version=2)
+    await rig.client.post("/api/v1/notifications/read-all", headers=rig.headers["other"])
+    assert (await rig.get("/notifications", user="other")).json()["unread_count"] == 0
+
+
+async def test_version_conflict_rolls_back_with_latest_snapshot(rig):
+    await rig.save()
+    result = await rig.save()
+    assert result.status_code == 409 and result.json()["code"] == "VERSION_CONFLICT"
+    assert result.json()["details"]["version"] == 1
+    async with rig.app.state.engine.connect() as connection:
+        assert len((await connection.execute(select(BookingNote.id))).all()) == 1
+
+
+@pytest.mark.parametrize("status", ["REJECTION", "PARKING"])
+async def test_required_note(rig, status):
+    for value in (None, " \t\x00\n"):
+        result = await rig.save(status_code=status, note=value)
+        assert result.status_code == 422 and result.json()["code"] == "NOTE_REQUIRED"
+    assert (await rig.save(status_code=status, note="Reason recorded")).status_code == 200
+
+
+async def test_status_length_and_control_cleaning(rig):
+    assert (await rig.save(status_code="MISSING")).json()["code"] == "STATUS_INACTIVE"
+    async with rig.app.state.engine.begin() as connection:
+        await connection.execute(
+            update(Status).where(Status.code == "BUNDLE").values(is_active=False)
+        )
+    assert (await rig.save()).json()["code"] == "STATUS_INACTIVE"
+    assert (await rig.save(status_code="PARKING", note="a" * 5001)).status_code == 422
+    result = await rig.save(status_code="PARKING", note="Before\x00\u200b\r\nafter")
+    assert result.json()["note"]["note"] == "Before\nafter"
+    assert result.json()["snapshot"]["last_note_preview"] == "Before\nafter"
+
+
+async def test_done_invoice_warning_and_reopen(rig):
+    assert (await rig.save(status_code="DONE")).json()["code"] == "INVOICE_REQUIRED"
+    result = await rig.save(status_code="DONE", invoices={"no_invoice": True})
+    assert result.status_code == 200, result.text
+    assert (await rig.get("/bookings/lookup", key=KEY)).json()["done_warning"] is None
+    lookup = (await rig.get("/bookings/lookup", key=KEY, user="other")).json()
+    assert "already marked this booking Done" in lookup["done_warning"]
+    assert lookup["snapshot"]["done_at"]
+    assert (await rig.save(version=1)).json()["snapshot"]["done_at"] is None
+    assert (await rig.get("/bookings/lookup", key=KEY)).json()["done_warning"] is None
+
+
+async def test_supplier_reuse_and_station_write_rules(rig):
+    assert (await rig.save(supplier_name=None, supplier_type=None)).json()[
+        "code"
+    ] == "SUPPLIER_REQUIRED"
+    assert (await rig.save(supplier_name="ab")).json()["code"] == "SUPPLIER_REQUIRED"
+    await rig.save()
+    result = await rig.save(key=KEY[:-4] + "2610", supplier_name=None, supplier_type=None)
+    assert (
+        result.status_code == 200
+        and result.json()["snapshot"]["supplier"]["name"] == "Example Hotel"
+    )
+    mismatch = await rig.save(key=KEY.replace("RDU", "YUL"))
+    assert (
+        mismatch.json()["code"] == "STATION_MISMATCH"
+        and mismatch.json()["details"]["suggested_key"] == KEY
+    )
+    missing = await rig.save(key="CW2154654-2609")
+    assert (
+        missing.json()["code"] == "STATION_REQUIRED"
+        and missing.json()["details"]["suggested_key"] == KEY
+    )
+    assert (await rig.save(key="CW9999999-2609")).json()["code"] == "STATION_REQUIRED"
+    assert (await rig.save(key="cw2154654-rdu-2609")).json()["code"] == "INVALID_BOOKING_KEY"
+    async with rig.app.state.engine.connect() as connection:
+        assert await connection.scalar(select(BookingGroup.booking_count)) == 2
+
+
+async def test_partial_new_month_invalid_and_ambiguous_resolution(rig):
+    assert (await rig.get("/bookings/lookup", key="CW2154654-2609")).json()["resolution"][
+        "status"
+    ] == "needs_station"
+    invalid = (await rig.get("/bookings/lookup", key="CW123-RDU-2609")).json()
+    assert (
+        invalid["resolution"]["status"] == "invalid"
+        and invalid["format_warning"]
+        and invalid["version"] == 0
+    )
+    await rig.save()
+    for key in ("CW2154654-2609", "CW 2154654-2609"):
+        result = (await rig.get("/bookings/lookup", key=key)).json()
+        assert (
+            result["resolution"]["status"] == "resolved_from_partial"
+            and result["booking_key"] == KEY
+            and result["exists"]
+        )
+    result = (await rig.get("/bookings/lookup", key="CW2154654-2610")).json()
+    assert (
+        result["resolution"]["status"] == "resolved_from_partial"
+        and not result["exists"]
+        and result["group_exists"]
+    )
+    async with rig.app.state.engine.begin() as connection:
+        group = await connection.scalar(select(Booking.group_id))
+        await connection.execute(
+            Booking.__table__.insert().values(
+                booking_key=KEY.replace("RDU", "YUL"),
+                group_id=group,
+                cw_number="CW2154654",
+                station_code="YUL",
+                period="2609",
+            )
+        )
+    await rig.app.state.key_index.load()
+    result = (await rig.get("/bookings/lookup", key="CW2154654-2609")).json()
+    assert (
+        result["resolution"]["status"] == "ambiguous"
+        and len(result["resolution"]["candidates"]) == 2
+    )
+
+
+async def test_idempotency_original_response_and_uuid_misuse(rig):
+    request_id = str(uuid4())
+    first = await rig.save(client_request_id=request_id)
+    await rig.save(version=1, note="Later update")
+    retry = await rig.save(client_request_id=request_id)
+    assert retry.status_code == 200 and retry.json() == first.json()
+    assert (await rig.save(client_request_id=request_id, note="Different")).status_code == 422
+    assert (await rig.save(user="other", client_request_id=request_id)).status_code == 422
+    async with rig.app.state.engine.connect() as connection:
+        assert len((await connection.execute(select(BookingNote.id))).all()) == 2
+
+
+async def test_mine_pagination_tasks_and_filters(rig):
+    for month in ("2609", "2610", "2611"):
+        assert (await rig.save(key=KEY[:-4] + month)).status_code == 200
+    async with rig.app.state.engine.begin() as connection:
+        ids = (await connection.execute(select(Booking.id).order_by(Booking.id))).scalars().all()
+        await connection.execute(
+            BookingTask.__table__.insert(),
+            [
+                {
+                    "booking_id": ids[0],
+                    "user_id": user,
+                    "message": "Private reminder",
+                    "remind_at": datetime.now(UTC),
+                }
+                for user in (3, 3, 5)
+            ],
+        )
+    first = (await rig.get("/bookings/mine", size=2)).json()
+    second = (await rig.get("/bookings/mine", page=2, size=2)).json()
+    assert (
+        first["total"] == 3
+        and len(second["items"]) == 1
+        and second["items"][0]["my_pending_tasks"] == 2
+    )
+    assert {i["booking_key"] for i in first["items"]}.isdisjoint(
+        {i["booking_key"] for i in second["items"]}
+    )
+    assert (await rig.get("/bookings/mine", user="other")).json()["total"] == 0
+    assert len((await rig.get("/bookings/lookup", key=KEY)).json()["my_tasks"]) == 2
+    assert len((await rig.get("/bookings/lookup", key=KEY, user="other")).json()["my_tasks"]) == 1
+    for params in (
+        {"q": "cw 2154654"},
+        {"supplier": "Example"},
+        {"station_code": "RDU"},
+        {"supplier_type": "hotel"},
+        {"status_code": "BUNDLE"},
+        {"agent_id": 3},
+    ):
+        assert (await rig.get("/bookings", **params)).json()["total"] == 3
+    assert (await rig.get("/bookings", period="2610")).json()["total"] == 1
+    assert (await rig.get("/bookings", sort="malicious")).status_code == 422
+
+
+async def test_stale_threshold_and_done_exclusion(rig):
+    await rig.save()
+    await rig.save(key=KEY[:-4] + "2610", status_code="DONE", invoices={"no_invoice": True})
+    async with rig.app.state.engine.begin() as connection:
+        await connection.execute(
+            update(Status).where(Status.code == "BUNDLE").values(stale_after_hours=2)
+        )
+        await connection.execute(
+            update(Booking).values(updated_at=datetime.now(UTC) - timedelta(hours=3))
+        )
+    rig.app.state.snapshot_cache.clear()
+    result = (await rig.get("/bookings/stale", scope="all")).json()
+    assert (
+        result["total"] == 1
+        and result["items"][0]["stale_hours"] >= 3
+        and result["items"][0]["booking_key"] == KEY
+    )
+    assert (await rig.get("/bookings/stale", user="other")).json()["total"] == 0
+    assert (await rig.get("/bookings", stale=True)).json()["total"] == 1
+    assert (await rig.get("/bookings", stale=False)).json()["total"] == 1
+
+
+async def test_history_cursor_ties_deleted_notes_and_attachments(rig):
+    for version in range(4):
+        assert (await rig.save(version=version)).status_code == 200
+    async with rig.app.state.engine.begin() as connection:
+        ids = (
+            (await connection.execute(select(BookingNote.id).order_by(BookingNote.id)))
+            .scalars()
+            .all()
+        )
+        await connection.execute(
+            update(BookingNote).values(created_at=datetime(2026, 1, 1, tzinfo=UTC))
+        )
+        await connection.execute(
+            update(BookingNote).where(BookingNote.id == ids[1]).values(deleted_at=datetime.now(UTC))
+        )
+        await connection.execute(
+            Attachment.__table__.insert().values(
+                note_id=ids[3],
+                file_name="invoice.pdf",
+                mime_type="application/pdf",
+                size_bytes=10,
+                storage_key="placeholder",
+            )
+        )
+    first = (await rig.get(f"/bookings/{KEY}/notes", limit=2)).json()
+    assert [i["id"] for i in first["items"]] == [ids[3], ids[2]] and first["items"][0][
+        "attachments"
+    ][0]["file_name"] == "invoice.pdf"
+    second = (await rig.get(f"/bookings/{KEY}/notes", limit=2, cursor=first["next_cursor"])).json()
+    assert [i["id"] for i in second["items"]] == [ids[0]] and second["next_cursor"] is None
+    assert (await rig.get(f"/bookings/{KEY}/notes", cursor="invalid")).status_code == 422
+    assert (await rig.get(f"/bookings/{KEY}")).status_code == 200
+
+
+async def test_missing_hot_key_zero_queries_and_folder_edit_invalidates(rig):
+    statements = []
+
+    def track(*args):
+        statements.append(args[2])
+
+    event.listen(rig.app.state.engine.sync_engine, "before_cursor_execute", track)
+    try:
+        result = await rig.get("/bookings/lookup", key=KEY)
+        assert result.status_code == 200 and not result.json()["exists"] and statements == []
+    finally:
+        event.remove(rig.app.state.engine.sync_engine, "before_cursor_execute", track)
+    await rig.save()
+    await rig.get("/bookings/lookup", key=KEY)
+    result = await rig.client.patch(
+        "/api/v1/folders/CW2154654",
+        headers=rig.headers["admin"],
+        json={"supplier_name": "Updated Supplier", "supplier_type": "transportation"},
+    )
+    assert result.status_code == 200, result.text
+    assert rig.app.state.key_index.groups["CW2154654"].info.supplier_name == "Updated Supplier"
+    assert (await rig.get("/bookings/lookup", key=KEY)).json()["snapshot"][
+        "supplier_name"
+    ] == "Updated Supplier"
+    assert (await rig.get("/bookings/lookup", key="CW2154654-2610")).json()["group"][
+        "supplier_type"
+    ] == "transportation"
+    assert (
+        await rig.client.patch(
+            "/api/v1/folders/CW2154654",
+            headers=rig.headers["agent"],
+            json={"supplier_name": "Forbidden"},
+        )
+    ).status_code == 403
+
+
+async def test_fallback_and_unique_lookup_explain(rig):
+    await rig.save()
+    rig.app.state.key_index.ready = False
+    assert (await rig.get("/bookings/lookup", key="CW2154654-2609")).json()["exists"]
+    rig.app.state.settings.key_index_enabled = False
+    assert (await rig.get("/bookings/lookup", key=KEY)).json()["exists"]
+    async with rig.app.state.engine.connect() as connection:
+        version = await connection.scalar(text("SELECT VERSION()"))
+        plan = (
+            (
+                await connection.execute(
+                    text("EXPLAIN SELECT id FROM bookings WHERE booking_key=:key"), {"key": KEY}
+                )
+            )
+            .mappings()
+            .all()
+        )
+        if "tidb" in version.lower():
+            assert any("Point_Get" in str(row) for row in plan)
+        else:
+            assert plan[0]["type"] == "const" and plan[0]["key"] == "booking_key"
+
+
+async def test_storage_placeholder_requires_owned_note(rig):
+    saved = (await rig.save()).json()
+    path = f"/api/v1/notes/{saved['note']['id']}/attachments"
+    assert (await rig.client.post(path, headers=rig.headers["agent"])).status_code == 501
+    assert (await rig.client.post(path, headers=rig.headers["other"])).status_code == 404
+
+
+async def test_inline_invoices_validate_and_rollback(rig):
+    assert (await rig.save(invoices={"add": ["bad!"]})).json()["code"] == "INVOICE_INVALID"
+    assert (await rig.save(invoices={"add": ["INV-001"], "no_invoice": True})).json()[
+        "code"
+    ] == "INVOICE_STATE_CONFLICT"
+    result = await rig.save(status_code="DONE", invoices={"add": [" inv-001 ", "INV-001"]})
+    assert result.status_code == 200 and result.json()["snapshot"]["invoice_count"] == 1
+    assert result.json()["note"]["invoice_change"]["added"] == ["INV-001"]
+    assert (await rig.get("/bookings", invoice="INV-001")).json()["total"] == 1
+
+
+async def test_concurrent_first_note_and_same_uuid(rig):
+    responses = await asyncio.gather(rig.save(), rig.save(user="other"))
+    assert sorted(r.status_code for r in responses) == [200, 409]
+    request_id = str(uuid4())
+    responses = await asyncio.gather(
+        rig.save(key=KEY[:-4] + "2610", client_request_id=request_id),
+        rig.save(key=KEY[:-4] + "2610", client_request_id=request_id),
+    )
+    assert [r.status_code for r in responses] == [200, 200] and responses[0].json() == responses[
+        1
+    ].json()
+    async with rig.app.state.engine.connect() as connection:
+        assert await connection.scalar(select(BookingGroup.booking_count)) == 2
+
+
+def add_route(rig, path, endpoint, seconds=0.15):
+    rig.app.router.routes.append(DeadlineRoute(path, timeout(seconds)(endpoint), methods=["GET"]))
+
+
+async def test_slow_query_504_discards_connection_and_recovers(rig, caplog):
+    identifiers, invalidations = [], []
+    event.listen(
+        rig.app.state.engine.sync_engine, "invalidate", lambda *args: invalidations.append(True)
+    )
+
+    async def slow(request: Request):
+        async with transaction(
+            request.app.state.engine, request.app.state.settings, seconds=3
+        ) as session:
+            identifiers.append(await session.scalar(text("SELECT CONNECTION_ID()")))
+            await session.execute(text("SELECT SLEEP(2)"))
+        return {"ok": True}
+
+    add_route(rig, "/test/slow", slow)
+    result = await rig.client.get("/test/slow", headers={"X-Request-ID": "slow-test"})
+    assert (
+        result.status_code == 504 and result.json()["code"] == "REQUEST_TIMEOUT" and invalidations
+    )
+    async with rig.app.state.engine.connect() as connection:
+        assert await connection.scalar(text("SELECT CONNECTION_ID()")) != identifiers[0]
+        assert await connection.scalar(text("SELECT 1")) == 1
+    assert "slow-test" in caplog.text and "/test/slow" in caplog.text
+
+
+async def test_cancelled_write_rolls_back(rig):
+    started = asyncio.Event()
+
+    async def work():
+        async with transaction(rig.app.state.engine, rig.app.state.settings) as session:
+            session.add(Station(code="ZZZ"))
+            await session.flush()
+            started.set()
+            await session.execute(text("SELECT SLEEP(2)"))
+
+    task = asyncio.create_task(work())
+    await asyncio.wait_for(started.wait(), 2)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    # A disconnected MySQL query can finish on the server before its transaction rolls
+    # back. A locking read waits for that rollback and proves the write did not commit.
+    async with asyncio.timeout(4), rig.app.state.engine.begin() as connection:
+        assert (
+            await connection.scalar(
+                select(Station.code).where(Station.code == "ZZZ").with_for_update()
+            )
+            is None
+        )
+
+
+async def test_pool_exhaustion_503_retry_after(rig):
+    async def pooled(request: Request):
+        async with transaction(request.app.state.engine, request.app.state.settings) as session:
+            await session.execute(text("SELECT 1"))
+        return {"ok": True}
+
+    add_route(rig, "/test/pooled", pooled, 2)
+    async with rig.app.state.engine.connect(), rig.app.state.engine.connect():
+        result = await rig.client.get("/test/pooled")
+    assert result.status_code == 503 and result.json()["code"] == "SERVICE_BUSY"
+    assert int(result.headers["retry-after"]) > 0
+
+
+async def test_retry_after_postcommit_timeout_never_duplicates(rig, monkeypatch):
+    started = asyncio.Event()
+
+    async def slow_broadcast(event_name, payload):
+        started.set()
+        await asyncio.sleep(0.2)
+
+    monkeypatch.setattr(rig.app.state.ws_manager, "broadcast", slow_broadcast)
+    rig.app.state.settings.note_save_timeout_seconds = 0.1
+    request_id = str(uuid4())
+    first = await rig.save(client_request_id=request_id)
+    assert first.status_code == 504, first.text
+    assert started.is_set()
+    retry = await rig.save(client_request_id=request_id)
+    assert retry.status_code == 200 and retry.json()["snapshot"]["version"] == 1
+    async with rig.app.state.engine.connect() as connection:
+        assert len((await connection.execute(select(BookingNote.id))).all()) == 1
+
+
+async def test_row_lock_wait_returns_service_busy(rig):
+    await rig.save()
+    async with rig.app.state.engine.connect() as connection:
+        async with connection.begin():
+            await connection.execute(
+                select(Booking.id).where(Booking.booking_key == KEY).with_for_update()
+            )
+            result = await rig.save(user="other", version=1)
+            assert result.status_code == 503 and result.json()["code"] == "SERVICE_BUSY"
+            assert int(result.headers["retry-after"]) > 0
+    assert (await rig.get("/bookings/lookup", key=KEY)).json()["version"] == 1
+
+
+async def test_legacy_invalid_key_is_readable_but_cannot_be_written(rig):
+    await rig.save()
+    legacy = "CW2154654-RDU-2613"
+    async with rig.app.state.engine.begin() as connection:
+        group_id = await connection.scalar(select(Booking.group_id))
+        await connection.execute(
+            Booking.__table__.insert().values(
+                booking_key=legacy,
+                group_id=group_id,
+                cw_number="CW2154654",
+                station_code="RDU",
+                period="2613",
+            )
+        )
+    await rig.app.state.key_index.load()
+    result = (await rig.get("/bookings/lookup", key=legacy)).json()
+    assert (
+        result["exists"]
+        and result["format_warning"]
+        and result["resolution"]["status"] == "invalid"
+    )
+    assert (await rig.save(key=legacy, version=1)).json()["code"] == "INVALID_BOOKING_KEY"
+
+
+async def test_list_queries_are_batched_and_never_read_note_table(rig):
+    for month in ("2609", "2610", "2611"):
+        await rig.save(key=KEY[:-4] + month)
+    statements = []
+
+    def track(*args):
+        statements.append(args[2].lower())
+
+    event.listen(rig.app.state.engine.sync_engine, "before_cursor_execute", track)
+    try:
+        assert (await rig.get("/bookings/mine")).status_code == 200
+    finally:
+        event.remove(rig.app.state.engine.sync_engine, "before_cursor_execute", track)
+    assert not any("booking_notes" in statement for statement in statements)
+    task_queries = [s for s in statements if "from booking_tasks" in s]
+    assert len(task_queries) == 1 and "group by booking_tasks.booking_id" in task_queries[0]
+    assert len([s for s in statements if s.startswith("select ")]) == 4

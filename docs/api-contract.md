@@ -2,7 +2,7 @@
 
 This document records the user's shared contract for all implementation prompts. Paths, JSON field names, and error codes must not change silently. Update this file and the wire models together if an approved change is needed.
 
-**Implementation status:** infrastructure probes and the four auth endpoints are implemented through Prompt 3. Shared schemas, generated types, and English copy are available. Booking and other business endpoints remain contracts for later prompts.
+**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Search/folder lists, task mutations, realtime, and later-prompt endpoints remain reserved.
 
 ## Common conventions
 
@@ -16,7 +16,7 @@ This document records the user's shared contract for all implementation prompts.
 
 ## Wire types
 
-Executable field definitions are in [`backend/app/schemas/contracts.py`](../backend/app/schemas/contracts.py) and [`backend/app/schemas/auth.py`](../backend/app/schemas/auth.py). Frontend equivalents are generated in [`frontend/src/types/api.generated.ts`](../frontend/src/types/api.generated.ts); do not edit that file manually.
+Executable field definitions are in [`backend/app/schemas/contracts.py`](../backend/app/schemas/contracts.py) [`backend/app/schemas/auth.py`](../backend/app/schemas/auth.py), and [`backend/app/schemas/bookings.py`](../backend/app/schemas/bookings.py). Frontend equivalents are generated in [`frontend/src/types/api.generated.ts`](../frontend/src/types/api.generated.ts); do not edit that file manually.
 
 | Type | Fields |
 | --- | --- |
@@ -196,7 +196,7 @@ Prompt 2 storage includes this contract's invoice fields/table, status task/invo
 }
 ```
 
-`supplier_name` and `supplier_type` are conditionally required for the first note of a new CW folder. `{key}` must be the canonical full key. A partial key returns `STATION_REQUIRED`, with `details.suggested_key` when known. Other malformed new keys return `INVALID_BOOKING_KEY`. Snapshot/version updates, note insertion, and the idempotency outcome must be atomic when implemented.
+`supplier_name` and `supplier_type` are conditionally required for the first note of a new CW folder. `{key}` must be the canonical full key. A partial key returns `STATION_REQUIRED`, with `details.suggested_key` when known. Other malformed new keys return `INVALID_BOOKING_KEY`. Snapshot/version updates, note insertion, invoices, takeover notification, audit, and the persisted idempotency outcome are atomic.
 
 Auth bodies/user responses are specified above by Prompt 3. Remaining envelopes not fully specified by Prompt 1B, including lookup aggregates and administrative request bodies, belong to their implementation prompts. Do not expose placeholder routes to fill those gaps.
 
@@ -205,3 +205,22 @@ Auth bodies/user responses are specified above by Prompt 3. Remaining envelopes 
 The complete copy catalogue, using the exact Prompt 1B keys, punctuation, capitalization, and interpolation variables, is in [`frontend/src/locales/en.json`](../frontend/src/locales/en.json). Existing foundation strings are preserved under their existing namespaces. `warmup` contains `Waking up the server…`; its subsequent state is separately stored as `warmup_ready: Ready`. The Markdown escape in `invoice_invalid` renders an underscore, not a literal backslash.
 
 Supplier labels are `Hotel` and `Transportation`. Standard status labels are `Done`, `Rejection`, `Parking`, `Bundle`, and `HRS Preview`; labels in the locale do not hard-code or seed the database status catalogue. Period labels use `Aug 2026`. Display datetimes use `DD MMM YYYY HH:mm:ss` and an explicit timezone label, with the user's configured timezone (default `Asia/Ho_Chi_Minh`). All UI rendering remains plain text.
+
+## Booking implementation details — Prompt 4
+
+These envelopes clarify fields that Prompt 1B left implicit; existing shared DTO fields and error codes retain their names.
+
+- `GET /bookings/lookup` returns `{booking_key,display_key,exists,version,resolution,format_warning,done_warning,snapshot,group,group_exists,suggestions,my_tasks,history}`. `history` is `{items:Note[],next_cursor}`. A missing/unresolved booking has `snapshot:null`, `version:0` and empty history/tasks; unresolved keys are null. `group` is null or `{cw_number,supplier_name,supplier_type,station_code}`. Partial input never writes. Missing full keys return `resolution.status:"exact"` but `exists:false`. Invalid input returns HTTP 200 with `resolution.status:"invalid"` and a warning; an existing malformed legacy key can be read but never written through note creation.
+- `snapshot` in lookup/detail and list items use `BookingItem`: all `BookingSnapshot` fields plus flat `supplier_name`, `supplier_type`, `my_pending_tasks` (default 0), and `stale_hours` (null unless stale). The task count is populated for list pages; lookup uses its private `my_tasks` array. Done warnings appear only when the last agent is another user. `GET /bookings/{key}` returns the same envelope, or 404 when absent.
+- `POST /bookings/{key}/notes` returns HTTP 200 `{snapshot:BookingSnapshot,note:Note}`, including on first creation and replay. A new booking requires `expected_version:0`. Existing version conflicts return the latest snapshot directly in `details`; if no booking exists yet, details is `{snapshot:null,version:0}`. Only canonical full paths can save; a normalized spelling is returned as `details.suggested_key` for noncanonical full input. Partial paths return `STATION_REQUIRED`, including a suggestion when the folder exists.
+- `client_request_id` is a required UUID. The normalized request (including actor and canonical key) is fingerprinted. An identical retry returns the original committed response, even after newer notes, supplier edits, or a lost HTTP response. Reusing a UUID for another payload/user/key returns 422 `VALIDATION_ERROR`. This is not a mechanism for editing an existing note.
+- Notes are at most 5,000 input characters. Control/format characters are removed; CRLF becomes LF and line breaks/tabs are retained. Whitespace-only notes fail when required. A new folder requires a cleaned 3–255-character supplier name and supplier type. Existing-folder supplier fields are ignored. Station mismatch includes `expected_station`, `suggested_key`, `display_key`.
+- Inline `invoices` accepts the shared `InvoiceChange`, validates/uppercases/deduplicates numbers, enforces the 20-number limit and owner/QC/Admin removal, maintains invoice state/count and records the change in the note. DONE's `invoice_required` guard is active. Cross-booking duplicate warnings and independent invoice APIs/reports remain for Prompt 8F.
+- Suggestions and the `confirm_new` / `allow_duplicate` guards belong to Prompt 8C: `suggestions` is currently empty and these flags reserve their contract fields. `assign_to` / `assign_message` return `ASSIGNMENT_INVALID` until Prompt 8D; requests are never silently treated as assigned.
+- Overall list adds `cw_number`, `station_code`, `supplier_type`, `period`, and `supplier` filters from Prompt 4. `q` matches a normalized booking-key prefix; supplier matches a normalized name prefix. `invoice` is an exact normalized invoice match. Dates must include a timezone and filter `updated_at` inclusively. Sort values are `updated_at_desc` (default) and `updated_at_asc`, with matching ID tie breakers. Pages are 1-based, sizes 1–100. Mine defaults to 10 and overall/stale to 20. Stale scope defaults to `mine`; Done is always excluded, thresholds are status-specific or 24 hours, and order is oldest activity first.
+- `GET /notifications` returns `{items,unread_count}`; items include `id,type,booking_key,display_key,by_agent,note_id,task_id,created_at,read_at`. Read/read-all return `{ok:true}`. Another owner's notification is 404.
+- `GET /statuses` returns active `Status[]` ordered by `sort_order,id`. `PATCH /folders/{cw}` accepts supplier name/type and returns `group` fields directly; Admin/QC only. This single folder operation is implemented early to keep index/cache edits correct.
+- `POST /notes/{id}/attachments` authenticates and checks note ownership (QC/Admin also allowed), then uses `NullStorage`. It intentionally returns **501 with code `INTERNAL`**, preserving the supplied error-code catalogue; a real provider/upload parser and download endpoint remain unimplemented. Another user's note is 404. Future upload limits: image/PDF, 5 MB each, 5 per note.
+- Lookup/detail expose `Server-Timing: key_index;dur=..., snapshot;dur=..., notes;dur=...`; browser CORS permits it. Default/lookup/save/export route budgets are 8/6/12/55 seconds. A timeout returns 504, pool/row-lock exhaustion returns 503 with `Retry-After: 5`. Export routes are reserved, but the decorator supports their future override.
+
+Operational limits, configuration and curl examples: [bookings.md](bookings.md).

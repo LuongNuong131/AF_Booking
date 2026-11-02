@@ -1,6 +1,6 @@
 # Database schema — Prompt 2
 
-This step implements models, the initial migration, seed data, and schema/query-plan checks. It adds no business API endpoints.
+Schema foundations and migration checks began in Prompt 2. Prompt 4 adds migration `0002`, storing `booking_notes.request_fingerprint` (SHA-256) and `save_result` (JSON) so retries return the original note/snapshot after later updates. Apply `alembic upgrade head` before running the booking API. The initial migration remains frozen.
 
 ## Files and storage rules
 
@@ -58,13 +58,13 @@ Downgrade deletes all application tables and data; Alembic's empty version table
 
 ## Provisional status seeds
 
-Prompt 1 §4.2 did not contain the promised Position/note-required table. Until supplied, these explicitly provisional values apply. Subsequent seeds do not overwrite operator edits.
+Position labels remain provisional because Prompt 1 §4.2 did not supply the mapping. Prompt 4 explicitly requires notes for Rejection/Parking; newly seeded rows now enforce that rule. Existing rows and operator edits are preserved: on a previously seeded database, an operator must enable `note_required` for these two statuses if they still have the former false defaults.
 
 | Code | Label / Position | Note required | Done | Suggest task | Invoice required | Order |
 | --- | --- | --- | --- | --- | --- | --- |
 | `DONE` | Done | false | true | false | true | 10 |
-| `REJECTION` | Rejection | false | false | true | false | 20 |
-| `PARKING` | Parking | false | false | true | false | 30 |
+| `REJECTION` | Rejection | true | false | true | false | 20 |
+| `PARKING` | Parking | true | false | true | false | 30 |
 | `BUNDLE` | Bundle | false | false | false | false | 40 |
 | `HRS_PREVIEW` | HRS Preview | false | false | false | false | 50 |
 
@@ -74,7 +74,7 @@ All are active; `stale_after_hours` and `default_task_days` remain NULL instead 
 
 MySQL 8.0.16+ gets `CHECK (booking_key = UPPER(booking_key) AND booking_key NOT LIKE '% %')`. On TiDB the migration inspects `tidb_enable_check_constraint`; it adds the CHECK only when enforcement is enabled and never changes a production-wide variable automatically. The v8.5.0 test image defaults to OFF.
 
-When CHECK enforcement is unavailable, migration logs the fallback. `require_canonical_storage_key` and the ORM validator reject non-uppercase/non-ASCII/whitespace keys. Future service writes, including Core/bulk inserts, must call this guard explicitly; raw SQL bypasses application validation. Full-key regex validation and partial resolution remain for the booking-service prompt.
+When CHECK enforcement is unavailable, migration logs the fallback. `require_canonical_storage_key` and the ORM validator reject non-uppercase/non-ASCII/whitespace keys. Future service writes, including Core/bulk inserts, must call this guard explicitly; raw SQL bypasses application validation. Prompt 4 additionally validates full-key syntax, months, station ownership, and canonical path spelling before every new note write.
 
 To use CHECK on TiDB, have the cluster administrator enable it before the initial migration. Enabling it afterward does not create an omitted constraint; adding it later requires a reviewed migration and existing-data validation. The disposable TiDB test covers both OFF fallback and ON re-migration.
 

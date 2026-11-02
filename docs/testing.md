@@ -53,3 +53,14 @@ uv pip compile requirements-dev.in --generate-hashes --quiet -c requirements.txt
 ```
 
 Reinstall with hash verification and rerun affected checks. Frontend installation uses the committed `package-lock.json` and `npm ci`.
+
+Prompt 4 adds shared Python/TypeScript booking-key fixtures and cache tests. Real booking API checks use fresh TLS databases:
+
+```sh
+.venv/bin/python tests/run_schema_checks.py --engine mysql --suite booking --report /tmp/booking-mysql.xml
+.venv/bin/python tests/run_schema_checks.py --engine tidb --suite booking --report /tmp/booking-tidb.xml
+```
+
+These verify row-lock/version races, original-response UUID replay after later writes and post-commit timeout, required notes, supplier/station/partial-key rules, private takeover notifications/tasks, cursor ties/deleted notes, stale thresholds, zero-query indexed misses, folder invalidation, batch list queries, EXPLAIN point lookup, cancelled rollback/connection discard, pool exhaustion and lock-wait 503. CI runs schema, auth and booking suites for both engines and uploads reports. Full startup/curl/configuration: [bookings.md](bookings.md).
+
+Verification for the Prompt 4 implementation: **87 backend unit tests passed**; 44 integration tests were skipped in that ordinary run and executed separately where applicable. On **each** disposable MySQL 8.0 / TiDB 8.5 database, **25 booking tests + 16 auth tests + 1 schema/migration/EXPLAIN test passed**. Frontend: **48 Vitest tests passed**, strict type checking and production build passed. Ruff checks/format and generated-contract drift checks passed. The two optional hosted-TiDB probe tests remain skipped because no hosted test connection was supplied; local Docker results do not prove hosted deployment readiness.

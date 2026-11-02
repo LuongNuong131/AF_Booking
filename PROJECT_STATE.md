@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Frontend sign-in, booking lookup, folder/supplier services, note writes/history APIs, snapshot maintenance, optimistic concurrency, idempotent write services, notifications, WebSocket runtime, soft locks, reminders, invoice services, reports/exports, non-auth audit flows, and recovery tools. Do not describe this as the completed booking application.
+Frontend sign-in/booking screens, search/folder-list APIs, full invoice management/reports, WebSocket transport, soft locks, reminder mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -40,11 +40,23 @@ Frontend sign-in, booking lookup, folder/supplier services, note writes/history 
 - Unit tests plus disposable MySQL/TiDB auth integration suites, including cache/ACLs, concurrent login/password/logout scenarios, audit rollback, and transport failure.
 - `JWT_SECRET_KEY` is an operator requirement; Render Blueprint can generate it. No default signing key/password is stored.
 
+## Implemented: Prompt 4 booking backend
+
+- Canonical/partial key parsing in Python and TypeScript using shared JSON fixtures.
+- Exact/partial/ambiguous lookup, supplier reuse/station guards, active statuses and required note validation.
+- Append-only note transaction with row locks, optimistic versions, atomic takeover notifications/audit and inline invoice changes.
+- Durable UUID replay of the original response, migration `0002`, one retry for duplicate/deadlock races and authoritative session rechecks.
+- Cursor history with batch attachment metadata, mine/overall/stale pages, batched private task counts and notification ownership.
+- Startup keyset RAM index, periodic reconciliation, DB fallback, generation-guarded snapshot LRU and post-commit invalidation before the broadcast stub.
+- Pure ASGI route deadlines, SELECT/lock/pool timeouts, cancellation rollback/connection discard, Server-Timing and safe WARNING logs.
+- Admin/QC folder supplier edit and intentional NullStorage 501 attachment interface.
+- Disposable TLS MySQL/TiDB booking tests added to CI; run instructions and explicit envelope clarifications in docs/bookings.md and docs/api-contract.md.
+
 ## Next implementation steps
 
-1. Confirm the provisional Position/note-required status rules when the business mapping is available.
-2. Implement booking services/APIs in their requested prompt, preserving Prompt 1B.
-3. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
+1. Confirm the provisional Position labels when the business mapping is available.
+2. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
+3. Continue later prompts for search/folders, task mutations, frontend screens and realtime.
 
 ## Deployment status
 

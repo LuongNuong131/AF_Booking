@@ -63,9 +63,11 @@ jobs:
       - run: pip install --require-hashes -r requirements-dev.txt
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --report /tmp/schema-report.json
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite auth --report /tmp/auth-report.xml
+      - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite booking --report /tmp/booking-report.xml
       - uses: actions/upload-artifact@v4
         with:
           name: database-checks-${{ matrix.engine }}
           path: |
             /tmp/schema-report.json
             /tmp/auth-report.xml
+            /tmp/booking-report.xml

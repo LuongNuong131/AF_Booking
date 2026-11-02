@@ -69,7 +69,7 @@ Expected responses:
 
 A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
-Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. The initial migration creates the application tables. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
+Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. The migrations create the application tables and persist idempotent note results; deploy the latest `head` before starting the API. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
 
 ## 3. Vercel frontend
 
@@ -99,6 +99,6 @@ Import the GitHub repository into Vercel:
 - Check the browser network panel for CORS errors and mixed-content requests.
 - Confirm no database credentials appear in the frontend bundle or repository.
 
-Backend authentication is implemented; verify it with the curl flow in [auth.md](auth.md) after configuring the signing secret and seeding an account. Frontend sign-in, note saving, version conflicts, idempotency, reminders, and realtime workflows still require later implementation before this is a usable booking application. Performance targets are goals, not measured guarantees.
+Backend auth and booking APIs are implemented; verify them with [auth.md](auth.md) and [bookings.md](bookings.md). Frontend sign-in/booking screens, reminders, and realtime transport remain for later prompts. Keep a single instance/worker while the key index, snapshot cache and session invalidation are process-local; see the cache limits in bookings.md. Performance targets are goals, not measured guarantees.
 
 References: [TiDB SQLAlchemy](https://docs.pingcap.com/tidb/stable/dev-guide-sample-application-python-sqlalchemy/), [TiDB MySQL compatibility](https://docs.pingcap.com/tidb/stable/mysql-compatibility/), [Render Blueprints](https://render.com/docs/blueprint-spec), [Vercel Vite](https://vercel.com/docs/frameworks/frontend/vite).

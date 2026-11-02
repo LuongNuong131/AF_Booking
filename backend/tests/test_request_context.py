@@ -50,4 +50,4 @@ def test_auth_requires_configuration_and_has_no_registration_route() -> None:
         assert response.json()["code"] == "SERVICE_BUSY"
         assert client.get("/api/v1/auth/me").status_code == 401
         assert client.post("/api/v1/auth/register", json={}).status_code == 404
-        assert client.get("/api/v1/bookings").status_code == 404
+        assert client.get("/api/v1/bookings").status_code == 401

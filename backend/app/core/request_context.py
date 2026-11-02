@@ -8,6 +8,7 @@ from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 request_id: ContextVar[str] = ContextVar("request_id", default="-")
+request_path: ContextVar[str] = ContextVar("request_path", default="-")
 logger = logging.getLogger("uvicorn.error")
 SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
@@ -24,6 +25,7 @@ class RequestContextMiddleware:
         identifier = supplied if SAFE_REQUEST_ID.fullmatch(supplied) else str(uuid4())
         scope.setdefault("state", {})["request_id"] = identifier
         context_token = request_id.set(identifier)
+        path_token = request_path.set(scope["path"])
         started = time.monotonic()
         status = 500
 
@@ -49,3 +51,4 @@ class RequestContextMiddleware:
                 (time.monotonic() - started) * 1000,
             )
             request_id.reset(context_token)
+            request_path.reset(path_token)

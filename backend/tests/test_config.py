@@ -35,7 +35,7 @@ def test_tls_uses_certificate_and_hostname_verification() -> None:
     # Inspect the final DBAPI arguments without opening a network connection.
     from unittest.mock import patch
 
-    with patch("app.core.db.create_async_engine") as create:
+    with patch("app.core.db.create_async_engine", return_value=engine) as create:
         create_database_engine(config)
     tls = create.call_args.kwargs["connect_args"]["ssl"]
     assert tls.check_hostname is True

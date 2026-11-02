@@ -4,8 +4,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.v1.auth import router as auth_router
+from app.api.v1.bookings import router as bookings_router
 from app.api.v1.health import HealthResponse, health
 from app.api.v1.health import router as health_router
+from app.api.v1.notifications import router as notifications_router
 from app.core.config import Settings
 from app.core.db import create_database_engine
 from app.core.errors import ApiCORSMiddleware, ApiErrorMiddleware, register_error_handlers
@@ -13,7 +15,13 @@ from app.core.request_context import RequestContextMiddleware
 from app.core.timeouts import RequestTimeoutMiddleware
 from app.schemas.contracts import ApiError
 from app.services.auth import AuthService
+from app.services.booking_reads import BookingReads
+from app.services.booking_writes import BookingWrites
+from app.services.key_index import KeyIndex
 from app.services.session_events import SessionEvents
+from app.services.snapshot_cache import SnapshotCache
+from app.services.storage import NullStorage
+from app.services.ws_manager import WebSocketManager
 
 
 def create_app(
@@ -27,9 +35,21 @@ def create_app(
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         application.state.engine = create_database_engine(config)
         application.state.auth = AuthService(application.state.engine, config, session_events)
+        cache = SnapshotCache(config.snapshot_cache_max_entries, config.snapshot_cache_ttl_seconds)
+        index = KeyIndex(application.state.engine, config, cache)
+        application.state.snapshot_cache = cache
+        application.state.key_index = index
+        application.state.ws_manager = WebSocketManager()
+        application.state.storage = NullStorage()
+        application.state.bookings = BookingReads(application.state.engine, config, index, cache)
+        application.state.booking_writes = BookingWrites(
+            application.state.engine, config, index, cache, application.state.ws_manager
+        )
+        index.start()
         try:
             yield
         finally:
+            await index.stop()
             if application.state.engine is not None:
                 await application.state.engine.dispose()
 
@@ -54,7 +74,7 @@ def create_app(
         allow_credentials=False,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
-        expose_headers=["X-Request-ID", "Retry-After"],
+        expose_headers=["X-Request-ID", "Retry-After", "Server-Timing"],
     )
     application.add_middleware(RequestContextMiddleware)
 
@@ -63,6 +83,8 @@ def create_app(
     )
     application.include_router(auth_router, prefix="/api/v1")
     application.include_router(health_router, prefix="/api/v1")
+    application.include_router(bookings_router, prefix="/api/v1")
+    application.include_router(notifications_router, prefix="/api/v1")
     return application
 
 

@@ -108,7 +108,7 @@ async def create_database(port: int, ca_file: Path, database: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", choices=["mysql", "tidb"], required=True)
-    parser.add_argument("--suite", choices=["schema", "auth"], default="schema")
+    parser.add_argument("--suite", choices=["schema", "auth", "booking"], default="schema")
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     docker_env = os.environ.copy()
@@ -192,20 +192,20 @@ def main() -> None:
                 }
             )
             args.report.resolve().parent.mkdir(parents=True, exist_ok=True)
-            test_file = (
-                "tests/test_schema_database.py"
-                if args.suite == "schema"
-                else "tests/test_auth_database.py"
-            )
+            test_file = {
+                "schema": "tests/test_schema_database.py",
+                "auth": "tests/test_auth_database.py",
+                "booking": "tests/test_booking_database.py",
+            }[args.suite]
             test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]
-            if args.suite == "auth":
+            if args.suite != "schema":
                 test_command.append(f"--junitxml={args.report.resolve()}")
             subprocess.run(
                 test_command,
                 cwd=BACKEND,
                 env=test_env,
                 check=True,
-                timeout=240,
+                timeout=360,
             )
             print(f"{args.engine} {args.suite}: checks passed; report: {args.report}")
         finally:
