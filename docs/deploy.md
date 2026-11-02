@@ -65,7 +65,7 @@ Expected responses:
 {"status":"ok","database":"connected"}
 ```
 
-A passing liveness check alone does not prove database readiness. A 503 ready response needs investigation of the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
+A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
 The Alembic runner is provided, but this release has no business migrations. Once reviewed migrations exist, run `alembic upgrade head` once as a release/pre-deploy step, using the same protected settings. Do not run concurrent schema changes in every application worker. Do not autogenerate against the empty metadata in this foundation to modify an existing database.
 

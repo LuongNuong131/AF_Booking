@@ -26,7 +26,7 @@ cp .env.example .env
 .venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-The API can start without a database. `/api/v1/health` returns 200 when the process is running; `/api/v1/ready` returns 503 until a real database connection succeeds. Configure `DATABASE_URL` in `backend/.env` using TiDB Cloud's connection details to enable readiness. Do not commit this file.
+The API can start without a database. `/api/v1/health` returns 200 when the process is running; `/api/v1/ready` returns 503 with `code: SERVICE_BUSY` and `details.database: not_configured` until a database is configured. Configure `DATABASE_URL` in `backend/.env` using TiDB Cloud's connection details to enable readiness. Do not commit this file.
 
 Frontend, in a second terminal:
 
@@ -55,5 +55,7 @@ VITE_API_BASE_URL=https://YOUR-API.onrender.com/api/v1 npm run build
 ```
 
 The production URL must use HTTPS and end in `/api/v1`. Missing or invalid production configuration fails the build. Database integration tests require `TEST_DATABASE_URL`; see [testing](docs/testing.md). GitHub Actions runs the unit tests, lint, type checking, and production build.
+
+Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.md). Frontend types are generated from Pydantic schemas with `backend/.venv/bin/python scripts/generate_contract_types.py`; run the same command with `--check` to detect drift. Business routes are reserved in the contract and remain unimplemented.
 
 Deployment instructions: [docs/deploy.md](docs/deploy.md). Implementation boundaries and next steps: [PROJECT_STATE.md](PROJECT_STATE.md). Product constraints: [docs/product-context.md](docs/product-context.md).

@@ -1,7 +1,9 @@
 import asyncio
 
-from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
+
+from app.core.errors import error_response
+from app.schemas.contracts import ErrorCode
 
 
 class RequestTimeoutMiddleware:
@@ -30,8 +32,5 @@ class RequestTimeoutMiddleware:
             if response_started:
                 # A streaming response cannot be replaced after its headers were sent.
                 raise
-            response = JSONResponse(
-                status_code=504,
-                content={"error": {"code": "REQUEST_TIMEOUT", "message": "Request timed out."}},
-            )
+            response = error_response(ErrorCode.REQUEST_TIMEOUT)
             await response(scope, receive, send)

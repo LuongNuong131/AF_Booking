@@ -24,6 +24,8 @@ jobs:
       - run: pip install --require-hashes -r requirements-dev.txt
       - run: ruff check .
       - run: ruff format --check .
+      - run: ruff check ../scripts --config pyproject.toml
+      - run: python ../scripts/generate_contract_types.py --check
       - run: python -m pytest -q
   frontend:
     runs-on: ubuntu-latest

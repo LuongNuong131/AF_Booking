@@ -13,12 +13,19 @@
 
 Business schema and migrations, admin bootstrap, authentication/session enforcement, roles, booking lookup, folders/suppliers, note writes/history, snapshot maintenance, optimistic concurrency, idempotency, notifications, WebSockets, soft locks, reminders, invoices, reports/exports, audit, and recovery tools. Do not describe this foundation as the completed booking application.
 
+## Implemented: Prompt 1B shared contract
+
+- `docs/api-contract.md` records all endpoint paths, request fields, access rules, pagination shapes, error codes, and explicit clarifications. `docs/ws-protocol.md` reserves the exact event names and directions; runtime frames/payloads remain for their implementation prompt.
+- Pydantic wire models define booking snapshots, invoices, notes, statuses, tasks, suggestions, folders, months, key resolution, and pagination. Frontend TypeScript types are generated from these schemas; CI rejects stale generated files.
+- HTTP errors use top-level `code`, `message`, and optional `details`, including validation, not-found, timeout, readiness, and internal errors. CORS and Retry-After headers are retained where applicable. Validation responses do not echo input secrets.
+- English copy from Prompt 1B is stored with the supplied keys and interpolation variables. Status labels do not replace the Admin-managed status catalogue.
+- `Task` and `FolderCard.latest` include `display_key` to satisfy the universal key/display rule.
+
 ## Next implementation steps
 
-1. Establish the API/error/WebSocket contracts and approved status catalogue (Prompt 1B).
-2. Implement and verify the TiDB-compatible schema, indexes, and Alembic migrations (Prompt 2).
-3. Add authentication, admin account provisioning, authorization, and session invalidation.
-4. Implement each booking/collaboration workflow in its own requested step with relevant tests.
+1. Implement and verify the TiDB-compatible schema, indexes, and Alembic migrations (Prompt 2). Status catalogue seed details remain to be supplied; labels alone are not status business rules.
+2. Add authentication, admin account provisioning, authorization, and session invalidation.
+3. Implement each booking/collaboration workflow in its own requested step with relevant tests, preserving the Prompt 1B contracts.
 
 ## Deployment status
 
