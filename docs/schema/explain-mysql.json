@@ -1,0 +1,169 @@
+{
+  "database_version": "8.0.46",
+  "fixture": {
+    "groups": 2000,
+    "bookings": 24000,
+    "notes": 48000
+  },
+  "plans": {
+    "a_mine": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_agent_updated",
+        "key": "ix_bookings_agent_updated",
+        "key_len": "9",
+        "ref": "const",
+        "rows": 1500,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ],
+    "b_history": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_notes",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_booking_notes_booking_created,ix_booking_notes_deleted_at",
+        "key": "ix_booking_notes_booking_created",
+        "key_len": "8",
+        "ref": "const",
+        "rows": 2,
+        "filtered": 50.0,
+        "Extra": "Using where; Backward index scan"
+      }
+    ],
+    "c_overall": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "index",
+        "possible_keys": null,
+        "key": "ix_bookings_updated_at",
+        "key_len": "15",
+        "ref": null,
+        "rows": 20,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ],
+    "d_station_folders": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_groups",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_booking_groups_station_type_activity",
+        "key": "ix_booking_groups_station_type_activity",
+        "key_len": "7",
+        "ref": "const,const",
+        "rows": 100,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ],
+    "e_folder_months": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_group_period",
+        "key": "ix_bookings_group_period",
+        "key_len": "8",
+        "ref": "const",
+        "rows": 12,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ],
+    "f_station_period": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_station_period",
+        "key": "ix_bookings_station_period",
+        "key_len": "10",
+        "ref": "const,const",
+        "rows": 200,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ],
+    "g_exact": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "const",
+        "possible_keys": "booking_key",
+        "key": "booking_key",
+        "key_len": "34",
+        "ref": "const",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      }
+    ],
+    "h_partial": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_cw_period",
+        "key": "ix_bookings_cw_period",
+        "key_len": "18",
+        "ref": "const,const",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      }
+    ],
+    "join_group": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "b",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_agent_updated,ix_bookings_group_period",
+        "key": "ix_bookings_agent_updated",
+        "key_len": "9",
+        "ref": "const",
+        "rows": 1500,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      },
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "g",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "booking_schema_ab4016b4bd91_test.b.group_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      }
+    ]
+  },
+  "verified_at_utc": "2026-11-02T14:25:26.519+00:00"
+}

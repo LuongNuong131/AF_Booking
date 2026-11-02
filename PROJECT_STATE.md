@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Business schema and migrations, admin bootstrap, authentication/session enforcement, roles, booking lookup, folders/suppliers, note writes/history, snapshot maintenance, optimistic concurrency, idempotency, notifications, WebSockets, soft locks, reminders, invoices, reports/exports, audit, and recovery tools. Do not describe this foundation as the completed booking application.
+Authentication/session enforcement, permission checks, booking lookup, folder/supplier services, note writes/history APIs, snapshot maintenance, optimistic concurrency, idempotent write services, notifications, WebSockets, soft locks, reminders, invoice services, reports/exports, audit recording, and recovery tools. Do not describe this foundation as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -21,11 +21,20 @@ Business schema and migrations, admin bootstrap, authentication/session enforcem
 - English copy from Prompt 1B is stored with the supplied keys and interpolation variables. Status labels do not replace the Admin-managed status catalogue.
 - `Task` and `FolderCard.latest` include `display_key` to satisfy the universal key/display rule.
 
+## Implemented: Prompt 2 database schema
+
+- Eleven SQLAlchemy mapped models, matching initial Alembic migration, InnoDB/utf8mb4 defaults, binary ASCII keys, unsigned IDs, and UTC DATETIME(3).
+- Required indexes, with explicit ID tie breakers for TiDB ordered scans; no database foreign keys, duplicate booking-key index, or hash index.
+- Canonical-key CHECK where enforcement is available, ORM storage validation fallback, and supplier-name normalization.
+- Repeatable status and environment-supplied Argon2id admin seeding. Missing real admin credentials remain an operator configuration requirement.
+- MySQL/TiDB disposable TLS tests verify migration parity, seeds/CLI, constraint behavior, eight index plans, the folder JOIN, rollback, and re-migration. Actual reports and assumptions are in docs/database-schema.md.
+- Prompt 1B invoice/status/notification storage additions are retained without implementing their APIs.
+
 ## Next implementation steps
 
-1. Implement and verify the TiDB-compatible schema, indexes, and Alembic migrations (Prompt 2). Status catalogue seed details remain to be supplied; labels alone are not status business rules.
-2. Add authentication, admin account provisioning, authorization, and session invalidation.
-3. Implement each booking/collaboration workflow in its own requested step with relevant tests, preserving the Prompt 1B contracts.
+1. Confirm the provisional Position/note-required status rules when the business mapping is available.
+2. Add authentication, authorization, and session invalidation APIs (Prompt 3).
+3. Implement each booking/collaboration workflow in its requested step, preserving Prompt 1B.
 
 ## Deployment status
 

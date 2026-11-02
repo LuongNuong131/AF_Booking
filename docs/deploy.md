@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the foundation release only. It does not provision accounts, implement authentication, or create booking tables. No live deployment is performed by committing these files.
+This guide deploys the foundation, shared contract, and database schema. It does not provision provider accounts or implement authentication APIs. Run the migration and optional admin seed explicitly as described below. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 
@@ -13,7 +13,7 @@ This guide deploys the foundation release only. It does not provision accounts, 
 mysql+aiomysql://<encoded-user>:<encoded-password>@<tidb-host>:4000/booking_tracker?charset=utf8mb4
 ```
 
-`DATABASE_SSL=true` creates a Python SSL context that verifies certificate trust and the server hostname. The system CA bundle is used by default. If the cluster requires a specific CA, upload its public CA certificate as a Render secret file and set `DATABASE_SSL_CA` to that file's path. Do not upload the server private key.
+`DB_SSL=true` creates a Python SSL context that verifies certificate trust and the server hostname. `DATABASE_SSL` remains a supported alias; configure consistent values if supplying both. The system CA bundle is used by default. If the cluster requires a specific CA, upload its public CA certificate as a Render secret file and set `DATABASE_SSL_CA` to that file's path. Do not upload the server private key.
 
 TiDB supports common MySQL syntax, not every MySQL feature. Validate each future migration against the selected cluster version. Avoid triggers and stored procedures. `ascii_bin` can be used for canonical booking keys; JOIN columns must use matching character sets and collations. TiDB query plans use operators such as `Point_Get` rather than MySQL's exact `EXPLAIN type=const` output, so future performance checks must assert an indexed point lookup in TiDB's plan.
 
@@ -38,7 +38,7 @@ Required environment settings:
 | --- | --- |
 | `APP_ENV` | `production` |
 | `DATABASE_URL` | The TiDB connection URL, stored securely |
-| `DATABASE_SSL` | `true` |
+| `DB_SSL` | `true` (`DATABASE_SSL` is also supported) |
 | `CORS_ORIGINS` | JSON list of exact frontend origins, for example `["https://YOUR-APP.vercel.app"]` |
 | `BUSINESS_TIMEZONE` | `Asia/Ho_Chi_Minh` |
 
@@ -67,7 +67,7 @@ Expected responses:
 
 A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
-The Alembic runner is provided, but this release has no business migrations. Once reviewed migrations exist, run `alembic upgrade head` once as a release/pre-deploy step, using the same protected settings. Do not run concurrent schema changes in every application worker. Do not autogenerate against the empty metadata in this foundation to modify an existing database.
+Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. The initial migration creates the application tables. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
 
 ## 3. Vercel frontend
 

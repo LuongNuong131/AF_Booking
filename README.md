@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: deployment foundation.** The repository contains a working Vue workspace, FastAPI health/readiness endpoints, verified-TLS TiDB connectivity, an Alembic runner, tests, and deployment configuration. Authentication, business tables, booking operations, and WebSocket events are not implemented yet. The overview page reports service connectivity; it does not display invented bookings or offer unfinished actions.
+**Current scope: deployment foundation, API contracts, and database schema.** The repository contains a Vue workspace, FastAPI health/readiness endpoints, verified-TLS TiDB connectivity, SQLAlchemy models, an initial Alembic migration, status/admin seeding, tests, and deployment configuration. Authentication APIs, booking operations, and WebSocket events are not implemented yet. The overview page reports service connectivity; it does not display invented bookings or offer unfinished actions.
 
 ## Stack and hosting
 
@@ -57,5 +57,7 @@ VITE_API_BASE_URL=https://YOUR-API.onrender.com/api/v1 npm run build
 The production URL must use HTTPS and end in `/api/v1`. Missing or invalid production configuration fails the build. Database integration tests require `TEST_DATABASE_URL`; see [testing](docs/testing.md). GitHub Actions runs the unit tests, lint, type checking, and production build.
 
 Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.md). Frontend types are generated from Pydantic schemas with `backend/.venv/bin/python scripts/generate_contract_types.py`; run the same command with `--check` to detect drift. Business routes are reserved in the contract and remain unimplemented.
+
+Database migrate/seed/rollback commands, provisional status rules, index rationale, and real EXPLAIN reports: [docs/database-schema.md](docs/database-schema.md).
 
 Deployment instructions: [docs/deploy.md](docs/deploy.md). Implementation boundaries and next steps: [PROJECT_STATE.md](PROJECT_STATE.md). Product constraints: [docs/product-context.md](docs/product-context.md).

@@ -1,0 +1,323 @@
+{
+  "database_version": "8.0.11-TiDB-v8.5.0",
+  "fixture": {
+    "groups": 2000,
+    "bookings": 24000,
+    "notes": 48000
+  },
+  "plans": {
+    "a_mine": [
+      {
+        "id": "Projection_7",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_edfa342827c4_test.bookings.id, booking_schema_edfa342827c4_test.bookings.booking_key, booking_schema_edfa342827c4_test.bookings.updated_at"
+      },
+      {
+        "id": "\u2514\u2500IndexLookUp_24",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "limit embedded(offset:0, count:20)"
+      },
+      {
+        "id": "  \u251c\u2500Limit_23(Build)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "offset:0, count:20"
+      },
+      {
+        "id": "  \u2502 \u2514\u2500IndexRangeScan_21",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_agent_updated(last_agent_id, updated_at, id)",
+        "operator info": "range:[1,1], keep order:true, desc, stats:partial[booking_key:unInitialized, id:allEvicted]"
+      },
+      {
+        "id": "  \u2514\u2500TableRowIDScan_22(Probe)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings",
+        "operator info": "keep order:false, stats:partial[booking_key:unInitialized, id:allEvicted]"
+      }
+    ],
+    "b_history": [
+      {
+        "id": "Projection_7",
+        "estRows": "2.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_edfa342827c4_test.booking_notes.id, booking_schema_edfa342827c4_test.booking_notes.note, booking_schema_edfa342827c4_test.booking_notes.created_at"
+      },
+      {
+        "id": "\u2514\u2500Limit_12",
+        "estRows": "2.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "offset:0, count:20"
+      },
+      {
+        "id": "  \u2514\u2500IndexLookUp_28",
+        "estRows": "2.00",
+        "task": "root",
+        "access object": "",
+        "operator info": ""
+      },
+      {
+        "id": "    \u251c\u2500IndexRangeScan_25(Build)",
+        "estRows": "2.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes, index:ix_booking_notes_booking_created(booking_id, created_at, id)",
+        "operator info": "range:[100,100], keep order:true, desc, stats:partial[id:allEvicted]"
+      },
+      {
+        "id": "    \u2514\u2500Selection_27(Probe)",
+        "estRows": "2.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "isnull(booking_schema_edfa342827c4_test.booking_notes.deleted_at)"
+      },
+      {
+        "id": "      \u2514\u2500TableRowIDScan_26",
+        "estRows": "2.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes",
+        "operator info": "keep order:false, stats:partial[id:allEvicted]"
+      }
+    ],
+    "c_overall": [
+      {
+        "id": "IndexLookUp_18",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "limit embedded(offset:0, count:20)"
+      },
+      {
+        "id": "\u251c\u2500Limit_17(Build)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "offset:0, count:20"
+      },
+      {
+        "id": "\u2502 \u2514\u2500IndexFullScan_15",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_updated_at(updated_at, id)",
+        "operator info": "keep order:true, desc, stats:partial[booking_key:unInitialized]"
+      },
+      {
+        "id": "\u2514\u2500TableRowIDScan_16(Probe)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings",
+        "operator info": "keep order:false, stats:partial[booking_key:unInitialized]"
+      }
+    ],
+    "d_station_folders": [
+      {
+        "id": "Projection_7",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_edfa342827c4_test.booking_groups.id, booking_schema_edfa342827c4_test.booking_groups.supplier_name, booking_schema_edfa342827c4_test.booking_groups.last_activity_at"
+      },
+      {
+        "id": "\u2514\u2500IndexLookUp_24",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "limit embedded(offset:0, count:20)"
+      },
+      {
+        "id": "  \u251c\u2500Limit_23(Build)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "offset:0, count:20"
+      },
+      {
+        "id": "  \u2502 \u2514\u2500IndexRangeScan_21",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_groups, index:ix_booking_groups_station_type_activity(station_code, supplier_type, last_activity_at, id)",
+        "operator info": "range:[\"RDU\" \"hotel\",\"RDU\" \"hotel\"], keep order:true, desc, stats:partial[id:allEvicted]"
+      },
+      {
+        "id": "  \u2514\u2500TableRowIDScan_22(Probe)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_groups",
+        "operator info": "keep order:false, stats:partial[id:allEvicted]"
+      }
+    ],
+    "e_folder_months": [
+      {
+        "id": "Projection_7",
+        "estRows": "12.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_edfa342827c4_test.bookings.id, booking_schema_edfa342827c4_test.bookings.booking_key, booking_schema_edfa342827c4_test.bookings.period"
+      },
+      {
+        "id": "\u2514\u2500IndexLookUp_24",
+        "estRows": "12.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "limit embedded(offset:0, count:20)"
+      },
+      {
+        "id": "  \u251c\u2500Limit_23(Build)",
+        "estRows": "12.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "offset:0, count:20"
+      },
+      {
+        "id": "  \u2502 \u2514\u2500IndexRangeScan_21",
+        "estRows": "12.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_group_period(group_id, period, id)",
+        "operator info": "range:[1,1], keep order:true, desc, stats:partial[booking_key:unInitialized, id:allEvicted]"
+      },
+      {
+        "id": "  \u2514\u2500TableRowIDScan_22(Probe)",
+        "estRows": "12.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings",
+        "operator info": "keep order:false, stats:partial[booking_key:unInitialized, id:allEvicted]"
+      }
+    ],
+    "f_station_period": [
+      {
+        "id": "Projection_7",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_edfa342827c4_test.bookings.id, booking_schema_edfa342827c4_test.bookings.booking_key"
+      },
+      {
+        "id": "\u2514\u2500IndexLookUp_28",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "limit embedded(offset:0, count:20)"
+      },
+      {
+        "id": "  \u251c\u2500Limit_27(Build)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "offset:0, count:20"
+      },
+      {
+        "id": "  \u2502 \u2514\u2500IndexRangeScan_25",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_station_period(station_code, period, id)",
+        "operator info": "range:[\"RDU\" \"2609\",\"RDU\" \"2609\"], keep order:true, desc, stats:partial[booking_key:unInitialized, id:allEvicted]"
+      },
+      {
+        "id": "  \u2514\u2500TableRowIDScan_26(Probe)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings",
+        "operator info": "keep order:false, stats:partial[booking_key:unInitialized, id:allEvicted]"
+      }
+    ],
+    "g_exact": [
+      {
+        "id": "Point_Get_1",
+        "estRows": "1.00",
+        "task": "root",
+        "access object": "table:bookings, index:booking_key(booking_key)",
+        "operator info": ""
+      }
+    ],
+    "h_partial": [
+      {
+        "id": "IndexLookUp_10",
+        "estRows": "1.01",
+        "task": "root",
+        "access object": "",
+        "operator info": ""
+      },
+      {
+        "id": "\u251c\u2500IndexRangeScan_8(Build)",
+        "estRows": "1.01",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_cw_period(cw_number, period)",
+        "operator info": "range:[\"CW2150001\" \"2609\",\"CW2150001\" \"2609\"], keep order:false, stats:partial[booking_key:unInitialized, ix_bookings_last_note_id:unInitialized, id:allEvicted]"
+      },
+      {
+        "id": "\u2514\u2500TableRowIDScan_9(Probe)",
+        "estRows": "1.01",
+        "task": "cop[tikv]",
+        "access object": "table:bookings",
+        "operator info": "keep order:false, stats:partial[booking_key:unInitialized, ix_bookings_last_note_id:unInitialized, id:allEvicted]"
+      }
+    ],
+    "join_group": [
+      {
+        "id": "Projection_12",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_edfa342827c4_test.bookings.booking_key, booking_schema_edfa342827c4_test.booking_groups.supplier_name"
+      },
+      {
+        "id": "\u2514\u2500Limit_19",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "offset:0, count:20"
+      },
+      {
+        "id": "  \u2514\u2500IndexHashJoin_66",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "inner join, inner:TableReader_61, outer key:booking_schema_edfa342827c4_test.bookings.group_id, inner key:booking_schema_edfa342827c4_test.booking_groups.id, equal cond:eq(booking_schema_edfa342827c4_test.bookings.group_id, booking_schema_edfa342827c4_test.booking_groups.id)"
+      },
+      {
+        "id": "    \u251c\u2500IndexLookUp_70(Build)",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": ""
+      },
+      {
+        "id": "    \u2502 \u251c\u2500IndexRangeScan_68(Build)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:b, index:ix_bookings_agent_updated(last_agent_id, updated_at, id)",
+        "operator info": "range:[1,1], keep order:true, desc, stats:partial[booking_key:unInitialized, id:allEvicted]"
+      },
+      {
+        "id": "    \u2502 \u2514\u2500TableRowIDScan_69(Probe)",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:b",
+        "operator info": "keep order:false, stats:partial[booking_key:unInitialized, id:allEvicted]"
+      },
+      {
+        "id": "    \u2514\u2500TableReader_61(Probe)",
+        "estRows": "20.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "data:TableRangeScan_60"
+      },
+      {
+        "id": "      \u2514\u2500TableRangeScan_60",
+        "estRows": "20.00",
+        "task": "cop[tikv]",
+        "access object": "table:g",
+        "operator info": "range: decided by [booking_schema_edfa342827c4_test.bookings.group_id], keep order:false"
+      }
+    ]
+  },
+  "verified_at_utc": "2026-11-02T14:22:21.623+00:00"
+}

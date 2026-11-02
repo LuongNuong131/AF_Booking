@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     app_env: Literal["development", "test", "production"] = "development"
     database_url: SecretStr | None = None
     database_ssl: bool = True
+    db_ssl: bool | None = None
     database_ssl_ca: str | None = None
     cors_origins: list[str] = ["http://localhost:5173"]
     business_timezone: str = "Asia/Ho_Chi_Minh"
@@ -82,6 +83,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production(self) -> "Settings":
+        if self.db_ssl is not None:
+            if "database_ssl" in self.model_fields_set and self.db_ssl != self.database_ssl:
+                raise ValueError("DB_SSL and DATABASE_SSL must agree when both are configured")
+            self.database_ssl = self.db_ssl
         if self.db_pool_size + self.db_max_overflow > 10:
             raise ValueError("The total database pool must not exceed 10 connections")
         if self.app_env == "production":

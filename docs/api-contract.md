@@ -107,6 +107,8 @@ Examples:
 
 ## Endpoint catalogue
 
+Prompt 2 storage includes this contract's invoice fields/table, status task/invoice settings, and all six notification types; see [database-schema.md](database-schema.md). It adds no business HTTP handlers and changes no wire field names above.
+
 `Authenticated` means any valid logged-in role. All paths below include the common `/api/v1` prefix at runtime. Defaults shown for pagination must be preserved when handlers are added.
 
 | Group | Method + path | Access | Contract |

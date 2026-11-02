@@ -44,3 +44,25 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+  database-schema:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [mysql, tidb]
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install --require-hashes -r requirements-dev.txt
+      - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --report /tmp/schema-report.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: schema-explain-${{ matrix.engine }}
+          path: /tmp/schema-report.json
