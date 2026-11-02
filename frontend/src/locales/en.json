@@ -1,0 +1,37 @@
+{
+  "app": {
+    "name": "Booking Tracker",
+    "workspace": "Team workspace",
+    "navigationLabel": "Main navigation",
+    "overview": "Overview",
+    "footer": "One workspace. Every booking.",
+    "initial": "BT",
+    "version": "Foundation · v0.1"
+  },
+  "overview": {
+    "eyebrow": "YOUR WORKSPACE, CONNECTED",
+    "title": "A clearer view of every booking.",
+    "description": "Keep booking updates and team activity together in one focused workspace.",
+    "setupTitle": "The foundation is in place",
+    "setupBody": "This first release prepares the workspace and its service connections. Sign-in and booking management are coming in the next implementation steps.",
+    "servicesTitle": "Service connections",
+    "servicesBody": "Check whether this workspace can reach its services.",
+    "check": "Check connections",
+    "checking": "Checking connections…",
+    "checkingShort": "Checking",
+    "unknown": "Not checked",
+    "online": "Connected",
+    "offline": "Unavailable",
+    "notConfigured": "Not configured",
+    "api": "Application service",
+    "apiDescription": "The connection between your workspace and its data.",
+    "database": "Database",
+    "databaseDescription": "Storage for your team's booking records.",
+    "checked": "Last checked {time}",
+    "neverChecked": "Connections have not been checked yet.",
+    "offlineHint": "The application service is unavailable. Please try again shortly.",
+    "databaseHint": "Database access is not ready. Ask your workspace administrator to check the connection.",
+    "errorTitle": "This page could not be loaded",
+    "errorBody": "Please refresh the page to try again."
+  }
+}
