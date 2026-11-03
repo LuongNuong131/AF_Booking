@@ -97,6 +97,13 @@ export function useBookingWorkspace() {
     return !!parsed && 'key' in parsed && parsed.key === key.value
   })
   const needsSupplier = computed(() => !!current.value && !current.value.group_exists)
+  const stationMatches = computed(() => {
+    const parsed = parseBookingKey(input.value)
+    return (
+      !current.value?.group ||
+      (!!parsed && 'key' in parsed && parsed.station_code === current.value.group.station_code)
+    )
+  })
   const invoiceNumbers = computed(() => [
     ...new Set(
       invoiceText.value
@@ -127,10 +134,11 @@ export function useBookingWorkspace() {
     () =>
       !!key.value &&
       inputMatches.value &&
+      stationMatches.value &&
       online.value &&
       !!selectedStatus.value &&
       (!selectedStatus.value.note_required || !!note.value.trim()) &&
-      (!needsSupplier.value || !!supplierName.value.trim()) &&
+      (!needsSupplier.value || supplierName.value.trim().length >= 3) &&
       (!showInvoice.value || invoiceValid.value) &&
       !saveRequest.pending.value &&
       !conflict.value,

@@ -31,7 +31,7 @@ export type EmptyData = {  }
 
 export type ErrorCode = "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
 
-export type FolderCard = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string; "booking_count": number; "open_count": number; "last_activity_at": string; "latest": FolderLatest | null }
+export type FolderCard = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string; "booking_count": number; "open_count": number; "stale_count"?: number; "last_activity_at": string; "latest": FolderLatest | null }
 
 export type FolderDetail = { "folder": FolderCard; "months": Array<MonthRow> }
 

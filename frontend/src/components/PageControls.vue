@@ -5,7 +5,7 @@ const props = defineProps<{
   page: number
   total: number
   size: number
-  summaryKey?: 'bookingUi.pageOf' | 'taskUi.pageOf'
+  summaryKey?: 'bookingUi.pageOf' | 'taskUi.pageOf' | 'folderUi.pageOf'
 }>()
 const { t } = useI18n()
 defineEmits<{ change: [page: number] }>()

@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Smart folder navigation, full invoice management/reports, assignments/watch, service-worker Web Push, exports, and recovery tools. Do not describe this as the completed booking application.
+Full invoice management/reports, assignments/watch, service-worker Web Push, exports, and recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -96,7 +96,7 @@ Smart folder navigation, full invoice management/reports, assignments/watch, ser
 - Shared extensible BookingTimeline, NoteForm, BookingSummaryCard, LockBadge, DoneWarning and BookingTable, with slots for later Task features.
 - Short bounded read cache, private session cleanup, generation/version guards, replay of events racing page reads and disposed-view debounce guards; no polling.
 - Existing listing filters reused. Text q now searches normalized Supplier names/stations as well as booking prefixes; exact/partial keys use equality. The public active-user summary directory is implemented early for the Agent filter.
-- Minimal Supplier creation fields and conditional invoice declaration support existing backend save requirements; smart folder search and full invoice management remain later scope.
+- Minimal Supplier creation fields and conditional invoice declaration support existing backend save requirements; Prompt 7C below adds smart folder search. Full invoice management remains later scope.
 - Frontend units and real Chromium/TLS TiDB two-user collaboration flow; backend listing/directory regressions on MySQL/TiDB. No migration or runtime dependency change.
 
 ## Implemented: Prompt 7B reminder tasks
@@ -108,11 +108,21 @@ Smart folder navigation, full invoice management/reports, assignments/watch, ser
 - Profile defaults/timezone/skip-weekends/sound/Web Notification settings persisted with explicit permission controls; sound only after interaction. Native browser notifications are implemented; service-worker push remains future scope.
 - Vitest calendar/DST/dialog/event/rollback/permission/audio checks, private API/concurrency/TLS database tests and a third real Chromium flow. Read docs/tasks.md for retry semantics, deployment and manual checks.
 
+## Implemented: Prompt 7C smart search and folder views
+
+- One Home smart input routes full/partial keys directly to lookup, debounces other searches at 200 ms, cancels old reads and renders the server discriminator. Python/TypeScript share a classification fixture.
+- Supplier folder cards, station/type sections, station-period rows, month browsing/New month, breadcrumbs, arrow/Enter selection and Escape/empty-Backspace navigation preserving note drafts.
+- New-CW station/Supplier guards, trimmed three-character name minimum, type shortcuts, read-only identity, station-mismatch application and Admin/QC supplier edits.
+- Summary Bookings/Folders mode, 20-folder server pages, station autocomplete/type/name-CW filters in URLs and folder/detail/return routes.
+- Shared 50-entry SWR LRU, 30-second freshness, per-session cancellation and data guards; immediate month patches plus coalesced targeted folder hydration with four-read concurrency. Recent folders are per user, max ten; command palette remains Prompt 8D.
+- Explicit additive FolderCard.stale_count, calculated in the same page-wide aggregate with status thresholds and no N+1. No migration; head remains 0003. First 20 months with virtual scrolling above 50.
+- Vitest classification/card/breadcrumb/keyboard/validation/cache/cancellation coverage, two-engine folder regressions/performance and a fourth Chromium flow. Read docs/smart-search.md and docs/testing.md.
+
 ## Next implementation steps
 
 1. Confirm the provisional Position labels when the business mapping is available.
 2. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
-3. Continue Prompt 7C and later prompts for smart folder navigation and remaining workflows.
+3. Continue Prompt 8 and later prompts for the remaining workflows.
 
 ## Deployment status
 

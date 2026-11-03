@@ -1,4 +1,7 @@
-# Home, Summary and booking detail (Prompt 7)
+# Home, Summary and booking detail (Prompts 7–7C)
+
+Prompt 7C extends lookup with smart supplier-folder search and month navigation; see
+[smart-search.md](smart-search.md) for the current field, breadcrumbs and Summary folder mode.
 
 Home now has a booking workspace and a live **My bookings** list. Summary is a
 server-paginated overview with shareable filters; its detail route reuses the same
@@ -47,8 +50,9 @@ Storage failure is reported and the in-memory note remains available. A pending
 POST is not an outbox: automatic/durable resend is reserved for Prompt 8B.
 
 Two minimal fields support creating the first booking of a new Supplier folder:
-Supplier name and Hotel/Transportation. Smart folder/Supplier lookup remains Prompt
-7C. The existing backend's Done status requires an invoice declaration; when needed,
+Supplier name and Hotel/Transportation. Prompt 7C implements smart folder/Supplier
+lookup; see [smart-search.md](smart-search.md). The backend's Done status requires
+an invoice declaration; when needed,
 the form accepts invoice numbers or an explicit **No invoice Number** checkbox via
 `NoteSaveRequest.invoices`. These fields only support the existing note-save contract.
 Separate invoice editing, duplicate-elsewhere warnings, reports and the full Prompt

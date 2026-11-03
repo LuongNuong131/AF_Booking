@@ -6,7 +6,7 @@ import { useUiStore } from '../stores/ui'
 import BaseIcon from './BaseIcon.vue'
 const { t } = useI18n()
 const ui = useUiStore()
-const rows = ['focus', 'lookup', 'save', 'task', 'status', 'clear', 'help']
+const rows = ['focus', 'lookup', 'save', 'task', 'status', 'back', 'help']
 </script>
 <template>
   <ElDialog

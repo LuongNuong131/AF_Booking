@@ -138,7 +138,12 @@ export function summaryParams(
   return params
 }
 export function summaryReturn(value: unknown): string {
-  return typeof value === 'string' && (value === '/summary' || value.startsWith('/summary?'))
+  return typeof value === 'string' &&
+    value.length <= 4000 &&
+    !/[\\\p{Cc}\p{Cf}]/u.test(value) &&
+    (value === '/summary' ||
+      value.startsWith('/summary?') ||
+      /^\/summary\/folders\/CW\d{5,10}(?:\?[^#]*)?$/.test(value))
     ? value
     : '/summary'
 }

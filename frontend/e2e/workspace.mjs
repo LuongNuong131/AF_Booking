@@ -33,7 +33,7 @@ async function start(username) {
   return { context, page }
 }
 async function open(page, key = KEY) {
-  const input = page.getByLabel('Booking number', { exact: true })
+  const input = page.getByLabel('Smart search', { exact: true })
   await input.fill(key)
   await input.press('Enter')
   await expect(page.locator('.booking-summary-card')).toContainText(
@@ -64,16 +64,15 @@ try {
     b = await start('other')
   await a.page.locator('.mine-booking').filter({ hasText: DISPLAY }).click()
   await expect(a.page.locator('.booking-summary-card')).toContainText(DISPLAY)
-  await expect(a.page.getByLabel('Booking number', { exact: true })).toHaveValue(DISPLAY)
-  await a.page.getByLabel('Booking number', { exact: true }).fill('cw 2154654-2609')
-  await a.page.getByLabel('Booking number', { exact: true }).press('Enter')
+  await expect(a.page.getByLabel('Smart search', { exact: true })).toHaveValue(DISPLAY)
+  await a.page.getByLabel('Smart search', { exact: true }).fill('cw 2154654-2609')
   await expect(a.page.getByRole('button', { name: 'Use this booking' })).toBeVisible()
   let extraLookups = 0
   const countLookup = (request) => {
     if (new URL(request.url()).pathname === '/api/v1/bookings/lookup') extraLookups++
   }
   a.page.on('request', countLookup)
-  await a.page.getByLabel('Booking number', { exact: true }).press('Enter')
+  await a.page.getByLabel('Smart search', { exact: true }).press('Enter')
   await expect(a.page.locator('.booking-summary-card')).toContainText(DISPLAY)
   expect(extraLookups).toBe(0)
   a.page.off('request', countLookup)
@@ -98,7 +97,7 @@ try {
   await save(a.page)
   await expect(b.page.locator('.mine-booking').filter({ hasText: DISPLAY })).toHaveCount(0)
   await expect(a.page.locator('.mine-booking').first()).toContainText(DISPLAY)
-  await expect(a.page.getByLabel('Booking number', { exact: true })).toBeFocused()
+  await expect(a.page.getByLabel('Smart search', { exact: true })).toBeFocused()
   await write(a.page, 'Persistent draft after reload')
   await expect
     .poll(async () =>
@@ -133,8 +132,8 @@ try {
   await a.page.getByRole('button', { name: 'Discard draft' }).click()
   await a.page.screenshot({ path: path.join(artifacts, 'workspace-light.png'), fullPage: true })
   // A new CW with no station resolves through the required station and Supplier steps.
-  await a.page.getByLabel('Booking number', { exact: true }).fill('CW9876543-2610')
-  await a.page.getByLabel('Booking number', { exact: true }).press('Enter')
+  await a.page.getByLabel('Smart search', { exact: true }).fill('CW9876543-2610')
+  await a.page.getByLabel('Smart search', { exact: true }).press('Enter')
   await a.page.getByLabel('Station code', { exact: true }).fill('yul')
   await a.page.getByRole('button', { name: 'Continue', exact: true }).click()
   await a.page.getByLabel('Supplier name', { exact: true }).fill('New Airport Hotel')

@@ -5,7 +5,8 @@ light/dark themes, private notifications and the Prompt 5 WebSocket protocol. Pr
 Summary and booking detail, including lookup, history, note entry, drafts, conflict
 review and live tables. See [booking-workspace.md](booking-workspace.md) for the workflow.
 Prompt 7B implements reminder task UI, due alerts and persisted Profile preferences;
-see [tasks.md](tasks.md). Profile also shows the authenticated account and local theme preference. Admin and Reports have guards and shell routes only.
+see [tasks.md](tasks.md). Prompt 7C adds smart search and folder navigation, documented
+in [smart-search.md](smart-search.md). Profile also shows the authenticated account and local theme preference. Admin and Reports have guards and shell routes only.
 
 ## Development and build
 
@@ -49,7 +50,7 @@ SPA fallback; WSS connects directly to Render. See [deploy.md](deploy.md).
 ## Structure and session handling
 
 - `src/router`: guest/role guards, canonical booking URL redirects and lazy workspace pages.
-- `src/stores`: auth, UI/theme, notifications, realtime and private task/due/reminder state.
+- `src/stores`: auth, UI/theme, notifications, realtime, private task/due/reminder state and supplier-folder SWR caches.
 - `src/runtime/application.ts`: auth-aware API hooks, WebSocket lifecycle and refresh dispatch.
 - `src/api`: Axios bearer injection, sanitized errors and runtime auth/frame validation.
 - `src/composables`: request deadlines, realtime transport, view refresh, route resilience and keyboard bindings.

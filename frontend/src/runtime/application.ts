@@ -11,6 +11,7 @@ import { useRealtimeStore } from '../stores/realtime'
 import { useNotificationsStore } from '../stores/notifications'
 import { useBookingsStore } from '../stores/bookings'
 import { useTasksStore } from '../stores/tasks'
+import { useFoldersStore } from '../stores/folders'
 import { i18n } from '../i18n'
 import { installTaskAlerts } from '../composables/useTaskAlerts'
 import { notificationText } from '../utils/notificationText'
@@ -23,6 +24,8 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
   const notifications = useNotificationsStore(pinia),
     tasks = useTasksStore(pinia),
     bookings = useBookingsStore(pinia)
+  const folders = useFoldersStore(pinia)
+  const foldersStop = bookings.subscribe(folders.observe)
   const themeStop = ui.startTheme()
   const routeStop = installRouteResilience(router, pinia)
   const alerts = installTaskAlerts(pinia, router)
@@ -57,6 +60,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
         notifications.reset()
         tasks.reset()
         bookings.reset()
+        folders.reset(token ? (auth.user?.id ?? null) : null)
         if (!token) {
           ui.clearNotices('workspace')
           return
@@ -131,6 +135,8 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
     notifications.reset()
     tasks.reset()
     bookings.reset()
+    folders.reset()
+    foldersStop()
     ui.clearNotices()
     apiStop()
     routeStop()

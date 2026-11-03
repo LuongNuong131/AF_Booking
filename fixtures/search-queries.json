@@ -1,0 +1,98 @@
+[
+  {
+    "input": "CW2154927-YUL-2608",
+    "kind": "full_key"
+  },
+  {
+    "input": "cw 2154927 - yul - 2608",
+    "kind": "full_key"
+  },
+  {
+    "input": "CW 2154927-YUL-2608",
+    "kind": "full_key"
+  },
+  {
+    "input": "CW2154927",
+    "kind": "cw_number"
+  },
+  {
+    "input": "CW2154927-YUL",
+    "kind": "cw_number"
+  },
+  {
+    "input": "CW2154",
+    "kind": "cw_prefix"
+  },
+  {
+    "input": "CW",
+    "kind": "cw_prefix"
+  },
+  {
+    "input": "YUL",
+    "kind": "station"
+  },
+  {
+    "input": "yul",
+    "kind": "station"
+  },
+  {
+    "input": "YUL-2608",
+    "kind": "station_period"
+  },
+  {
+    "input": "YUL 2608",
+    "kind": "station_period"
+  },
+  {
+    "input": "YUL–2608",
+    "kind": "station_period"
+  },
+  {
+    "input": "Hotellus",
+    "kind": "text"
+  },
+  {
+    "input": "double tree",
+    "kind": "text"
+  },
+  {
+    "input": "hilton yul",
+    "kind": "text"
+  },
+  {
+    "input": "CW2154927-2608",
+    "kind": "partial_key"
+  },
+  {
+    "input": "CW 2154927-2608",
+    "kind": "partial_key"
+  },
+  {
+    "input": "ABC",
+    "kind": "text"
+  },
+  {
+    "input": "CW2154927-YUL-2613",
+    "kind": "none"
+  },
+  {
+    "input": "CW2154927-2600",
+    "kind": "none"
+  },
+  {
+    "input": "YUL-2613",
+    "kind": "none"
+  },
+  {
+    "input": "CW2154927-YUL-2608\u0000",
+    "kind": "none"
+  },
+  {
+    "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "kind": "none"
+  },
+  {
+    "input": " ",
+    "kind": "none"
+  }
+]

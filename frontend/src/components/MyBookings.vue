@@ -241,6 +241,9 @@ function refreshList() {
               <p class="mine-supplier">
                 {{ row.supplier.name }}<span>{{ row.station_code }}</span>
               </p>
+              <p class="mine-period-type">
+                {{ t(`supplier_types.${row.supplier.type}`) }} · {{ row.period_label }}
+              </p>
               <p class="mine-position">{{ row.last_position }}</p>
               <p class="mine-note">{{ row.last_note_preview || t('bookingUi.noNote') }}</p>
               <div class="mine-row-footer">

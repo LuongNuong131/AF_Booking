@@ -1,0 +1,216 @@
+{
+  "database_version": "8.0.46",
+  "fixture": {
+    "folders": 2000,
+    "bookings": 50000
+  },
+  "method": "Warm sequential in-process ASGI requests, one worker, real verified-TLS loopback DB. Includes auth cache, classification, SQL and serialization; excludes public HTTP/hosting latency. Three warmups and 60 samples per query.",
+  "target_p95_ms": 100,
+  "index_load_ms": 894.604,
+  "measurements": [
+    {
+      "query": "CW5000000-YUL-2501",
+      "samples": 60,
+      "p50_ms": 0.899,
+      "p95_ms": 1.06,
+      "max_ms": 1.251
+    },
+    {
+      "query": "CW9999999-YUL-2501",
+      "samples": 60,
+      "p50_ms": 0.951,
+      "p95_ms": 1.327,
+      "max_ms": 2.165
+    },
+    {
+      "query": "CW5000000-2501",
+      "samples": 60,
+      "p50_ms": 0.903,
+      "p95_ms": 1.126,
+      "max_ms": 1.19
+    },
+    {
+      "query": "CW5000000",
+      "samples": 60,
+      "p50_ms": 9.806,
+      "p95_ms": 12.538,
+      "max_ms": 106.61
+    },
+    {
+      "query": "CW500",
+      "samples": 60,
+      "p50_ms": 10.404,
+      "p95_ms": 13.206,
+      "max_ms": 15.141
+    },
+    {
+      "query": "YUL",
+      "samples": 60,
+      "p50_ms": 11.415,
+      "p95_ms": 16.277,
+      "max_ms": 23.634
+    },
+    {
+      "query": "YUL-2501",
+      "samples": 60,
+      "p50_ms": 9.994,
+      "p95_ms": 14.082,
+      "max_ms": 15.636
+    },
+    {
+      "query": "double tree",
+      "samples": 60,
+      "p50_ms": 12.47,
+      "p95_ms": 14.761,
+      "max_ms": 17.793
+    },
+    {
+      "query": "tree doub",
+      "samples": 60,
+      "p50_ms": 14.232,
+      "p95_ms": 18.992,
+      "max_ms": 20.615
+    },
+    {
+      "query": "hotel yul",
+      "samples": 60,
+      "p50_ms": 13.474,
+      "p95_ms": 18.602,
+      "max_ms": 19.709
+    }
+  ],
+  "plans": {
+    "folder_aggregate": [
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "booking_groups",
+        "partitions": null,
+        "type": "range",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": null,
+        "rows": 20,
+        "filtered": 100.0,
+        "Extra": "Using where"
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "<derived2>",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "<auto_key0>",
+        "key": "<auto_key0>",
+        "key_len": "8",
+        "ref": "booking_schema_092742421a98_test.booking_groups.id",
+        "rows": 11,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "latest",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "folder_stats.latest_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "statuses",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "booking_schema_092742421a98_test.latest.last_status_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "users",
+        "partitions": null,
+        "type": "ALL",
+        "possible_keys": "PRIMARY",
+        "key": null,
+        "key_len": null,
+        "ref": null,
+        "rows": 3,
+        "filtered": 100.0,
+        "Extra": "Using where; Using join buffer (hash join)"
+      },
+      {
+        "id": 2,
+        "select_type": "DERIVED",
+        "table": "bookings",
+        "partitions": null,
+        "type": "range",
+        "possible_keys": "ix_bookings_group_period",
+        "key": "ix_bookings_group_period",
+        "key_len": "8",
+        "ref": null,
+        "rows": 500,
+        "filtered": 100.0,
+        "Extra": "Using index condition"
+      },
+      {
+        "id": 2,
+        "select_type": "DERIVED",
+        "table": "activity_status",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "booking_schema_092742421a98_test.bookings.last_status_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      }
+    ],
+    "station_folders": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_groups",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_booking_groups_station_type_activity",
+        "key": "ix_booking_groups_station_type_activity",
+        "key_len": "7",
+        "ref": "const,const",
+        "rows": 250,
+        "filtered": 100.0,
+        "Extra": "Backward index scan; Using index"
+      }
+    ],
+    "station_period": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_station_period",
+        "key": "ix_bookings_station_period",
+        "key_len": "10",
+        "ref": "const,const",
+        "rows": 500,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ]
+  }
+}

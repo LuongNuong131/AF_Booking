@@ -202,3 +202,42 @@ Playwright install described above. The runner owns port 5173 and its temporary
 processes/container; leave user processes alone. Actual minute-based manual scheduling
 and browser-close/reopen instructions are in [tasks.md](tasks.md). Hosted resources
 and credentials remain separately configured in Vercel, Render and TiDB Cloud.
+
+## Prompt 7C smart search/folder verification
+
+**174 frontend tests passed**, with strict Vue/TypeScript and production build.
+Backend unit verification passed **124 tests**, with **97 database tests skipped**
+in that ordinary run; Ruff/format and generated-contract checks passed.
+The shared 24-row classifier fixture covers all supplied key/CW/station/Supplier forms,
+aliases and invalid shapes. Tests additionally cover cards, breadcrumbs, Escape and
+empty-input Backspace, arrow focus, Supplier minimum, 200 ms debounce, stale request
+cancellation, slow at 3 s/timeout at 8 s, SWR/LRU bounds, session reset, supplier edits,
+targeted realtime hydration and virtual scrolling above 50 months.
+
+Both isolated verified-TLS MySQL and TiDB passed **22 folder/search/station tests**,
+including once-per-page aggregation and stale_count parity with month flags/status
+thresholds while excluding Done. The 2,000-folder/50,000-booking performance suite passed
+on each engine: ten warm query classes, three warmups and 60 measured samples per class.
+Maximum class p95 was **18.992 ms MySQL / 49.232 ms TiDB**, below 100 ms. Reports are
+[MySQL](performance/search-7c-mysql.json) and [TiDB](performance/search-7c-tidb.json).
+They measure local ASGI + TLS loopback DB, excluding public/hosting latency.
+
+The browser runner now executes **four Chromium flows**; all four passed against
+isolated TLS TiDB. The new `folders.mjs` covers station/type groups, keyboard selection,
+cached breadcrumbs/backtracking, actual booking.updated with targeted folder GET only,
+New month supplier reuse, canonical/partial/invalid/station-mismatch keys, new Supplier
+guards, station-period rows, Summary filters/deep-link/reload/return URLs, per-user recent
+folders, Admin/QC supplier editing and mobile fit. Screenshots include
+`folders-summary.png` and `folders-mobile.png`. The original auth/collaboration/task
+flows remain in the same CI job. No production test endpoint was added.
+
+```sh
+backend/.venv/bin/python backend/tests/run_schema_checks.py --engine mysql --suite folder --report /tmp/folder-mysql.xml
+backend/.venv/bin/python backend/tests/run_schema_checks.py --engine tidb --suite folder --report /tmp/folder-tidb.xml
+backend/.venv/bin/python backend/tests/run_schema_checks.py --engine mysql --suite search-performance --report /tmp/search-mysql.json
+backend/.venv/bin/python backend/tests/run_schema_checks.py --engine tidb --suite search-performance --report /tmp/search-tidb.json
+BOOKING_CHROMIUM_PATH=/usr/bin/chromium BOOKING_E2E_ARTIFACTS=/tmp/booking-browser backend/.venv/bin/python backend/tests/run_schema_checks.py --engine tidb --suite frontend --report /tmp/browser.xml
+```
+
+No migration or dependency change is required; head remains 0003. Manual checks and
+implementation boundaries: [smart-search.md](smart-search.md).

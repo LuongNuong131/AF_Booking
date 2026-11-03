@@ -254,6 +254,7 @@ class FolderCard(ContractModel):
     station_code: str
     booking_count: int
     open_count: int
+    stale_count: int = 0
     last_activity_at: UtcTimestamp
     latest: FolderLatest | None
 

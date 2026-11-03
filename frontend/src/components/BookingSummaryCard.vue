@@ -10,6 +10,8 @@ import TaskButton from './TaskButton.vue'
 import StatusTag from './StatusTag.vue'
 import LockBadge from './LockBadge.vue'
 import DoneWarning from './DoneWarning.vue'
+import SupplierEditor from './SupplierEditor.vue'
+defineEmits<{ supplierUpdated: [] }>()
 const { t } = useI18n(),
   auth = useAuthStore()
 const props = defineProps<{ booking: BookingLookup }>()
@@ -31,6 +33,13 @@ const identity = computed(() =>
       ><StatusTag v-if="booking.snapshot?.last_status" :status="booking.snapshot.last_status" />
     </header>
     <h2 v-if="booking.group">{{ booking.group.supplier_name }}</h2>
+    <SupplierEditor
+      v-if="booking.group"
+      :cw="booking.group.cw_number"
+      :name="booking.group.supplier_name"
+      :type="booking.group.supplier_type"
+      @updated="$emit('supplierUpdated')"
+    />
     <div class="summary-metadata">
       <span v-if="booking.group">{{ t(`supplier_types.${booking.group.supplier_type}`) }}</span
       ><span>{{

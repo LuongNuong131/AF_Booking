@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the backend and frontend through Prompt 7B. It does not provision provider accounts. Home/Summary/booking and reminder tasks are implemented; smart folder navigation and full invoice features remain. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
+This guide deploys the backend and frontend through Prompt 7C. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; full invoice features remain. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 

@@ -1,4 +1,6 @@
+import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -14,30 +16,10 @@ from app.utils.search_query import QueryKind, classify_query
 @pytest.mark.parametrize(
     ("raw", "kind"),
     [
-        ("CW2154927-YUL-2608", QueryKind.FULL_KEY),
-        ("cw 2154927 - yul - 2608", QueryKind.FULL_KEY),
-        ("CW 2154927-YUL-2608", QueryKind.FULL_KEY),
-        ("CW2154927", QueryKind.CW_NUMBER),
-        ("CW2154927-YUL", QueryKind.CW_NUMBER),
-        ("CW2154", QueryKind.CW_PREFIX),
-        ("CW", QueryKind.CW_PREFIX),
-        ("YUL", QueryKind.STATION),
-        ("yul", QueryKind.STATION),
-        ("YUL-2608", QueryKind.STATION_PERIOD),
-        ("YUL 2608", QueryKind.STATION_PERIOD),
-        ("YUL–2608", QueryKind.STATION_PERIOD),
-        ("Hotellus", QueryKind.TEXT),
-        ("double tree", QueryKind.TEXT),
-        ("hilton yul", QueryKind.TEXT),
-        ("CW2154927-2608", QueryKind.PARTIAL_KEY),
-        ("CW 2154927-2608", QueryKind.PARTIAL_KEY),
-        ("ABC", QueryKind.TEXT),
-        ("CW2154927-YUL-2613", QueryKind.NONE),
-        ("CW2154927-2600", QueryKind.NONE),
-        ("YUL-2613", QueryKind.NONE),
-        ("CW2154927-YUL-2608\x00", QueryKind.NONE),
-        ("x" * 101, QueryKind.NONE),
-        (" ", QueryKind.NONE),
+        (case["input"], case["kind"])
+        for case in json.loads(
+            (Path(__file__).resolve().parents[2] / "fixtures" / "search-queries.json").read_text()
+        )
     ],
 )
 def test_classification(raw, kind):

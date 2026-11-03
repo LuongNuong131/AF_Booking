@@ -205,9 +205,11 @@
       "status": "Alt + 1…5",
       "clear": "Esc",
       "help": "?",
-      "task": "Alt + T"
+      "task": "Alt + T",
+      "back": "Esc / Backspace (empty search)"
     },
-    "task": "Set a reminder for this booking"
+    "task": "Set a reminder for this booking",
+    "back": "Back one search level"
   },
   "boundary": {
     "title": "This section could not be loaded.",
@@ -407,5 +409,37 @@
     "savePreferences": "Save preferences",
     "preferencesSaved": "Reminder preferences saved.",
     "pageOf": "Page {page} of {pages} · {total} task(s)"
+  },
+  "folderUi": {
+    "searchLabel": "Smart search",
+    "searchHint": "Find a booking or browse supplier folders. Use ↑/↓ and Enter to select; Esc to go back.",
+    "search": "Search",
+    "results": "Search results",
+    "folder": "Supplier folder",
+    "folders": "Folders",
+    "bookings": "Bookings",
+    "breadcrumb": "Folder navigation",
+    "back": "Back",
+    "backToFolder": "Back to folder",
+    "months": "Booking months",
+    "monthCount": "{count} month(s)",
+    "openCount": "{count} open",
+    "staleCount": "{count} stale month(s)",
+    "pageOf": "Page {page} of {pages} · {total} folder(s)",
+    "showingMonths": "Showing {shown} of {total} month(s)",
+    "moreMonths": "Show 20 more",
+    "noMonths": "No booking months yet.",
+    "newMonth": "+ New month",
+    "openMonth": "Open month",
+    "recent": "Recent folders",
+    "noTypeFolders": "No folders of this type on this page.",
+    "editSupplier": "Edit supplier",
+    "saveSupplier": "Save supplier",
+    "supplierMinimum": "Enter at least 3 characters for the supplier name.",
+    "summaryMode": "Summary view",
+    "summaryDescription": "Browse suppliers by station and open their booking months.",
+    "findFolders": "Find supplier folders",
+    "folderPlaceholder": "Search supplier name or CW number…",
+    "liveError": "A folder update could not be loaded. Refresh to get the latest data."
   }
 }

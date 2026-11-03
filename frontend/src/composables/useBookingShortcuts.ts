@@ -12,6 +12,7 @@ export interface BookingShortcutContext {
   save: () => unknown
   task?: () => unknown
   clear: () => unknown
+  back?: () => unknown
   statuses: () => Status[]
   selectStatus: (code: string) => unknown
 }
@@ -122,9 +123,15 @@ export function useWorkspaceShortcuts(): void {
       ) {
         event.preventDefault()
         call(context.lookup)
-      } else if (event.key === 'Escape' && (!editable || inInput)) {
+      } else if (
+        (event.key === 'Escape' && (!editable || inInput || (context.back && inScope))) ||
+        (event.key === 'Backspace' &&
+          inInput &&
+          !(input as HTMLInputElement).value.trim() &&
+          context.back)
+      ) {
         event.preventDefault()
-        call(context.clear)
+        call(context.back ?? context.clear)
         input?.focus()
       }
     },

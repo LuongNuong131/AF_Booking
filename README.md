@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: backend through Prompt 5 plus task APIs, frontend through Prompt 7B.** FastAPI implements authentication, booking notes/lookup/lists, Supplier/station search, private notifications, WebSocket updates, advisory locks and stale reminders. Vue now has a working Home booking workspace/My bookings list, filterable Summary, reusable booking detail/history/note entry, drafts and conflict review, alongside role guards, themes and notifications. Reminder tasks now include quick scheduling, private due alerts, snooze/completion and profile preferences; see [tasks.md](docs/tasks.md). Smart folder navigation and later features remain for their implementation prompts.
+**Current scope: backend through Prompt 5 plus task APIs, frontend through Prompt 7C.** FastAPI implements authentication, booking notes/lookup/lists, Supplier/station search, private notifications, WebSocket updates, advisory locks and stale reminders. Vue now has a working Home booking workspace/My bookings list, filterable Summary, reusable booking detail/history/note entry, drafts and conflict review, alongside role guards, themes and notifications. Reminder tasks now include quick scheduling, private due alerts, snooze/completion and profile preferences; see [tasks.md](docs/tasks.md). Smart search, supplier folders, month navigation and Summary folder mode are implemented; see [smart-search.md](docs/smart-search.md). Full invoice management and later features remain for their prompts.
 
 ## Stack and hosting
 

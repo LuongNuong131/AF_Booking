@@ -3,7 +3,7 @@
 import re
 from datetime import UTC, datetime
 
-from sqlalchemy import String, and_, case, cast, func, or_, select
+from sqlalchemy import String, and_, case, cast, func, or_, select, text
 from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import aliased
 
@@ -29,19 +29,31 @@ from app.utils.search_query import QueryKind, classify_query
 from app.utils.supplier import normalize_supplier_name
 
 
-def folder_card_query(ids: list[int]):
+def folder_card_query(ids: list[int], stale_hours_default=24):
     # Four period characters followed by a zero-padded unsigned BIGINT identify the
     # latest period and break legacy duplicate-period ties by id, even after backfills.
     latest_order = func.max(
         func.concat(Booking.period, func.lpad(cast(Booking.id, String), 20, "0"))
+    )
+    activity_status = aliased(Status, name="activity_status")
+    stale = and_(
+        Booking.is_done.is_(False),
+        Booking.updated_at
+        <= func.timestampadd(
+            text("HOUR"),
+            -func.coalesce(activity_status.stale_after_hours, stale_hours_default),
+            datetime.now(UTC),
+        ),
     )
     stats = (
         select(
             Booking.group_id,
             func.count().label("booking_count"),
             func.sum(case((Booking.is_done.is_(False), 1), else_=0)).label("open_count"),
+            func.sum(case((stale, 1), else_=0)).label("stale_count"),
             cast(func.substring(latest_order, 5), mysql.BIGINT(unsigned=True)).label("latest_id"),
         )
+        .outerjoin(activity_status, activity_status.id == Booking.last_status_id)
         .where(Booking.group_id.in_(ids))
         .group_by(Booking.group_id)
         .subquery("folder_stats")
@@ -57,6 +69,7 @@ def folder_card_query(ids: list[int]):
             BookingGroup.last_activity_at,
             stats.c.booking_count,
             stats.c.open_count,
+            stats.c.stale_count,
             latest.booking_key,
             latest.period,
             Status.code.label("status_code"),
@@ -78,10 +91,10 @@ def safe_period_label(period: str) -> str:
     return period_label(period)
 
 
-async def folder_cards(session, ids: list[int]) -> list[FolderCard]:
+async def folder_cards(session, ids: list[int], stale_hours_default=24) -> list[FolderCard]:
     if not ids:
         return []
-    rows = (await session.execute(folder_card_query(ids))).all()
+    rows = (await session.execute(folder_card_query(ids, stale_hours_default))).all()
     cards = {}
     for r in rows:
         latest = None
@@ -102,6 +115,7 @@ async def folder_cards(session, ids: list[int]) -> list[FolderCard]:
             station_code=r.station_code,
             booking_count=r.booking_count or 0,
             open_count=r.open_count or 0,
+            stale_count=r.stale_count or 0,
             last_activity_at=r.last_activity_at,
             latest=latest,
         )
@@ -186,7 +200,7 @@ class FolderService:
                 identifier = await session.scalar(select(BookingGroup.id).where(*conditions))
             if identifier is None:
                 raise ApiException(ErrorCode.NOT_FOUND)
-            cards = await folder_cards(session, [identifier])
+            cards = await folder_cards(session, [identifier], self.settings.stale_hours_default)
             if not cards:
                 raise ApiException(ErrorCode.NOT_FOUND)
             months = await month_rows(session, identifier, self.settings)
@@ -223,7 +237,7 @@ class FolderService:
             if not ids:
                 return Page(items=[], total=total, page=page, size=size)
             async with self.tx() as session:
-                items = await folder_cards(session, ids)
+                items = await folder_cards(session, ids, self.settings.stale_hours_default)
             return Page(items=items, total=total, page=page, size=size)
         conditions = []
         if station_code is not None:
@@ -269,7 +283,7 @@ class FolderService:
                     )
                 ).all()
             )
-            items = await folder_cards(session, ids)
+            items = await folder_cards(session, ids, self.settings.stale_hours_default)
         return Page(items=items, total=total, page=page, size=size)
 
     async def listing(self, query: str = "", **filters):

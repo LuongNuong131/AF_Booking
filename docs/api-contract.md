@@ -2,7 +2,7 @@
 
 This document records the user's shared contract for all implementation prompts. Paths, JSON field names, and error codes must not change silently. Update this file and the wire models together if an approved change is needed.
 
-**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Prompt 7B adds private task mutations, due jobs/events and profile reminder preferences. Later-prompt endpoints remain reserved.
+**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Prompt 7B adds private task mutations, due jobs/events and profile reminder preferences. Prompt 7C adds folder stale counts and the smart folder UI. Later-prompt endpoints remain reserved.
 
 ## Common conventions
 
@@ -27,7 +27,7 @@ Executable field definitions are in [`backend/app/schemas/contracts.py`](../back
 | `Status` | `id`, `code`, `label`, `position_label`, `note_required`, `is_done`, `sort_order`, `suggest_task`, `default_task_days`, `invoice_required` |
 | `Task` | `id`, `booking_key`, `display_key`, `message`, `remind_at`, `status`, `is_due`, `is_overdue`, `snooze_count`, `created_at`, `completed_at\|null`, `booking_changed_since`, `booking:{last_status,last_agent,is_done,updated_at}` |
 | `Suggestion` | `booking_key`, `display_key`, `last_status`, `last_agent`, `updated_at`, `distance` |
-| `FolderCard` | `cw_number`, `supplier_name`, `supplier_type`, `station_code`, `booking_count`, `open_count`, `last_activity_at`, `latest:{booking_key,display_key,period_label,status,agent}\|null` |
+| `FolderCard` | `cw_number`, `supplier_name`, `supplier_type`, `station_code`, `booking_count`, `open_count`, `stale_count` (additive, default 0), `last_activity_at`, `latest:{booking_key,display_key,period_label,status,agent}\|null` |
 | `MonthRow` | `booking_key`, `display_key`, `period`, `period_label`, `last_status`, `last_position`, `last_agent`, `is_done`, `is_stale`, `updated_at`, `invoice_state`, `invoice_count` |
 | `KeyResolution` | `status`, `input_kind`, `key\|null`, `display_key\|null`, optional `candidates:[{key,display_key,station_code,supplier_name}]` |
 
@@ -115,7 +115,7 @@ Examples:
 - Framework HTTP statuses not listed in the business catalogue (for example method-not-allowed 405) retain their HTTP status and use the same error envelope with `VALIDATION_ERROR`; their headers, such as `Allow`, are preserved. The specified business-code/status pairs above do not change.
 - `Task.display_key` and `FolderCard.latest.display_key` are explicit additions required by the universal booking-key/display-key rule, although omitted in the shorthand examples in Prompt 1B.
 - Unspecified shorthand types are resolved as strings for position labels, nullable status/agent summaries for incomplete snapshots, nullable `Status.default_task_days`, and a numeric user ID for `assign_to`. Error payloads without explicit field names use `details.suggestions` and `details.note` as shown above.
-- Prompt 1B reserved the event names below. Prompt 5 now defines `{event,data}` and exact implemented payloads in [ws-protocol.md](ws-protocol.md); `task.due` remains for Prompt 5B.
+- Prompt 1B reserved the event names below. Prompt 5 now defines `{event,data}` and exact implemented payloads in [ws-protocol.md](ws-protocol.md); `task.due` is now implemented by Prompt 7B, including the missing Prompt 5B prerequisite.
 
 ## Endpoint catalogue
 
@@ -315,3 +315,23 @@ details left open in Prompt 1B:
   `{event,data}`. Notification type is the existing `task_due`.
 
 Detailed timing, retry, calendar and delivery semantics: [tasks.md](tasks.md).
+
+## Smart folder UI clarification — Prompt 7C
+
+`FolderCard` now includes the additive integer `stale_count` (default 0 for older
+constructed DTOs). Every search/folder response populates it. It counts months with
+`is_done=false` and activity at least the status-specific `stale_after_hours` or
+`STALE_HOURS_DEFAULT` old, matching MonthRow.is_stale. The existing page-wide aggregate
+computes it alongside booking/open counts; no N+1 queries or schema migration are added.
+Existing paths, fields, enum values, key/display conventions and error codes retain
+their names. Latest still means the largest period, not the most recently edited month.
+
+The frontend uses the existing `/search`, `/folders`, `/folders/{cw}` and Admin/QC
+`PATCH /folders/{cw}`. Full/partial keys always go directly to `/bookings/lookup`;
+client classification selects the API and server `kind` controls presentation. The
+classifier fixture is now shared at `fixtures/search-queries.json`.
+
+Summary's `view=folders` and `from` query fields are client routing state, not new API
+filters. Station/type/q/page map to the existing folder list parameters. A folder
+booking event triggers targeted folder reconciliation, without a whole-page search
+reload. See [smart-search.md](smart-search.md) for cache, navigation and manual checks.

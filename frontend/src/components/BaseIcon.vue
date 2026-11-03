@@ -1,6 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{ name: string }>()
 const paths: Record<string, string[]> = {
+  folder: ['M3 6a2 2 0 0 1 2-2h5l2 3h7a2 2 0 0 1 2 2v10H3V6Z'],
   clock: ['M12 8v4l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0'],
   search: ['m21 21-4.5-4.5 M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0'],
   home: ['m3 10 9-7 9 7', 'M5 9v12h14V9', 'M9 21v-8h6v8'],

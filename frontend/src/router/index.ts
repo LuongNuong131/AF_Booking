@@ -42,6 +42,12 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
             meta: { titleKey: 'pages.summaryTitle', descriptionKey: 'pages.summaryDescription' },
           },
           {
+            path: 'summary/folders/:cw',
+            name: 'summary-folder',
+            component: () => import('../views/SummaryFolderView.vue'),
+            meta: { titleKey: 'folderUi.folder' },
+          },
+          {
             path: 'summary/:key',
             name: 'booking',
             component: () => import('../views/BookingDetailView.vue'),
@@ -86,6 +92,16 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
     if (to.name === 'login' && auth.isAuthenticated) return { name: 'home' }
     if (to.meta.roles && (!auth.user || !to.meta.roles.includes(auth.user.role)))
       return { name: 'home' }
+    if (to.name === 'summary-folder') {
+      const raw = String(to.params.cw ?? ''),
+        cw = raw
+          .trim()
+          .toUpperCase()
+          .replace(/^CW\s+/, 'CW')
+      if (!/^CW\d{5,10}$/.test(cw)) return { name: 'summary', query: { view: 'folders' } }
+      if (raw !== cw)
+        return { name: 'summary-folder', params: { cw }, query: to.query, replace: true }
+    }
     if (to.name === 'booking') {
       const raw = String(to.params.key ?? '')
       const parsed = parseBookingKey(raw)

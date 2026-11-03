@@ -112,6 +112,8 @@ it('requires a station and Supplier before saving a brand new CW', async () => {
   expect(get.mock.calls[1]?.[1]?.params).toEqual({ key: KEY })
   w.statusCode.value = 'BUNDLE'
   expect(w.canSave.value).toBe(false)
+  w.supplierName.value = ' AB '
+  expect(w.canSave.value).toBe(false)
   w.supplierName.value = 'New Hotel'
   expect(w.canSave.value).toBe(true)
 })
@@ -130,6 +132,18 @@ it('keeps a draft on foreign realtime updates and refreshes without replacing th
   await w.refresh()
   expect(w.current.value?.version).toBe(2)
   expect(w.note.value).toBe('Keep this draft')
+})
+it('blocks saving a key whose station differs from the known supplier folder', async () => {
+  const result = lookup()
+  result.group = { ...result.group!, station_code: 'YUL' }
+  vi.spyOn(api, 'get').mockResolvedValue({ data: result })
+  const post = vi.spyOn(api, 'post'),
+    w = setup()
+  await w.open(KEY)
+  w.statusCode.value = 'BUNDLE'
+  expect(w.canSave.value).toBe(false)
+  expect(await w.save()).toBe(false)
+  expect(post).not.toHaveBeenCalled()
 })
 it('reuses the exact request UUID on an uncertain manual retry and blocks duplicate saves', async () => {
   vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })

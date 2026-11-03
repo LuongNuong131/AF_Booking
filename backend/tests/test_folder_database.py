@@ -2,12 +2,13 @@
 
 import asyncio
 import os
+from datetime import UTC, datetime, timedelta
 
 import pytest
 import test_booking_database as booking_support
 from sqlalchemy import event, select, update
 
-from app.models import AuditLog, Station
+from app.models import AuditLog, Booking, Station, Status
 
 pytestmark = pytest.mark.skipif(
     not os.environ.get("SCHEMA_TEST_DATABASE_URL"), reason="No isolated folder test database"
@@ -266,6 +267,31 @@ async def test_folder_aggregation_is_one_query_for_whole_page(rig):
     queries = [s for s in statements if s.startswith("select ")]
     assert len(queries) == 1 and "group by bookings.group_id" in queries[0]
     assert "booking_notes" not in queries[0]
+
+
+async def test_folder_stale_count_matches_month_flags_and_status_thresholds(rig):
+    await seed_folder(rig)
+    await rig.save(key=KEY, version=1, status_code="DONE", invoices={"no_invoice": True})
+    now = datetime.now(UTC)
+    async with rig.app.state.engine.begin() as connection:
+        for period, hours in [("2609", 25), ("2607", 2), ("2608", 100)]:
+            await connection.execute(
+                update(Booking)
+                .where(Booking.booking_key == f"{CW}-YUL-{period}")
+                .values(updated_at=now - timedelta(hours=hours))
+            )
+    result = (await rig.get(f"/folders/{CW}")).json()
+    assert result["folder"]["stale_count"] == 1
+    assert sum(m["is_stale"] for m in result["months"]) == 1
+    async with rig.app.state.engine.begin() as connection:
+        await connection.execute(
+            update(Status).where(Status.code == "BUNDLE").values(stale_after_hours=1)
+        )
+    result = (await rig.get("/search", q=CW)).json()
+    assert result["folder"]["stale_count"] == 2
+    assert result["folder"]["open_count"] == 2
+    assert sum(m["is_stale"] for m in result["months"]) == 2
+    assert (await rig.get("/folders")).json()["items"][0]["stale_count"] == 2
 
 
 async def test_length_rate_limit_and_fallback_timeout(rig, monkeypatch):

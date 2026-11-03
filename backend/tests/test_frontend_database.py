@@ -10,10 +10,11 @@ from pathlib import Path
 
 import pytest
 import test_booking_database as support
+import test_folder_database as folder_support
 import uvicorn
 from sqlalchemy import update
 
-from app.models import BookingTask, User
+from app.models import Booking, BookingTask, User
 
 migrated = support.migrated
 password_pair = support.password_pair
@@ -73,7 +74,9 @@ class BackendListener:
             self.task = None
 
 
-@pytest.mark.parametrize("browser_script", ["smoke.mjs", "workspace.mjs", "tasks.mjs"])
+@pytest.mark.parametrize(
+    "browser_script", ["smoke.mjs", "workspace.mjs", "tasks.mjs", "folders.mjs"]
+)
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
     rig, browser_account, tmp_path, browser_script
 ):
@@ -90,6 +93,23 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
             },
         )
     assert (await rig.save()).status_code == 200
+    if browser_script == "folders.mjs":
+        await folder_support.seed_folder(
+            rig, name="Hotellus Montreal Inc. d/b/a DOUBLE TREE by HILTON - YUL"
+        )
+        await folder_support.seed_folder(
+            rig,
+            cw="CW2154928",
+            name="Montreal Crew Shuttle",
+            supplier_type="transportation",
+            periods=("2608",),
+        )
+        async with rig.app.state.engine.begin() as connection:
+            await connection.execute(
+                update(Booking)
+                .where(Booking.booking_key == "CW2154927-YUL-2609")
+                .values(updated_at=datetime.now(UTC) - timedelta(days=2))
+            )
     live = BackendListener(rig.app)
     vite = browser = None
     await live.start()
@@ -148,6 +168,16 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
                         await rig.app.state.tasks.due_job()
                     elif event.get("action") == "takeover":
                         assert (await rig.save(user="other", version=1)).status_code == 200
+                    elif event.get("action") == "folder_update":
+                        assert (
+                            await rig.save(
+                                key="CW2154927-YUL-2609",
+                                user="other",
+                                version=1,
+                                status_code="DONE",
+                                invoices={"no_invoice": True},
+                            )
+                        ).status_code == 200
                     elif event.get("result") == "passed":
                         completed = True
                         continue
