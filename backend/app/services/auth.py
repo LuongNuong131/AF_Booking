@@ -26,7 +26,7 @@ from app.schemas.contracts import ErrorCode
 from app.services.audit import AuditContext, record_audit
 from app.services.login_limiter import LoginLimiter
 from app.services.session_cache import CurrentUser, SessionCache
-from app.services.session_events import NoopSessionEvents, SessionEvents
+from app.services.session_events import SessionEvents
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,11 @@ class AuthService:
         self,
         engine: AsyncEngine | None,
         settings: Settings,
-        events: SessionEvents | None = None,
+        events: SessionEvents,
     ) -> None:
         self.engine = engine
         self.settings = settings
-        self.events = events or NoopSessionEvents()
+        self.events = events
         self.cache = SessionCache(settings.auth_cache_ttl_seconds, settings.auth_cache_max_entries)
         self.limiter = LoginLimiter(settings.login_max_failures, settings.login_lockout_seconds)
         self.passwords = PasswordService(settings.auth_hash_concurrency)

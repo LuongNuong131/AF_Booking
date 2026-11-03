@@ -52,3 +52,35 @@ class RequestContextMiddleware:
             )
             request_id.reset(context_token)
             request_path.reset(path_token)
+
+
+class WebSocketTokenRedaction(logging.Filter):
+    """Uvicorn logs WebSocket handshake paths even with --no-access-log."""
+
+    pattern = re.compile(r"([?&]token=)[^&\s\"']*", re.IGNORECASE)
+    query_pattern = re.compile(r"\?[^\s\"']*")
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        handshake = isinstance(record.msg, str) and "websocket" in record.msg.casefold()
+
+        def redact(value):
+            if not isinstance(value, str):
+                return value
+            if handshake or "/api/v1/ws" in value:
+                # Remove the entire raw query, including percent-encoded parameter names.
+                return self.query_pattern.sub("?[REDACTED]", value)
+            return self.pattern.sub(r"\1[REDACTED]", value)
+
+        record.msg = redact(record.msg)
+        if isinstance(record.args, tuple):
+            record.args = tuple(redact(a) for a in record.args)
+        elif isinstance(record.args, dict):
+            record.args = {k: redact(v) for k, v in record.args.items()}
+        return True
+
+
+def install_websocket_log_redaction() -> None:
+    for name in ("uvicorn.error", "uvicorn.access"):
+        target = logging.getLogger(name)
+        if not any(isinstance(f, WebSocketTokenRedaction) for f in target.filters):
+            target.addFilter(WebSocketTokenRedaction())

@@ -48,7 +48,7 @@ Origins must use HTTPS in production and have no path or trailing slash. Add cus
 
 The connection pool defaults to 5 connections, no overflow, pre-ping, a 280-second recycle, and a 5-second pool/connect timeout. The ready probe has a bounded query deadline. Business query/transaction timeouts and route-specific export/note deadlines will be added with those features.
 
-Run **one service instance and one Uvicorn worker** while auth cache invalidation/login lockouts and future realtime coordination are in memory. Multiple instances require shared coordination. Direct database changes or another process can remain cached until the 12-second TTL; admin code must use the provided invalidation/revocation helpers. A rolling deployment can briefly overlap processes, so cross-process revocation is bounded by TTL until shared invalidation exists. Configure Uvicorn's trusted proxy IPs for the actual Render proxy when needed; the app does not blindly trust client forwarding headers.
+Run **one service instance and one Uvicorn worker** while auth cache invalidation/login lockouts and realtime connection/lock state are in memory. Multiple instances require shared coordination. Direct database changes or another process can remain cached until the 12-second TTL; admin code must use the provided invalidation/revocation helpers. A rolling deployment can briefly overlap processes, so cross-process revocation is bounded by TTL until shared invalidation exists. Configure Uvicorn's trusted proxy IPs for the actual Render proxy when needed; the app does not blindly trust client forwarding headers.
 
 After deployment, make both requests:
 
@@ -87,7 +87,7 @@ Import the GitHub repository into Vercel:
 | `VITE_API_BASE_URL` | `https://YOUR-API.onrender.com/api/v1` |
 | `VITE_TIMEOUT_SCALE` | `1` (optional) |
 
-`frontend/vercel.json` includes the SPA fallback for client-side routes. Vercel serves the static frontend only; the browser calls Render directly. WebSockets, when implemented, will connect directly to Render over WSS rather than through a Vercel serverless function.
+`frontend/vercel.json` includes the SPA fallback for client-side routes. Vercel serves the static frontend only; the browser calls Render directly. WebSockets connect directly to Render over WSS rather than through a Vercel serverless function.
 
 `VITE_*` values are public and compiled into the bundle. Never put `DATABASE_URL`, database credentials, or signing keys in them. Changing the API URL requires a new frontend build. After obtaining the final Vercel domain, update Render's exact CORS allowlist and redeploy as required.
 
@@ -99,6 +99,9 @@ Import the GitHub repository into Vercel:
 - Check the browser network panel for CORS errors and mixed-content requests.
 - Confirm no database credentials appear in the frontend bundle or repository.
 
-Backend auth and booking APIs are implemented; verify them with [auth.md](auth.md) and [bookings.md](bookings.md). Frontend sign-in/booking screens, reminders, and realtime transport remain for later prompts. Keep a single instance/worker while the key index, snapshot cache and session invalidation are process-local; see the cache limits in bookings.md. Performance targets are goals, not measured guarantees.
+Backend auth and booking APIs are implemented; verify them with [auth.md](auth.md) and [bookings.md](bookings.md). WebSocket updates/locks/session logout and stale reminders are implemented; see [ws-protocol.md](ws-protocol.md). Frontend sign-in/booking/realtime screens and reminder task mutations remain for later prompts. Keep a single instance/worker while the key index, snapshot cache and session invalidation are process-local; see the cache limits in bookings.md. Performance targets are goals, not measured guarantees.
 
 References: [TiDB SQLAlchemy](https://docs.pingcap.com/tidb/stable/dev-guide-sample-application-python-sqlalchemy/), [TiDB MySQL compatibility](https://docs.pingcap.com/tidb/stable/mysql-compatibility/), [Render Blueprints](https://render.com/docs/blueprint-spec), [Vercel Vite](https://vercel.com/docs/frameworks/frontend/vite).
+
+
+Prompt 5's Render command selects the tested `websockets-sansio` backend and applies the transport byte limit from `WS_MAX_MESSAGE_BYTES` (default 4096). `uvicorn[standard]` and its WebSocket dependency are already in the verified lockfile; no dependency change is needed. The application separately enforces the byte limit. Browser clients must answer JSON `ping` with JSON `pong`; native control frames do not replace that contract. Scheduler catch-up runs on process startup, with a 20-minute stale scan and 25-second lock sweep by default. Keep exactly one running instance/worker while these are in memory; no Redis/distributed guarantees are claimed. A sleeping/stopped service cannot push, so unread notifications and read-time stale lists remain authoritative.

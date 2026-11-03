@@ -15,6 +15,7 @@ from app.schemas.auth import AUTH_MODELS  # noqa: E402
 from app.schemas.bookings import BOOKING_MODELS  # noqa: E402
 from app.schemas.contracts import CONTRACT_ENUMS, CONTRACT_MODELS, ErrorCode  # noqa: E402
 from app.schemas.folders import FOLDER_MODELS, SearchResponse  # noqa: E402
+from app.schemas.realtime import REALTIME_MODELS, ClientFrame, ServerFrame  # noqa: E402
 
 OUTPUT = ROOT / "frontend/src/types/api.generated.ts"
 
@@ -59,7 +60,13 @@ def ts_type(schema: dict[str, Any]) -> str:
 
 def generate() -> str:
     definitions: dict[str, Any] = {}
-    for model in (*CONTRACT_MODELS, *AUTH_MODELS, *BOOKING_MODELS, *FOLDER_MODELS):
+    for model in (
+        *CONTRACT_MODELS,
+        *AUTH_MODELS,
+        *BOOKING_MODELS,
+        *FOLDER_MODELS,
+        *REALTIME_MODELS,
+    ):
         schema = model.model_json_schema(mode="serialization")
         for name, definition in schema.pop("$defs", {}).items():
             if name in definitions and definitions[name] != definition:
@@ -69,6 +76,13 @@ def generate() -> str:
     response_schema = TypeAdapter(SearchResponse).json_schema(mode="serialization")
     response_schema.pop("$defs", None)
     definitions["SearchResponse"] = response_schema
+    for name, frame in (
+        ("WebSocketClientFrame", ClientFrame),
+        ("WebSocketServerFrame", ServerFrame),
+    ):
+        schema = TypeAdapter(frame).json_schema(mode="serialization")
+        schema.pop("$defs", None)
+        definitions[name] = schema
     for enum in CONTRACT_ENUMS:
         definitions[enum.__name__] = {"enum": [item.value for item in enum]}
     # Pydantic emits an unconstrained schema for its built-in JsonValue type.

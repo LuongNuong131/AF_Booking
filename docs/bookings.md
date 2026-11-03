@@ -1,6 +1,6 @@
 # Booking backend — Prompt 4
 
-The API now supports lookup, notes/history, mine/overall/stale lists, active statuses and private notifications. It also implements Admin/QC supplier-folder edits needed by cache invalidation. No user endpoint edits or deletes an existing note. WebSocket broadcast remains an internal no-op; attachment storage deliberately returns 501. Frontend screens are not part of this backend prompt.
+The API now supports lookup, notes/history, mine/overall/stale lists, active statuses and private notifications. It also implements Admin/QC supplier-folder edits needed by cache invalidation. No user endpoint edits or deletes an existing note. Prompt 5 implements WebSocket broadcast/private notifications, advisory locks and stale jobs; [ws-protocol.md](ws-protocol.md) defines the frames. Attachment storage deliberately returns 501. Frontend screens are not part of this backend prompt.
 
 ## Run and migrate
 
@@ -9,7 +9,7 @@ From `backend`, configure the ignored `.env` as described in [auth.md](auth.md),
 ```sh
 .venv/bin/alembic upgrade head
 .venv/bin/python -m app.scripts.seed --statuses-only
-.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log --ws websockets-sansio --ws-max-size 4096
 ```
 
 Migration `0002` adds nullable note fingerprint/result columns. Existing notes remain readable. Only new writes have a replayable original response. Position labels remain provisional; newly seeded Rejection/Parking statuses require a note. Seed preserves existing Admin edits, so existing deployments must enable those two flags if they retained the earlier false defaults.
@@ -46,7 +46,7 @@ Use **one process/worker and one service instance**. The key index/cache are pro
 
 Reconciliation compares booking/folder COUNT/MAX(id) and folder MAX(updated_at) every 600 seconds. It reloads after changes or failures. Direct database edits can be stale until reconciliation; count/max does not detect an in-place booking-key rewrite. Supported writes never rewrite a booking key. Run `key_index.load()` internally or restart after out-of-band identity repairs. Folder updates through the API update the index immediately. Multiple service replicas require shared invalidation before enabling this index.
 
-Snapshot LRU stores at most 2,000 entries for 30 seconds, with a generation guard against repopulating from an older concurrent read. It never stores history or private tasks; stale age is recomputed on every cache hit. A successful commit invalidates before any broadcast await. Folder edits invalidate all cached bookings in that folder. Historical note attachments are fetched in one batch, invoice previews use one windowed query and task counts use one GROUP BY for the page; none are queried once per item.
+Snapshot LRU stores at most 2,000 entries for 30 seconds, with a generation guard against repopulating from an older concurrent read. It never stores history or private tasks; stale age is recomputed on every cache hit. A successful commit invalidates and refreshes the key index before scheduling manager-owned realtime dispatch. Folder edits invalidate all cached bookings in that folder. Historical note attachments are fetched in one batch, invoice previews use one windowed query and task counts use one GROUP BY for the page; none are queried once per item.
 
 Business transactions use READ COMMITTED plus explicit user/group/booking row locks. User/session is rechecked inside note/folder writes. Uniqueness/deadlock races get one retry, optimistic conflicts return 409 and lock-wait 1205 returns 503. Cancellation rolls back/discards its connection; cleanup is shielded from a second cancellation. All requests have a finite ASGI deadline, and both retry attempts fit inside the save budget. A lost response after commit is recovered by the durable UUID result.
 

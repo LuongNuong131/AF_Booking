@@ -1,6 +1,6 @@
 # Authentication and authorization — Prompt 3
 
-The backend implements the four auth endpoints from Prompt 1B. There is no registration route and no booking API. Existing SQLAlchemy models/migration are reused; no database migration is needed for this step.
+The backend implements the four auth endpoints from Prompt 1B. There is no registration route. Booking APIs and realtime are now implemented in Prompts 4–5. Existing SQLAlchemy models/migration are reused; no database migration is needed for this step.
 
 ## Files
 
@@ -11,7 +11,7 @@ The backend implements the four auth endpoints from Prompt 1B. There is no regis
 - `app/services/session_cache.py`: bounded, short-lived user/session snapshots without password hashes.
 - `app/services/login_limiter.py`: bounded per-IP/account login lockouts.
 - `app/services/audit.py`: audit writes that participate in the caller's transaction.
-- `app/services/session_events.py`: injectable `session.force_logout` transport interface; WebSocket runtime remains a placeholder.
+- `app/services/session_events.py`: `session.force_logout` interface and optional observer composition; the application always supplies the real WebSocket manager.
 - `app/core/request_context.py`: response/request correlation IDs and safe completion logs.
 - `app/schemas/auth.py`: the authoritative wire schemas; frontend types are generated with the existing generator.
 
@@ -27,7 +27,7 @@ python3.12 -m venv .venv
 # Populate DATABASE_URL, JWT_SECRET_KEY, ADMIN_USERNAME and ADMIN_PASSWORD securely.
 .venv/bin/alembic upgrade head
 .venv/bin/python -m app.scripts.seed
-.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log --ws websockets-sansio --ws-max-size 4096
 ```
 
 `JWT_SECRET_KEY` must be an independently generated random secret of at least 32 characters. There is no built-in signing key, password, or automatically enabled demo account. On an existing database, seed preserves an active Admin's stored password; changing `ADMIN_PASSWORD` does not rotate that password. New passwords must have 12–1024 characters. Spaces are preserved in passwords; they are not trimmed or normalized.
@@ -49,7 +49,7 @@ Render's Blueprint generates its signing secret with `generateValue: true`. For 
 | `DB_QUERY_TIMEOUT_MS` | 5000 for auth transactions |
 | `DB_POOL_TIMEOUT_SECONDS` | 5, also bounding auth lock acquisition |
 | `REQUEST_TIMEOUT_SECONDS` | 8 |
-| `WS_SEND_TIMEOUT_SECONDS` | 5 for the injectable revocation callback |
+| `WS_SEND_TIMEOUT_SECONDS` | 5 for socket sends and the revocation callback |
 
 `GET /health` is process liveness and never reads the database. `/api/v1/health` remains an alias. `/api/v1/ready` checks database connectivity. A successful health/readiness probe does not validate a signing key, seeded account, or password. Missing auth configuration fails closed with `503 SERVICE_BUSY`; it does not create an insecure fallback key.
 
@@ -96,7 +96,7 @@ Reviewer = Annotated[CurrentUser, Depends(require_roles("admin", "qc"))]
 
 `get_db_session` supplies a fresh async session for future router/service work; the caller owns its transaction. Auth checks use independent short transactions and return an immutable snapshot rather than a live ORM user.
 
-For Prompt 5, obtain `AuthService` with `get_auth_service` and call:
+For administrative services, obtain `AuthService` with `get_auth_service` and call:
 
 ```python
 await auth.kick_session(user_id, actor_id=admin.id, context=audit_context)
@@ -107,7 +107,7 @@ These are internal helpers, not public admin endpoints; the future caller must e
 
 Cache entries expire after 12 seconds. Reads and mutations for a user share bounded locks, preventing an in-flight read from repopulating stale cache data after invalidation. Login/logout/password/kick/disable invalidate on success, failure, and cancellation/uncertain commit. Future role/profile changes must use the same `auth.mutation(user_id)` boundary or call `auth.invalidate_user(user_id)` after commit. Out-of-process/direct-SQL changes can remain cached until TTL and are not a substitute for these helpers.
 
-Inject a `SessionEvents` implementation with `create_app(settings, session_events=...)`. The callback `force_logout(user_id, old_session_id, reason)` represents the reserved `session.force_logout` event and always targets the old session. It runs after commit with a bounded send deadline. Transport failure cannot undo revocation. The default implementation is deliberately a no-op placeholder; no WebSocket frame format or runtime is added in this prompt.
+The default `SessionEvents` transport is the real WebSocket manager. An optional observer can be added with `create_app(settings, session_events=...)` and runs after the manager. `force_logout(user_id, old_session_id, reason)` targets the old SID after commit with bounded delivery; transport failure cannot undo revocation. Prompt 5 defines the frames and close behavior in ws-protocol.md.
 
 ## Audit and request IDs
 
@@ -164,3 +164,6 @@ unset BOOKING_OLD_PASSWORD BOOKING_NEW_PASSWORD BOOKING_TOKEN
 ```
 
 Integration tests verify correct/incorrect/unknown/disabled login, warmed-cache revocation, ACLs, misleading token roles, logout races, password changes and their races, lockout expiry/collation aliases, cache query counts/TTL, audit metadata, concurrent logins, transport failures, and audit rollback. Unit tests cover JWT expiry/signature/claims/algorithm rejection, bounded limiter behavior, hashing cancellation, request IDs, no registration route, and DB-free root health. Database suites are skipped in the ordinary unit run and run separately in CI for both MySQL and TiDB.
+
+
+Prompt 5 supplies the real WebSocket transport for the existing revocation hooks. Handshake takes the auth user lock and reads the live row before registration, so login cannot race a cached old SID into a socket. Login/logout/password/kick/disable dispatch to the matching old SID only; callback transport failure never restores revoked credentials. `AuthService` now requires a transport; `create_app` provides the real manager and optionally composes an injected observer for integration/tests. There is no default no-op fallback. Frames, ping/pong, close codes and connection replacement: [ws-protocol.md](ws-protocol.md).

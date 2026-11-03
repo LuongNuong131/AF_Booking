@@ -22,6 +22,7 @@ from app.models import (
 )
 from app.schemas.bookings import GroupInfo, NoteSaveResponse
 from app.schemas.contracts import BookingSnapshot, ErrorCode, Note, NoteSaveRequest
+from app.schemas.realtime import BookingUpdatedData, NotificationNewData
 from app.services.audit import record_audit
 from app.services.auth import AuthService
 from app.services.booking_reads import invoice_previews, snapshot_from_row, snapshot_query
@@ -155,15 +156,27 @@ class BookingWrites:
         result = None
         changed_group = None
         key_entry = None
+        new_write = False
+        booking_event = None
+        notification_event = None
 
         def committed() -> None:
             if identifier is not None and key_entry is not None and changed_group is not None:
                 self.cache.invalidate(identifier)
                 self.index.update(key_entry, changed_group)
+                if new_write:
+                    self.ws_manager.saved(
+                        user.id, user.session_id, booking_event, notification_event
+                    )
+                else:
+                    self.ws_manager.locks.release(user.id, parsed.key, session_id=user.session_id)
 
         # One deadline spans both attempts, including lock waits and post-commit hooks.
         async with request_budget(self.settings.note_save_timeout_seconds):
             for attempt in range(2):
+                new_write = False
+                notification_row = None
+                notification_event = None
                 try:
                     async with transaction(
                         self.engine,
@@ -327,15 +340,15 @@ class BookingWrites:
                         booking.version += 1
                         group.last_activity_at, group.updated_at = now, now
                         if previous_agent and previous_agent != user.id:
-                            session.add(
-                                Notification(
-                                    user_id=previous_agent,
-                                    booking_id=booking.id,
-                                    type="taken_over",
-                                    note_id=note.id,
-                                    by_agent_id=user.id,
-                                )
+                            notification_row = Notification(
+                                user_id=previous_agent,
+                                booking_id=booking.id,
+                                type="taken_over",
+                                note_id=note.id,
+                                by_agent_id=user.id,
+                                created_at=now,
                             )
+                            session.add(notification_row)
                         record_audit(
                             session,
                             "booking_note_created",
@@ -376,6 +389,32 @@ class BookingWrites:
                             ),
                         )
                         note.save_result = result.model_dump(mode="json")
+                        booking_event = BookingUpdatedData(
+                            booking_key=parsed.key,
+                            display_key=parsed.display_key,
+                            cw_number=parsed.cw_number,
+                            station_code=parsed.station_code,
+                            version=snapshot.version,
+                            last_agent_id=live.id,
+                            last_agent_name=live.full_name,
+                            status_code=status.code,
+                            position=status.position_label,
+                            updated_at=snapshot.updated_at,
+                            is_done=snapshot.is_done,
+                        ).model_dump(mode="json")
+                        if notification_row is not None:
+                            notification_event = (
+                                previous_agent,
+                                NotificationNewData(
+                                    id=notification_row.id,
+                                    booking_key=parsed.key,
+                                    display_key=parsed.display_key,
+                                    by_agent_name=live.full_name,
+                                    created_at=now,
+                                    type="taken_over",
+                                ).model_dump(mode="json"),
+                            )
+                        new_write = True
                         changed_group = group_entry(group)
                         key_entry = KeyEntry(
                             booking.id,
@@ -394,18 +433,6 @@ class BookingWrites:
                     # Also covers cancelled/uncertain commits; a later read must query the DB.
                     if identifier is not None:
                         self.cache.invalidate(identifier)
-            try:
-                await self.ws_manager.broadcast(
-                    "booking.updated",
-                    {
-                        "booking_key": result.snapshot.booking_key,
-                        "display_key": result.snapshot.display_key,
-                        "version": result.snapshot.version,
-                    },
-                )
-            except Exception:
-                # A transport failure cannot turn a committed note into a failed save.
-                pass
             return result
 
     async def patch_folder(self, cw: str, body, user, context) -> GroupInfo:

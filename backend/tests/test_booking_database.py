@@ -88,6 +88,7 @@ async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
     settings = Settings(
         _env_file=None,
         app_env="test",
+        scheduler_enabled=False,
         database_url=os.environ["SCHEMA_TEST_DATABASE_URL"],
         database_ssl_ca=os.environ["SCHEMA_TEST_SSL_CA"],
         jwt_secret_key=secrets.token_urlsafe(64),

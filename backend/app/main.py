@@ -9,10 +9,11 @@ from app.api.v1.folders import router as folders_router
 from app.api.v1.health import HealthResponse, health
 from app.api.v1.health import router as health_router
 from app.api.v1.notifications import router as notifications_router
+from app.api.v1.realtime import router as realtime_router
 from app.core.config import Settings
 from app.core.db import create_database_engine
 from app.core.errors import ApiCORSMiddleware, ApiErrorMiddleware, register_error_handlers
-from app.core.request_context import RequestContextMiddleware
+from app.core.request_context import RequestContextMiddleware, install_websocket_log_redaction
 from app.core.timeouts import RequestTimeoutMiddleware
 from app.schemas.contracts import ApiError
 from app.services.auth import AuthService
@@ -20,9 +21,11 @@ from app.services.booking_reads import BookingReads
 from app.services.booking_writes import BookingWrites
 from app.services.folders import FolderService
 from app.services.key_index import KeyIndex
+from app.services.scheduler import Scheduler
 from app.services.search_limiter import SearchLimiter
-from app.services.session_events import SessionEvents
+from app.services.session_events import CombinedSessionEvents, SessionEvents
 from app.services.snapshot_cache import SnapshotCache
+from app.services.stale_reminders import StaleReminders
 from app.services.stations import StationService
 from app.services.storage import NullStorage
 from app.services.ws_manager import WebSocketManager
@@ -34,11 +37,19 @@ def create_app(
     session_events: SessionEvents | None = None,
 ) -> FastAPI:
     config = settings or Settings()
+    install_websocket_log_redaction()
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
         application.state.engine = create_database_engine(config)
-        application.state.auth = AuthService(application.state.engine, config, session_events)
+        ws_manager = WebSocketManager(config)
+        events = (
+            CombinedSessionEvents(ws_manager, session_events)
+            if session_events is not None
+            else ws_manager
+        )
+        application.state.auth = AuthService(application.state.engine, config, events)
+        ws_manager.auth = application.state.auth
         cache = SnapshotCache(config.snapshot_cache_max_entries, config.snapshot_cache_ttl_seconds)
         stations = StationService(application.state.engine, config)
         index = KeyIndex(
@@ -52,7 +63,8 @@ def create_app(
         )
         application.state.snapshot_cache = cache
         application.state.key_index = index
-        application.state.ws_manager = WebSocketManager()
+        application.state.ws_manager = ws_manager
+        application.state.lock_manager = ws_manager.locks
         application.state.storage = NullStorage()
         application.state.bookings = BookingReads(application.state.engine, config, index, cache)
         application.state.booking_writes = BookingWrites(
@@ -61,10 +73,27 @@ def create_app(
         application.state.folders = FolderService(
             application.state.engine, config, index, application.state.bookings, stations
         )
+        scheduler = Scheduler()
+        stale_reminders = StaleReminders(application.state.engine, config, ws_manager)
+        application.state.scheduler = scheduler
+        application.state.stale_reminders = stale_reminders
+        scheduler.add_job(
+            "locks.expire", ws_manager.locks.sweep, interval=config.lock_sweep_interval_seconds
+        )
+        scheduler.add_job(
+            "bookings.stale",
+            stale_reminders.run,
+            interval=config.stale_job_interval_seconds,
+            timeout=config.scheduler_job_timeout_seconds,
+        )
         index.start()
+        if config.scheduler_enabled:
+            scheduler.start()
         try:
             yield
         finally:
+            await scheduler.stop()
+            await ws_manager.stop()
             await index.stop()
             if application.state.engine is not None:
                 await application.state.engine.dispose()
@@ -102,6 +131,7 @@ def create_app(
     application.include_router(bookings_router, prefix="/api/v1")
     application.include_router(notifications_router, prefix="/api/v1")
     application.include_router(folders_router, prefix="/api/v1")
+    application.include_router(realtime_router, prefix="/api/v1")
     return application
 
 

@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Frontend sign-in/booking screens, full invoice management/reports, WebSocket transport, soft locks, reminder mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
+Frontend sign-in/booking screens, full invoice management/reports, reminder task mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -36,7 +36,7 @@ Frontend sign-in/booking screens, full invoice management/reports, WebSocket tra
 - Single-device SID enforcement, active-user checks, bounded 12-second user/session cache, and immediate same-process invalidation on login/logout/password/kick/disable.
 - Shared `get_current_user`, `require_roles`, database-session dependency, and authoritative rechecks for critical session mutations.
 - Per-IP/account five-failure lockouts, safe request-ID logging/headers, DB-free `/health`, atomic auth audit records, and no-store auth responses.
-- Internal `kick_session` / `set_user_active` helpers and an injectable `session.force_logout` transport placeholder; no admin HTTP API or WebSocket runtime yet.
+- Internal `kick_session` / `set_user_active` helpers and an injectable `session.force_logout` transport interface, implemented by the Prompt 5 manager; no admin HTTP API yet.
 - Unit tests plus disposable MySQL/TiDB auth integration suites, including cache/ACLs, concurrent login/password/logout scenarios, audit rollback, and transport failure.
 - `JWT_SECRET_KEY` is an operator requirement; Render Blueprint can generate it. No default signing key/password is stored.
 
@@ -47,7 +47,7 @@ Frontend sign-in/booking screens, full invoice management/reports, WebSocket tra
 - Append-only note transaction with row locks, optimistic versions, atomic takeover notifications/audit and inline invoice changes.
 - Durable UUID replay of the original response, migration `0002`, one retry for duplicate/deadlock races and authoritative session rechecks.
 - Cursor history with batch attachment metadata, mine/overall/stale pages, batched private task counts and notification ownership.
-- Startup keyset RAM index, periodic reconciliation, DB fallback, generation-guarded snapshot LRU and post-commit invalidation before the broadcast stub.
+- Startup keyset RAM index, periodic reconciliation, DB fallback, generation-guarded snapshot LRU and post-commit invalidation before realtime dispatch.
 - Pure ASGI route deadlines, SELECT/lock/pool timeouts, cancellation rollback/connection discard, Server-Timing and safe WARNING logs.
 - Admin/QC folder supplier edit and intentional NullStorage 501 attachment interface.
 - Disposable TLS MySQL/TiDB booking tests added to CI; run instructions and explicit envelope clarifications in docs/bookings.md and docs/api-contract.md.
@@ -63,11 +63,22 @@ Frontend sign-in/booking screens, full invoice management/reports, WebSocket tra
 - MySQL/TiDB tests cover classification, word/diacritic matching, rename visibility/ACL/audit, pagination, no-LIKE key branches, one-query aggregates and station caching. A reproducible 2,000-folder/50,000-booking benchmark verifies p95 and EXPLAIN plans; reports and limits are in docs/folder-search.md.
 - Search wire types are generated as a discriminated union. No frontend screens or new database migrations were added.
 
+## Implemented: Prompt 5 realtime and stale reminders
+
+- Real `/api/v1/ws?token=` with REST JWT rules, fresh-row SID/active checks serialized with login, one socket per user, and actual 4401 rejection close codes.
+- JSON `{event,data}` protocol with required display keys/UTC timestamps; typed frames/generated frontend unions; documented ping/pong and close/reconnect behavior.
+- Bounded per-client FIFO writers, per-send deadlines, slow-client eviction, query-token log redaction and shutdown cleanup.
+- Advisory one-user/one-booking leases, heartbeat/150-second TTL, 25-second sweep, snapshot/denial, safe same-SID replacement and save/disconnect/revocation release.
+- Post-commit index/cache ordering, cancellation-independent booking broadcast and private takeover notification; UUID replays never duplicate publication.
+- Auth login/logout/password/kick/disable now invoke the real SID-targeted force-logout manager; no no-op default transport remains.
+- Independent asyncio scheduler jobs with startup catch-up, isolation/deadlines; durable once-per-stale-episode notifications preserve the booking activity clock and version.
+- Real Uvicorn/WebSocket peers against disposable TLS MySQL/TiDB, plus unit tests for hung senders, bounded queues, scheduler failures and encoded-token redaction. No new migration; one instance/worker remains required.
+
 ## Next implementation steps
 
 1. Confirm the provisional Position labels when the business mapping is available.
 2. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
-3. Continue later prompts for task mutations, frontend screens and realtime.
+3. Continue later prompts for task mutations and frontend screens, including realtime UI.
 
 ## Deployment status
 

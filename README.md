@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: deployment foundation, schema, auth, and booking backend (Prompts 1–4B).** FastAPI implements booking lookup, supplier folders, append-only notes, optimistic versions, idempotent saves, lists, stale detection, and private notifications. It includes a RAM key index, snapshot cache, bounded database transactions, and verified TLS. Supplier/station search, folder pages and station naming are implemented. Frontend booking/sign-in screens and WebSocket transport remain for later prompts.
+**Current scope: deployment foundation, schema, auth, and booking backend (Prompts 1–5).** FastAPI implements booking lookup, supplier folders, append-only notes, optimistic versions, idempotent saves, lists, stale detection, and private notifications. It includes a RAM key index, snapshot cache, bounded database transactions, and verified TLS. Supplier/station search, folder pages and station naming are implemented. WebSocket updates, advisory locks, SID-targeted logout and stale reminder jobs are implemented. Frontend booking/sign-in/realtime screens remain for later prompts.
 
 ## Stack and hosting
 
@@ -23,7 +23,7 @@ cd backend
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements-dev.txt
 test -f .env || cp .env.example .env
-.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --no-access-log
+.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --workers 1 --no-access-log --ws websockets-sansio --ws-max-size 4096
 ```
 
 The API can start without database/auth credentials: `/health` (also `/api/v1/health`) returns 200 without DB access, while `/api/v1/ready` returns 503 until a database is configured. Auth fails closed until `JWT_SECRET_KEY` and the database are configured. To enable login, configure the ignored `backend/.env`, migrate, and seed an Admin using protected environment values; follow [auth.md](docs/auth.md) for startup and curl examples. Never commit real credentials.

@@ -110,7 +110,7 @@ def main() -> None:
     parser.add_argument("--engine", choices=["mysql", "tidb"], required=True)
     parser.add_argument(
         "--suite",
-        choices=["schema", "auth", "booking", "folder", "search-performance"],
+        choices=["schema", "auth", "booking", "folder", "realtime", "search-performance"],
         default="schema",
     )
     parser.add_argument("--report", type=Path, required=True)
@@ -201,6 +201,7 @@ def main() -> None:
                 "auth": "tests/test_auth_database.py",
                 "booking": "tests/test_booking_database.py",
                 "folder": "tests/test_folder_database.py",
+                "realtime": "tests/test_realtime_database.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]
             test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]

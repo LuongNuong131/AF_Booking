@@ -2,7 +2,7 @@
 
 This document records the user's shared contract for all implementation prompts. Paths, JSON field names, and error codes must not change silently. Update this file and the wire models together if an approved change is needed.
 
-**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Task mutations, realtime and later-prompt endpoints remain reserved.
+**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Task mutations and later-prompt endpoints remain reserved.
 
 ## Common conventions
 
@@ -66,7 +66,7 @@ CI checks that the generated file is current and runs the frontend build.
 - The first five invalid credential attempts return 401; later attempts in the lockout return `429 RATE_LIMITED` with `Retry-After`. Cache/session invalidation and in-memory scope are documented in [auth.md](auth.md).
 - Every HTTP response has `X-Request-ID`; browser CORS exposes it and `Retry-After`. Auth responses use `Cache-Control: no-store`.
 
-No registration, refresh-token, booking, or admin-management endpoint is added in Prompt 3. `session.force_logout` has an injectable internal callback only; its WebSocket wire frame remains unspecified.
+No registration, refresh-token, booking, or admin-management endpoint is added in Prompt 3. Prompt 5 now implements that internal callback through the real WebSocket manager and defines its wire frame in ws-protocol.md.
 
 | Code | HTTP | Details / behavior |
 | --- | --- | --- |
@@ -115,7 +115,7 @@ Examples:
 - Framework HTTP statuses not listed in the business catalogue (for example method-not-allowed 405) retain their HTTP status and use the same error envelope with `VALIDATION_ERROR`; their headers, such as `Allow`, are preserved. The specified business-code/status pairs above do not change.
 - `Task.display_key` and `FolderCard.latest.display_key` are explicit additions required by the universal booking-key/display-key rule, although omitted in the shorthand examples in Prompt 1B.
 - Unspecified shorthand types are resolved as strings for position labels, nullable status/agent summaries for incomplete snapshots, nullable `Status.default_task_days`, and a numeric user ID for `assign_to`. Error payloads without explicit field names use `details.suggestions` and `details.note` as shown above.
-- WebSocket event names are reserved below, but Prompt 1B does not define an envelope or detailed payload schemas. These must be documented before the corresponding runtime implementation; no payload shape is invented in this step.
+- Prompt 1B reserved the event names below. Prompt 5 now defines `{event,data}` and exact implemented payloads in [ws-protocol.md](ws-protocol.md); `task.due` remains for Prompt 5B.
 
 ## Endpoint catalogue
 
@@ -246,3 +246,11 @@ Full-key misses return `booking` with `exists:false`. Partial `needs_station`/`a
 `GET /folders/{cw}` returns `{folder,months}`. `GET /folders` returns `Page<FolderCard>` (size 1–100), sorted activity descending; filters are `station_code,supplier_type,q`. `PATCH /folders/{cw}` keeps its Prompt 4 body/response and Admin/QC ACL. `GET /stations?q=` returns `StationOption[]` directly: `{code,name:null|string,folder_count}`; response ETag/private max-age 60 and conditional 304 are supported. `PATCH /admin/stations/{code}` accepts required nullable `name` (max 100), returns `{code,name}`, Admin only, and returns 404 for unknown codes. All HTTP errors retain the existing code catalogue.
 
 Search limit: `q` at most 100 characters, page size 1–20, default 120 requests/user/60 seconds. The whole DB fallback has a dedicated 3 s deadline. Supplier normalization, per-word prefix matching, relevance ordering, ETag invalidation, operational boundaries and reproducible benchmark commands: [folder-search.md](folder-search.md).
+
+## Realtime implementation details — Prompt 5
+
+`WS /api/v1/ws?token=` is implemented. Frames use `{event,data}` with the fixed business names; JSON application `ping`/`pong` are explicit transport additions needed for the ASGI/browser heartbeat. The complete field/close-code tables and reconnect rules are in [ws-protocol.md](ws-protocol.md). Executable models are `schemas/realtime.py`; generated `WebSocketClientFrame` / `WebSocketServerFrame` unions have required event discriminators.
+
+Server booking/lock/notification payloads include `display_key` wherever `booking_key` occurs. Client lock commands send only canonical `booking_key`, consistent with the client identity rule. `notification.new` adds `type` for every notification (required for stale) and nullable `by_agent_name` for system reminders. Lock snapshot is `{locks:[{booking_key,display_key,user_id,user_name,expires_at}]}`; denial identifies the holder. Force logout data is `{reason,message}` without SID/token. `task.due` stays reserved and is not assigned an invented payload here.
+
+Successful notes refresh KeyIndex/invalidate snapshots before manager-owned post-commit publication, which survives cancellation of the committed HTTP request. The saver’s own lease is released; another holder's advisory lease never prohibits note saving. UUID replays return the original response without duplicating booking events/notifications. Existing HTTP fields/errors are unchanged. Stale notifications/markers commit together without changing `updated_at`, version or last agent, and HTTP stale lists remain read-time truth. Default app wiring uses the real revocation manager; one backend process/instance is required.

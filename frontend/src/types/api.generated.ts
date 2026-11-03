@@ -13,6 +13,10 @@ export type BookingLookup = { "booking_key": string | null; "display_key": strin
 
 export type BookingSnapshot = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "period": string; "period_label": string; "supplier": SupplierSummary; "version": number; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "last_note_preview": string | null; "is_done": boolean; "done_at": string | null; "updated_at": string; "is_stale": boolean; "invoice_state": InvoiceState; "invoice_count": number; "invoices_preview": Array<string> }
 
+export type BookingUpdatedData = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "version": number; "last_agent_id": number; "last_agent_name": string; "status_code": string; "position": string; "updated_at": string; "is_done": boolean }
+
+export type BookingUpdatedFrame = { "event": "booking.updated"; "data": BookingUpdatedData }
+
 export type ChangePasswordRequest = { "old_password": string; "new_password": string }
 
 export type ClientEventName = "lock.acquire" | "lock.heartbeat" | "lock.release"
@@ -20,6 +24,8 @@ export type ClientEventName = "lock.acquire" | "lock.heartbeat" | "lock.release"
 export type CursorPage<T> = { "items": Array<T>; "next_cursor": string | null }
 
 export type CursorPage_Note_ = { "items": Array<Note>; "next_cursor": string | null }
+
+export type EmptyData = {  }
 
 export type ErrorCode = "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
 
@@ -31,7 +37,13 @@ export type FolderLatest = { "booking_key": string; "display_key": string; "peri
 
 export type FolderPatch = { "supplier_name"?: string | null; "supplier_type"?: SupplierType | null }
 
+export type ForceLogoutData = { "reason": string; "message": string }
+
+export type ForceLogoutFrame = { "event": "session.force_logout"; "data": ForceLogoutData }
+
 export type GroupInfo = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string }
+
+export type HeartbeatFrame = { "event": "ping" | "pong"; "data": EmptyData }
 
 export type InputKind = "full" | "partial" | "invalid"
 
@@ -46,6 +58,20 @@ export type JsonValue = null | boolean | number | string | Array<JsonValue> | { 
 export type KeyCandidate = { "key": string; "display_key": string; "station_code": string; "supplier_name": string }
 
 export type KeyResolution = { "status": ResolutionStatus; "input_kind": InputKind; "key": string | null; "display_key": string | null; "candidates"?: Array<KeyCandidate> }
+
+export type LockChangedFrame = { "event": "lock.acquired" | "lock.released" | "lock.denied"; "data": LockHolder }
+
+export type LockCommandData = { "booking_key": string }
+
+export type LockCommandFrame = { "event": "lock.acquire" | "lock.heartbeat" | "lock.release"; "data": LockCommandData }
+
+export type LockHolder = { "booking_key": string; "display_key": string; "user_id": number; "user_name": string }
+
+export type LockInfo = { "booking_key": string; "display_key": string; "user_id": number; "user_name": string; "expires_at": string }
+
+export type LockSnapshotData = { "locks": Array<LockInfo> }
+
+export type LockSnapshotFrame = { "event": "lock.snapshot"; "data": LockSnapshotData }
 
 export type LoginRequest = { "username": string; "password": string }
 
@@ -68,6 +94,10 @@ export type NoteSaveResponse = { "snapshot": BookingSnapshot; "note": Note }
 export type NotificationItem = { "booking_key": string; "display_key": string; "id": number; "type": NotificationType; "by_agent": AgentSummary | null; "note_id": number | null; "task_id": number | null; "created_at": string; "read_at": string | null }
 
 export type NotificationList = { "items": Array<NotificationItem>; "unread_count": number }
+
+export type NotificationNewData = { "id": number; "booking_key": string; "display_key": string; "by_agent_name": string | null; "created_at": string; "type": NotificationType }
+
+export type NotificationNewFrame = { "event": "notification.new"; "data": NotificationNewData }
 
 export type NotificationType = "taken_over" | "stale" | "task_due" | "watch_update" | "assigned" | "assignment_done"
 
@@ -120,5 +150,9 @@ export type Task = { "booking_key": string; "display_key": string; "id": number;
 export type TaskBookingSummary = { "last_status": StatusSummary | null; "last_agent": AgentSummary | null; "is_done": boolean; "updated_at": string }
 
 export type TaskStatus = "pending" | "done" | "cancelled"
+
+export type WebSocketClientFrame = LockCommandFrame | HeartbeatFrame
+
+export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | ForceLogoutFrame | HeartbeatFrame
 
 export const ERROR_CODES = ["UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]
