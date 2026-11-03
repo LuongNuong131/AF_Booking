@@ -65,7 +65,15 @@ class ReminderSettingsPatch(ContractModel):
 
 
 class ProfilePatch(ContractModel):
-    settings: ReminderSettingsPatch
+    settings: ReminderSettingsPatch | None = None
+    full_name: str | None = None
+
+    @field_validator("full_name")
+    @classmethod
+    def name(cls, value):
+        from app.schemas.admin import display_name
+
+        return display_name(value)
 
 
 TASK_MODELS = (TaskCreate, TaskEdit, DueTasks, ReminderSettingsPatch, ProfilePatch)

@@ -33,7 +33,10 @@ export function months(): MonthRow[] {
     display_key: `CW 2154927-YUL-${period}`,
     period,
     period_label: ['Sep 2026', 'Aug 2026', 'Jul 2026'][i]!,
-    last_status: { code: i === 1 ? 'DONE' : 'BUNDLE', label: i === 1 ? 'Done' : 'Bundle' },
+    last_status: {
+      code: i === 1 ? 'DONE' : 'BUNDLE',
+      label: i === 1 ? 'Done' : 'Bundle',
+    },
     last_position: 'Processing',
     last_agent: { id: 3, full_name: 'Agent' },
     is_done: i === 1,

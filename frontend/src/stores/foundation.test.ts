@@ -26,7 +26,12 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks())
 it('logs in using the contract, persists only the token per tab, and clears private data on expiry', async () => {
   const post = vi.spyOn(api, 'post').mockResolvedValue({
-    data: { access_token: 'test-token', user, expires_in: 3600, token_type: 'bearer' },
+    data: {
+      access_token: 'test-token',
+      user,
+      expires_in: 3600,
+      token_type: 'bearer',
+    },
   })
   const auth = useAuthStore()
   expect(await auth.login({ username: 'agent', password: 'test-password' })).toBe(true)
@@ -68,7 +73,7 @@ it.each(['agent', 'qc', 'admin'] as const)(
     auth.ready = true
     const router = createAppRouter(pinia, createMemoryHistory())
     await router.push('/admin/users')
-    expect(router.currentRoute.value.name).toBe(role === 'admin' ? 'admin' : 'home')
+    expect(router.currentRoute.value.name).toBe(role === 'admin' ? 'admin-users' : 'home')
     await router.push('/reports')
     expect(router.currentRoute.value.name).toBe(role === 'agent' ? 'home' : 'reports')
     await router.push('/summary/CW%202154654-rdu-2609')
@@ -128,7 +133,7 @@ it('does not erase a new unread notification while mark-all is in flight', async
   })
   finish({ data: { ok: true } })
   expect(await marking).toBe(true)
-  expect(notifications.unread).toBe(2)
+  expect(notifications.unread).toBe(1)
   notifications.reset()
   expect(notifications.unread).toBe(0)
   expect(notifications.items).toEqual([])

@@ -26,6 +26,7 @@ export const useFoldersStore = defineStore('folders', () => {
   const cache = ref(new Map<string, Entry>()),
     recent = ref<FolderCard[]>([])
   const liveError = ref(false)
+  const listeners = new Set<(cw: string, card: FolderCard) => void>()
   let epoch = 0,
     revision = 0,
     owner: number | null = null,
@@ -64,8 +65,13 @@ export const useFoldersStore = defineStore('folders', () => {
     }
     for (let retry = 0; retry < 2; retry++) {
       const stamp = revision
-      const value = (await api.get<T>(path, { params, signal: ctx.signal, timeout: ctx.timeoutMs }))
-        .data
+      const value = (
+        await api.get<T>(path, {
+          params,
+          signal: ctx.signal,
+          timeout: ctx.timeoutMs,
+        })
+      ).data
       if (ctx.signal.aborted || generation !== epoch)
         throw new DOMException('Cancelled', 'AbortError')
       if (stamp !== revision) {
@@ -74,7 +80,10 @@ export const useFoldersStore = defineStore('folders', () => {
       }
       put(key, value)
       if ('kind' in value && value.kind === 'folder')
-        put(folderId(value.folder.cw_number), { folder: value.folder, months: value.months })
+        put(folderId(value.folder.cw_number), {
+          folder: value.folder,
+          months: value.months,
+        })
       return value
     }
     throw new Error('Retry required')
@@ -114,13 +123,18 @@ export const useFoldersStore = defineStore('folders', () => {
   }
   function patchMonth(row: MonthRow, event: BookingUpdatedData) {
     if (row.booking_key !== event.booking_key || row.updated_at >= event.updated_at) return
-    row.last_status = {
-      code: event.status_code,
-      label:
-        useBookingsStore().statuses.find((s) => s.code === event.status_code)?.label ??
-        event.status_code,
-    }
-    row.last_agent = { id: event.last_agent_id, full_name: event.last_agent_name }
+    row.last_status = event.status_code
+      ? {
+          code: event.status_code,
+          label:
+            useBookingsStore().statuses.find((s) => s.code === event.status_code)?.label ??
+            event.status_code,
+        }
+      : null
+    row.last_agent =
+      event.last_agent_id && event.last_agent_name
+        ? { id: event.last_agent_id, full_name: event.last_agent_name }
+        : null
     row.last_position = event.position
     row.updated_at = event.updated_at
     row.is_done = event.is_done
@@ -153,13 +167,18 @@ export const useFoldersStore = defineStore('folders', () => {
           booking_key: event.booking_key,
           display_key: event.display_key,
           period_label: parsed?.period_label ?? '',
-          status: {
-            code: event.status_code,
-            label:
-              useBookingsStore().statuses.find((s) => s.code === event.status_code)?.label ??
-              event.status_code,
-          },
-          agent: { id: event.last_agent_id, full_name: event.last_agent_name },
+          status: event.status_code
+            ? {
+                code: event.status_code,
+                label:
+                  useBookingsStore().statuses.find((s) => s.code === event.status_code)?.label ??
+                  event.status_code,
+              }
+            : null,
+          agent:
+            event.last_agent_id && event.last_agent_name
+              ? { id: event.last_agent_id, full_name: event.last_agent_name }
+              : null,
         }
     })
     if (interests.has(event.cw_number)) schedule(event.cw_number)
@@ -196,6 +215,7 @@ export const useFoldersStore = defineStore('folders', () => {
               if (card.cw_number === cw) Object.assign(card, result.folder)
             })
             persistRecent()
+            listeners.forEach((listener) => listener(cw, result.folder))
             liveError.value = false
           } else liveError.value = true
         })
@@ -283,7 +303,18 @@ export const useFoldersStore = defineStore('folders', () => {
         /* Ignore unavailable or invalid optional history. */
       }
   }
+  function invalidate() {
+    revision++
+    for (const entry of cache.value.values()) entry.at = 0
+  }
   return {
+    subscribe(listener: (cw: string, card: FolderCard) => void) {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
+    invalidate,
     cache,
     recent,
     liveError,

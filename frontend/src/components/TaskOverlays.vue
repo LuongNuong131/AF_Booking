@@ -39,7 +39,8 @@ function openNote() {
   <TaskDialog v-if="tasks.dialog" :key="tasks.dialog.nonce" /><DueTasksModal /><TaskReminderToast />
   <aside v-if="tasks.noteSuggestion" class="task-note-suggestion" role="status">
     <span>{{ t('taskUi.notePrompt') }}</span
-    ><button type="button" class="text-button" @click="openNote">{{ t('taskUi.addNote') }}</button
+    ><button type="button" class="text-button" @click="openNote">
+      {{ t('taskUi.addNote') }}</button
     ><button type="button" class="text-button" @click="tasks.noteSuggestion = null">
       {{ t('common.close') }}
     </button>

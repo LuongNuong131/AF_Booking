@@ -75,7 +75,8 @@ class BackendListener:
 
 
 @pytest.mark.parametrize(
-    "browser_script", ["smoke.mjs", "workspace.mjs", "tasks.mjs", "folders.mjs"]
+    "browser_script",
+    ["smoke.mjs", "workspace.mjs", "tasks.mjs", "folders.mjs", "admin.mjs", "outbox.mjs"],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
     rig, browser_account, tmp_path, browser_script
@@ -93,6 +94,12 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
             },
         )
     assert (await rig.save()).status_code == 200
+    if browser_script == "admin.mjs":
+        assert (
+            await rig.save(
+                version=1, status_code="DONE", note="=1+1", invoices={"no_invoice": True}
+            )
+        ).status_code == 200
     if browser_script == "folders.mjs":
         await folder_support.seed_folder(
             rig, name="Hotellus Montreal Inc. d/b/a DOUBLE TREE by HILTON - YUL"

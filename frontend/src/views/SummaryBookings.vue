@@ -66,7 +66,10 @@ const agentOptions = computed(() => {
   for (const row of rows.value)
     if (row.last_agent) entries.set(String(row.last_agent.id), row.last_agent)
   if (auth.user)
-    entries.set(String(auth.user.id), { id: auth.user.id, full_name: auth.user.full_name })
+    entries.set(String(auth.user.id), {
+      id: auth.user.id,
+      full_name: auth.user.full_name,
+    })
   return [...entries.values()].sort((a, b) => a.full_name.localeCompare(b.full_name))
 })
 async function load(force: boolean = false) {
@@ -174,6 +177,22 @@ watch(
     void load()
   },
 )
+watch(
+  () => [
+    rows.value.map((row) => `${row.booking_key}:${row.version}:${row.last_note_preview}`).join('|'),
+    total.value,
+  ],
+  () => {
+    if (!request.pending.value && !disposed && !validation.value)
+      store.rememberList('/bookings', params.value, {
+        items: rows.value,
+        total: total.value,
+        page: page.value,
+        size: Number(params.value.size ?? 20),
+      })
+  },
+  { flush: 'post' },
+)
 useViewRefresh(() => load(true))
 onScopeDispose(() => {
   disposed = true
@@ -185,7 +204,11 @@ onMounted(() => {
   void agentRequest.run()
 })
 function open(key: string) {
-  void router.push({ name: 'booking', params: { key }, query: { from: route.fullPath } })
+  void router.push({
+    name: 'booking',
+    params: { key },
+    query: { from: route.fullPath },
+  })
 }
 function refreshPage() {
   refreshing.value = false
@@ -200,7 +223,9 @@ function refreshPage() {
         <h1>{{ t('pages.summaryTitle') }}</h1>
         <p>{{ t('bookingUi.summaryIntro') }}</p>
       </div>
-      <button type="button" class="button" @click="load(true)">{{ t('bookingUi.refresh') }}</button>
+      <button type="button" class="button" @click="load(true)">
+        {{ t('bookingUi.refresh') }}
+      </button>
     </header>
     <section class="summary-controls" :aria-label="t('bookingUi.filters')">
       <label class="summary-search"
@@ -266,7 +291,9 @@ function refreshPage() {
             >
               <option value="">{{ t('bookingUi.allTypes') }}</option>
               <option value="hotel">{{ t('supplier_types.hotel') }}</option>
-              <option value="transportation">{{ t('supplier_types.transportation') }}</option>
+              <option value="transportation">
+                {{ t('supplier_types.transportation') }}
+              </option>
             </select></label
           >
           <label
@@ -329,15 +356,20 @@ function refreshPage() {
             </select></label
           >
           <div class="quick-filters">
-            <button type="button" class="button" @click="today">{{ t('bookingUi.today') }}</button
+            <button type="button" class="button" @click="today">
+              {{ t('bookingUi.today') }}</button
             ><button type="button" class="text-button" @click="clearFilters">
               {{ t('bookingUi.clearFilters') }}
             </button>
           </div>
         </div>
-        <p class="filter-timezone">{{ t('bookingUi.datesInZone', { timezone: auth.timezone }) }}</p>
+        <p class="filter-timezone">
+          {{ t('bookingUi.datesInZone', { timezone: auth.timezone }) }}
+        </p>
       </details>
-      <p v-if="validation" class="field-error" role="alert">{{ t(validation) }}</p>
+      <p v-if="validation" class="field-error" role="alert">
+        {{ t(validation) }}
+      </p>
       <RequestStatus
         :state="statusRequest.state.value"
         :error="statusRequest.error.value"

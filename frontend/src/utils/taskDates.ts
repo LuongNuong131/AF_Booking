@@ -45,7 +45,10 @@ export function reminderParts(instant: string, zone: string) {
     hourCycle: 'h23',
   }).formatToParts(new Date(instant))
   const p = (key: Intl.DateTimeFormatPartTypes) => parts.find((v) => v.type === key)!.value
-  return { date: `${p('year')}-${p('month')}-${p('day')}`, time: `${p('hour')}:${p('minute')}` }
+  return {
+    date: `${p('year')}-${p('month')}-${p('day')}`,
+    time: `${p('hour')}:${p('minute')}`,
+  }
 }
 export function reminderInstant(day: string, clock: string, zone: string): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(clock)) return null
@@ -84,9 +87,10 @@ export function confirmation(day: string, clock: string, zone: string) {
   if (!instant) return null
   const text = formatDateTime(instant, zone)
   return {
-    weekday: new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone: zone }).format(
-      new Date(instant),
-    ),
+    weekday: new Intl.DateTimeFormat('en-GB', {
+      weekday: 'short',
+      timeZone: zone,
+    }).format(new Date(instant)),
     date: text.slice(0, 11),
     time: text.slice(12),
   }

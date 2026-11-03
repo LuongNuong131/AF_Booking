@@ -137,7 +137,10 @@ export function useRealtime(options: RealtimeOptions) {
         options.onFrame(frame)
         options.onState('connected')
         if (options.activeKey())
-          send({ event: 'lock.acquire', data: { booking_key: options.activeKey()! } })
+          send({
+            event: 'lock.acquire',
+            data: { booking_key: options.activeKey()! },
+          })
         clearInterval(heartbeatTimer)
         heartbeatTimer = setInterval(() => {
           const key = options.activeKey()

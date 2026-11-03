@@ -63,12 +63,19 @@ function changed() {
   }, timeouts.smartSearchDebounce)
 }
 async function changePage(value: number, replace = false) {
-  const target = { name: 'summary', query: { ...summaryQuery(filters, value), view: 'folders' } }
+  const target = {
+    name: 'summary',
+    query: { ...summaryQuery(filters, value), view: 'folders' },
+  }
   if (replace) await router.replace(target)
   else await router.push(target)
 }
 function open(cw: string) {
-  void router.push({ name: 'summary-folder', params: { cw }, query: { from: route.fullPath } })
+  void router.push({
+    name: 'summary-folder',
+    params: { cw },
+    query: { from: route.fullPath },
+  })
 }
 watch(
   () => route.query,
@@ -93,7 +100,9 @@ onScopeDispose(() => {
         <h1>{{ t('pages.summaryTitle') }}</h1>
         <p>{{ t('folderUi.summaryDescription') }}</p>
       </div>
-      <button type="button" class="button" @click="load(true)">{{ t('bookingUi.refresh') }}</button>
+      <button type="button" class="button" @click="load(true)">
+        {{ t('bookingUi.refresh') }}
+      </button>
     </header>
     <section class="summary-controls" :aria-label="t('bookingUi.filters')">
       <label class="summary-search"
@@ -114,7 +123,9 @@ onScopeDispose(() => {
           >
             <option value="">{{ t('bookingUi.allTypes') }}</option>
             <option value="hotel">{{ t('supplier_types.hotel') }}</option>
-            <option value="transportation">{{ t('supplier_types.transportation') }}</option>
+            <option value="transportation">
+              {{ t('supplier_types.transportation') }}
+            </option>
           </select></label
         >
       </div>

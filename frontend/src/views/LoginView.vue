@@ -18,8 +18,10 @@ import { useUiStore } from '../stores/ui'
 import { safeRedirect } from '../utils/navigation'
 import BaseIcon from '../components/BaseIcon.vue'
 import ThemeMenu from '../components/ThemeMenu.vue'
+import { useWarmup } from '../composables/useWarmup'
 import RequestStatus from '../components/RequestStatus.vue'
 const { t } = useI18n()
+const warmup = useWarmup()
 const auth = useAuthStore(),
   ui = useUiStore()
 const route = useRoute(),
@@ -31,7 +33,12 @@ async function submit() {
   if (auth.loginRequest.pending) return
   const valid = await form.value?.validate().catch(() => false)
   if (!valid) return
-  if (await auth.login({ username: credentials.username.trim(), password: credentials.password })) {
+  if (
+    await auth.login({
+      username: credentials.username.trim(),
+      password: credentials.password,
+    })
+  ) {
     credentials.password = ''
     await router.replace(safeRedirect(route.query.redirect))
   }
@@ -50,6 +57,9 @@ onBeforeUnmount(() => {
 </script>
 <template>
   <div class="login-page">
+    <span class="warmup-status" role="status" :class="warmup.state.value"
+      ><span class="status-dot" />{{ t(`outboxUi.warm_${warmup.state.value}`) }}</span
+    >
     <aside class="login-story">
       <RouterLink to="/" class="brand"
         ><span class="brand-mark" aria-hidden="true">{{ t('app.initial') }}</span
@@ -130,7 +140,13 @@ onBeforeUnmount(() => {
           ><ElFormItem
             prop="password"
             :label="t('auth.password')"
-            :rules="[{ required: true, message: t('auth.passwordRequired'), trigger: 'blur' }]"
+            :rules="[
+              {
+                required: true,
+                message: t('auth.passwordRequired'),
+                trigger: 'blur',
+              },
+            ]"
             ><ElInput
               v-model="credentials.password"
               name="password"

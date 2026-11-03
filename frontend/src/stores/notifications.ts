@@ -54,17 +54,26 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
   async function markRead(id: number): Promise<boolean> {
     const item = items.value.find((n) => n.id === id)
-    if (item?.read_at || marking.value.includes(id)) return true
+    if (markingAll.value || item?.read_at || marking.value.includes(id)) return true
     const generation = epoch
-    const atRevision = ++revision
+    ++revision
     listRequest.cancel()
     const request = useRequest(
       async ({ signal, timeoutMs }) =>
-        (await api.post(`/notifications/${id}/read`, undefined, { signal, timeout: timeoutMs }))
-          .data as unknown,
+        (
+          await api.post(`/notifications/${id}/read`, undefined, {
+            signal,
+            timeout: timeoutMs,
+          })
+        ).data as unknown,
       { timeoutMs: timeouts.task },
     )
     mutations.add(request.cancel)
+    const optimisticAt = new Date().toISOString()
+    if (item && !item.read_at) {
+      item.read_at = optimisticAt
+      unread.value = Math.max(0, unread.value - 1)
+    }
     marking.value.push(id)
     actionError.value = null
     try {
@@ -72,11 +81,11 @@ export const useNotificationsStore = defineStore('notifications', () => {
       if (generation !== epoch) return false
       if (request.state.value !== 'success') {
         actionError.value = request.error.value
+        if (item?.read_at === optimisticAt) {
+          item.read_at = null
+          unread.value++
+        }
         return false
-      }
-      if (revision === atRevision && item && !item.read_at) {
-        item.read_at = new Date().toISOString()
-        unread.value = Math.max(0, unread.value - 1)
       }
       void refresh()
       return true
@@ -86,17 +95,26 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
   async function markAllRead(): Promise<boolean> {
-    if (markingAll.value) return false
+    if (markingAll.value || marking.value.length) return false
     const generation = epoch
-    const atRevision = ++revision
+    ++revision
     listRequest.cancel()
     const request = useRequest(
       async ({ signal, timeoutMs }) =>
-        (await api.post('/notifications/read-all', undefined, { signal, timeout: timeoutMs }))
-          .data as unknown,
+        (
+          await api.post('/notifications/read-all', undefined, {
+            signal,
+            timeout: timeoutMs,
+          })
+        ).data as unknown,
       { timeoutMs: timeouts.task },
     )
     mutations.add(request.cancel)
+    const previousUnread = unread.value
+    const changedItems = items.value.filter((n) => !n.read_at)
+    const optimisticAt = new Date().toISOString()
+    for (const item of changedItems) item.read_at = optimisticAt
+    unread.value = 0
     markingAll.value = true
     actionError.value = null
     try {
@@ -104,11 +122,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
       if (generation !== epoch) return false
       if (request.state.value !== 'success') {
         actionError.value = request.error.value
+        for (const item of changedItems) if (item.read_at === optimisticAt) item.read_at = null
+        unread.value += previousUnread
         return false
-      }
-      if (revision === atRevision) {
-        for (const item of items.value) item.read_at ??= new Date().toISOString()
-        unread.value = 0
       }
       void refresh()
       return true

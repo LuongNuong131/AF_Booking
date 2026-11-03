@@ -123,7 +123,7 @@ try {
   await a.context.setOffline(true)
   await a.page.getByLabel('Note', { exact: true }).fill('Offline draft retained')
   await expect(a.page.locator('.offline-save')).toBeVisible()
-  await expect(a.page.getByRole('button', { name: /^Save update/ })).toBeDisabled()
+  await expect(a.page.getByRole('button', { name: /^Save update/ })).toBeEnabled()
   await a.context.setOffline(false)
   await expect(a.page.getByLabel('Realtime connection: Live', { exact: true })).toBeVisible({
     timeout: 20000,

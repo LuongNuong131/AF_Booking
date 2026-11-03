@@ -2,7 +2,10 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.responses import ORJSONResponse
+from starlette.middleware.gzip import GZipMiddleware
 
+from app.api.v1.admin import router as admin_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.bookings import router as bookings_router
 from app.api.v1.folders import router as folders_router
@@ -17,11 +20,14 @@ from app.core.errors import ApiCORSMiddleware, ApiErrorMiddleware, register_erro
 from app.core.request_context import RequestContextMiddleware, install_websocket_log_redaction
 from app.core.timeouts import RequestTimeoutMiddleware
 from app.schemas.contracts import ApiError
+from app.services.admin import AdminService
 from app.services.auth import AuthService
 from app.services.booking_reads import BookingReads
 from app.services.booking_writes import BookingWrites
+from app.services.exports import ExportService
 from app.services.folders import FolderService
 from app.services.key_index import KeyIndex
+from app.services.reports import ReportService
 from app.services.scheduler import Scheduler
 from app.services.search_limiter import SearchLimiter
 from app.services.session_events import CombinedSessionEvents, SessionEvents
@@ -63,6 +69,7 @@ def create_app(
             config.search_rate_window_seconds,
             config.search_rate_max_entries,
         )
+        application.state.warm_limiter = SearchLimiter(limit=10)
         application.state.snapshot_cache = cache
         application.state.key_index = index
         application.state.ws_manager = ws_manager
@@ -79,6 +86,16 @@ def create_app(
             application.state.engine, config, application.state.auth, ws_manager
         )
         scheduler = Scheduler()
+        application.state.reports = ReportService(application.state.engine, config)
+        application.state.exports = ExportService(application.state.engine, config)
+        application.state.admin = AdminService(
+            application.state.engine,
+            config,
+            application.state.auth,
+            application.state.booking_writes,
+            ws_manager,
+            application.state.reports,
+        )
         stale_reminders = StaleReminders(application.state.engine, config, ws_manager)
         application.state.scheduler = scheduler
         application.state.stale_reminders = stale_reminders
@@ -113,6 +130,7 @@ def create_app(
         title="Booking Tracker API",
         version="0.1.0",
         lifespan=lifespan,
+        default_response_class=ORJSONResponse,
         docs_url="/docs" if config.app_env != "production" else None,
         redoc_url=None,
         openapi_url="/openapi.json" if config.app_env != "production" else None,
@@ -121,6 +139,7 @@ def create_app(
     application.state.settings = config
     register_error_handlers(application)
     application.add_middleware(ApiErrorMiddleware)
+    application.add_middleware(GZipMiddleware, minimum_size=500)
     application.add_middleware(
         RequestTimeoutMiddleware, timeout_seconds=config.request_timeout_seconds
     )
@@ -144,6 +163,7 @@ def create_app(
     application.include_router(folders_router, prefix="/api/v1")
     application.include_router(realtime_router, prefix="/api/v1")
     application.include_router(tasks_router, prefix="/api/v1")
+    application.include_router(admin_router, prefix="/api/v1")
     return application
 
 

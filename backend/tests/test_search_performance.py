@@ -4,6 +4,7 @@ import asyncio
 import json
 import math
 import os
+import sys
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -176,6 +177,35 @@ async def test_search_p95_and_index_plans_with_2000_folders_50000_bookings(rig: 
         ("station_period", "ix_bookings_station_period"),
     ):
         assert index in str(plans[name]), (name, plans[name])
+
+    async def measure(source):
+        worker = await asyncio.create_subprocess_exec(
+            sys.executable,
+            str(Path(__file__).with_name("measure_lookup.py")),
+            str(source),
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+        )
+        private = json.dumps(
+            {
+                "signing_key": rig.app.state.settings.jwt_secret_key.get_secret_value(),
+                "headers": rig.headers["agent"],
+            }
+        ).encode()
+        output, _ = await worker.communicate(private)
+        assert worker.returncode == 0, "Lookup benchmark worker failed"
+        return json.loads(output)
+
+    lookup_after = await measure(Path(booking_support.__file__).parent.parent)
+    assert "booking_key" in str(lookup_after["plans"]["full_key"])
+    assert "ix_bookings_cw_period" in str(lookup_after["plans"]["partial_key"])
+    if tidb:
+        assert "Point_Get" in str(lookup_after["plans"]["full_key"])
+    else:
+        assert lookup_after["plans"]["full_key"][0]["type"] == "const"
+        assert lookup_after["plans"]["partial_key"][0]["type"] == "ref"
+    baseline = os.environ.get("BOOKING_LOOKUP_BASELINE_ROOT")
+    lookup_before = await measure(Path(baseline)) if baseline else None
     report = {
         "database_version": version,
         "fixture": {"folders": 2000, "bookings": 50000},
@@ -188,6 +218,9 @@ async def test_search_p95_and_index_plans_with_2000_folders_50000_bookings(rig: 
         "index_load_ms": round(index_load_ms, 3),
         "measurements": measurements,
         "plans": plans,
+        "lookup_after": lookup_after,
+        "lookup_before": lookup_before,
+        "lookup_baseline_commit": "d640d851a6221a8e7ccef92215b0a11e0efb7096" if baseline else None,
     }
     output = os.environ.get("SCHEMA_TEST_REPORT")
     if output:

@@ -17,10 +17,11 @@ class BookingUpdatedData(ContractModel):
     cw_number: str
     station_code: str
     version: int
-    last_agent_id: int
-    last_agent_name: str
-    status_code: str
-    position: str
+    last_agent_id: int | None
+    last_agent_name: str | None
+    status_code: str | None
+    position: str | None
+    snapshot_rebuilt: bool = False
     updated_at: UtcTimestamp
     is_done: bool
 
@@ -94,6 +95,16 @@ class EmptyData(ContractModel):
     pass
 
 
+class CatalogData(ContractModel):
+    resource: Literal["statuses", "users"]
+    snapshots_changed: bool = False
+
+
+class CatalogFrame(Frame):
+    event: Literal["catalog.updated"] = "catalog.updated"
+    data: CatalogData
+
+
 class HeartbeatFrame(Frame):
     event: Literal["ping", "pong"]
     data: EmptyData = Field(default_factory=EmptyData)
@@ -116,11 +127,14 @@ ServerFrame = Annotated[
     | NotificationNewFrame
     | TaskDueFrame
     | ForceLogoutFrame
-    | HeartbeatFrame,
+    | HeartbeatFrame
+    | CatalogFrame,
+    # Catalog events invalidate dynamic labels and current-view snapshots.
     Field(discriminator="event"),
 ]
 client_frame_adapter = TypeAdapter(ClientFrame)
 REALTIME_MODELS = (
+    CatalogFrame,
     BookingUpdatedFrame,
     LockChangedFrame,
     LockSnapshotFrame,

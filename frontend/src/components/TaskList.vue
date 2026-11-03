@@ -75,7 +75,9 @@ useViewRefresh(() => tasks.refreshList())
     </div>
     <template v-else-if="tasks.items.length"
       ><section v-for="group in groups" :key="group.kind" class="task-group">
-        <h3>{{ t(tasks.view === 'done' ? 'taskUi.completed' : `taskUi.${group.kind}`) }}</h3>
+        <h3>
+          {{ t(tasks.view === 'done' ? 'taskUi.completed' : `taskUi.${group.kind}`) }}
+        </h3>
         <article v-for="task in group.items" :key="task.id" class="task-row">
           <header>
             <button
@@ -97,7 +99,9 @@ useViewRefresh(() => tasks.refreshList())
               })
             }}
           </p>
-          <p v-if="task.booking.is_done" class="task-warning">{{ t('taskUi.bookingDone') }}</p>
+          <p v-if="task.booking.is_done" class="task-warning">
+            {{ t('taskUi.bookingDone') }}
+          </p>
           <TaskActions :task="task" />
         </article></section></template
     ><EmptyState

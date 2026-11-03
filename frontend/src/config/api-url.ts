@@ -60,7 +60,11 @@ export function resolveWsUrl(
 }
 
 export function resolveEndpoints(
-  env: { VITE_API_URL?: string; VITE_API_BASE_URL?: string; VITE_WS_URL?: string },
+  env: {
+    VITE_API_URL?: string
+    VITE_API_BASE_URL?: string
+    VITE_WS_URL?: string
+  },
   production: boolean,
 ) {
   const apiUrl = resolveApiBaseUrl(

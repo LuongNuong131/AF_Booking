@@ -9,7 +9,11 @@ import { user, KEY, event, task } from '../test/bookingFixtures'
 import type { TaskDueData } from '../types/api.generated'
 
 function due(t = task()): TaskDueData {
-  return { task: t, notification_id: 10, created_at: '2026-11-03T08:00:00.000Z' }
+  return {
+    task: t,
+    notification_id: 10,
+    created_at: '2026-11-03T08:00:00.000Z',
+  }
 }
 beforeEach(() => {
   vi.useFakeTimers()
@@ -59,7 +63,9 @@ it('optimistically completes, then restores on error while preserving a booking 
         fail = reject
       }),
   )
-  vi.spyOn(api, 'get').mockResolvedValue({ data: { items: [task()], total: 1 } })
+  vi.spyOn(api, 'get').mockResolvedValue({
+    data: { items: [task()], total: 1 },
+  })
   const store = useTasksStore()
   store.setDueTasks([task()])
   store.incoming(due())
@@ -68,7 +74,10 @@ it('optimistically completes, then restores on error while preserving a booking 
   expect(store.dueCount).toBe(0)
   expect(store.records[1]?.status).toBe('done')
   store.bookingUpdated(event(2, 5))
-  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const config = {
+    method: 'post',
+    headers: new AxiosHeaders(),
+  } as InternalAxiosRequestConfig
   fail(new AxiosError('offline', 'ERR_NETWORK', config))
   expect(await changing).toBe(false)
   expect(store.records[1]?.status).toBe('pending')
@@ -108,14 +117,21 @@ it('blocks double actions and never resurrects a completed task from a delayed d
   expect(store.noteSuggestion).toBe(KEY)
 })
 it('reuses a create UUID on manual retry and sends local date/time only', async () => {
-  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const config = {
+    method: 'post',
+    headers: new AxiosHeaders(),
+  } as InternalAxiosRequestConfig
   const post = vi
     .spyOn(api, 'post')
     .mockRejectedValueOnce(new AxiosError('timeout', 'ECONNABORTED', config))
     .mockResolvedValueOnce({ data: task() })
   const store = useTasksStore(),
     ctx = { signal: new AbortController().signal, timeoutMs: 10000 },
-    body = { remind_date: '2026-11-04', remind_time: '09:00', message: 'Check mail' }
+    body = {
+      remind_date: '2026-11-04',
+      remind_time: '09:00',
+      message: 'Check mail',
+    }
   await store.create(ctx, KEY, body).catch(() => {})
   await store.create(ctx, KEY, body)
   expect(post.mock.calls[0]?.[1]).toEqual(post.mock.calls[1]?.[1])
@@ -137,7 +153,9 @@ it('retries an active page read interrupted by a due event without polling', asy
       return new Promise((done) => {
         finish = done
       })
-    return Promise.resolve({ data: { items: [task()], total: 1, page: 1, size: 10 } })
+    return Promise.resolve({
+      data: { items: [task()], total: 1, page: 1, size: 10 },
+    })
   })
   const store = useTasksStore()
   store.setListActive(true)

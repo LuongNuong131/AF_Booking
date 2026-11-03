@@ -6,7 +6,7 @@ Summary and booking detail, including lookup, history, note entry, drafts, confl
 review and live tables. See [booking-workspace.md](booking-workspace.md) for the workflow.
 Prompt 7B implements reminder task UI, due alerts and persisted Profile preferences;
 see [tasks.md](tasks.md). Prompt 7C adds smart search and folder navigation, documented
-in [smart-search.md](smart-search.md). Profile also shows the authenticated account and local theme preference. Admin and Reports have guards and shell routes only.
+in [smart-search.md](smart-search.md). Prompt 8 implements full Admin/QC/Profile screens; see [admin-qc-profile.md](admin-qc-profile.md). Prompt 8B adds the durable optimistic note outbox and performance work; see [performance-8b.md](performance-8b.md).
 
 ## Development and build
 
@@ -102,8 +102,7 @@ Axios receives the remaining deadline. Starting another request cancels its pred
 request generations discard late results. Timers and button state clear in `finally`.
 Only explicitly enabled, proven GET network/503/504 failures retry, once, after
 300–500 ms jitter and the larger `Retry-After` delay. Retry stays within the original
-deadline. POST/PATCH/DELETE/PUT never auto-retry. Note outbox replay is reserved for
-Prompt 8B and must retain its original request UUID.
+deadline. Generic POST/PATCH/DELETE/PUT calls never auto-retry. Prompt 8B owns note replay in its durable outbox, retaining its original UUID. See [performance-8b.md](performance-8b.md).
 
 Route loading ends after 20 seconds with a nonblocking Retry banner, including on
 initial lazy-load failure. A tab hidden for at least 60 seconds emits a refresh request.

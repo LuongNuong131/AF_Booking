@@ -1,0 +1,431 @@
+{
+  "database_version": "8.0.46",
+  "fixture": {
+    "folders": 2000,
+    "bookings": 50000
+  },
+  "method": "Warm sequential in-process ASGI requests, one worker, real verified-TLS loopback DB. Includes auth cache, classification, SQL and serialization; excludes public HTTP/hosting latency. Three warmups and 60 samples per query.",
+  "target_p95_ms": 100,
+  "index_load_ms": 980.205,
+  "measurements": [
+    {
+      "query": "CW5000000-YUL-2501",
+      "samples": 60,
+      "p50_ms": 0.956,
+      "p95_ms": 1.253,
+      "max_ms": 1.503
+    },
+    {
+      "query": "CW9999999-YUL-2501",
+      "samples": 60,
+      "p50_ms": 0.948,
+      "p95_ms": 1.47,
+      "max_ms": 2.298
+    },
+    {
+      "query": "CW5000000-2501",
+      "samples": 60,
+      "p50_ms": 1.305,
+      "p95_ms": 3.47,
+      "max_ms": 4.295
+    },
+    {
+      "query": "CW5000000",
+      "samples": 60,
+      "p50_ms": 11.338,
+      "p95_ms": 15.926,
+      "max_ms": 43.099
+    },
+    {
+      "query": "CW500",
+      "samples": 60,
+      "p50_ms": 11.855,
+      "p95_ms": 16.575,
+      "max_ms": 18.635
+    },
+    {
+      "query": "YUL",
+      "samples": 60,
+      "p50_ms": 14.469,
+      "p95_ms": 19.942,
+      "max_ms": 152.323
+    },
+    {
+      "query": "YUL-2501",
+      "samples": 60,
+      "p50_ms": 11.839,
+      "p95_ms": 15.715,
+      "max_ms": 19.378
+    },
+    {
+      "query": "double tree",
+      "samples": 60,
+      "p50_ms": 15.156,
+      "p95_ms": 21.526,
+      "max_ms": 28.069
+    },
+    {
+      "query": "tree doub",
+      "samples": 60,
+      "p50_ms": 18.414,
+      "p95_ms": 26.632,
+      "max_ms": 34.795
+    },
+    {
+      "query": "hotel yul",
+      "samples": 60,
+      "p50_ms": 14.899,
+      "p95_ms": 20.616,
+      "max_ms": 22.964
+    }
+  ],
+  "plans": {
+    "folder_aggregate": [
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "booking_groups",
+        "partitions": null,
+        "type": "range",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": null,
+        "rows": 20,
+        "filtered": 100.0,
+        "Extra": "Using where"
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "<derived2>",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "<auto_key0>",
+        "key": "<auto_key0>",
+        "key_len": "8",
+        "ref": "booking_schema_24ffd86b1fa3_test.booking_groups.id",
+        "rows": 11,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "latest",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "folder_stats.latest_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "statuses",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "booking_schema_24ffd86b1fa3_test.latest.last_status_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "users",
+        "partitions": null,
+        "type": "ALL",
+        "possible_keys": "PRIMARY",
+        "key": null,
+        "key_len": null,
+        "ref": null,
+        "rows": 3,
+        "filtered": 100.0,
+        "Extra": "Using where; Using join buffer (hash join)"
+      },
+      {
+        "id": 2,
+        "select_type": "DERIVED",
+        "table": "bookings",
+        "partitions": null,
+        "type": "range",
+        "possible_keys": "ix_bookings_group_period",
+        "key": "ix_bookings_group_period",
+        "key_len": "8",
+        "ref": null,
+        "rows": 500,
+        "filtered": 100.0,
+        "Extra": "Using index condition"
+      },
+      {
+        "id": 2,
+        "select_type": "DERIVED",
+        "table": "activity_status",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "booking_schema_24ffd86b1fa3_test.bookings.last_status_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      }
+    ],
+    "station_folders": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_groups",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_booking_groups_station_type_activity",
+        "key": "ix_booking_groups_station_type_activity",
+        "key_len": "7",
+        "ref": "const,const",
+        "rows": 250,
+        "filtered": 100.0,
+        "Extra": "Backward index scan; Using index"
+      }
+    ],
+    "station_period": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_station_period",
+        "key": "ix_bookings_station_period",
+        "key_len": "10",
+        "ref": "const,const",
+        "rows": 500,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ]
+  },
+  "lookup_after": {
+    "measurements": [
+      {
+        "query": "CW5000000-YUL-2501",
+        "samples": 60,
+        "p50_ms": 6.299,
+        "p95_ms": 8.09,
+        "p99_ms": 11.645
+      },
+      {
+        "query": "CW9999999-YUL-2501",
+        "samples": 60,
+        "p50_ms": 0.939,
+        "p95_ms": 1.369,
+        "p99_ms": 95.846
+      },
+      {
+        "query": "CW5000000-2501",
+        "samples": 60,
+        "p50_ms": 5.93,
+        "p95_ms": 7.248,
+        "p99_ms": 11.017
+      },
+      {
+        "query": "cw 5000000 - yul - 2501",
+        "samples": 60,
+        "p50_ms": 6.544,
+        "p95_ms": 9.679,
+        "p99_ms": 11.763
+      }
+    ],
+    "index_load_ms": 932.653,
+    "index_retained_bytes_estimate": 33524394,
+    "snapshot_cache": {
+      "hits": 188,
+      "misses": 1,
+      "hit_ratio": 0.9947,
+      "ttl_seconds": 30.0,
+      "capacity": 2000
+    },
+    "plans": {
+      "full_key": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "const",
+          "possible_keys": "booking_key",
+          "key": "booking_key",
+          "key_len": "34",
+          "ref": "const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": "Using index"
+        }
+      ],
+      "partial_key": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "ix_bookings_cw_period",
+          "key": "ix_bookings_cw_period",
+          "key_len": "18",
+          "ref": "const,const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": null
+        }
+      ],
+      "summary_recent": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "index",
+          "possible_keys": null,
+          "key": "ix_bookings_updated_at",
+          "key_len": "15",
+          "ref": null,
+          "rows": 20,
+          "filtered": 100.0,
+          "Extra": "Backward index scan"
+        }
+      ],
+      "summary_mine": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "ix_bookings_agent_updated",
+          "key": "ix_bookings_agent_updated",
+          "key_len": "9",
+          "ref": "const",
+          "rows": 24804,
+          "filtered": 100.0,
+          "Extra": "Backward index scan"
+        }
+      ]
+    }
+  },
+  "lookup_before": {
+    "measurements": [
+      {
+        "query": "CW5000000-YUL-2501",
+        "samples": 60,
+        "p50_ms": 5.269,
+        "p95_ms": 7.592,
+        "p99_ms": 11.743
+      },
+      {
+        "query": "CW9999999-YUL-2501",
+        "samples": 60,
+        "p50_ms": 0.773,
+        "p95_ms": 0.968,
+        "p99_ms": 1.696
+      },
+      {
+        "query": "CW5000000-2501",
+        "samples": 60,
+        "p50_ms": 5.156,
+        "p95_ms": 6.376,
+        "p99_ms": 7.277
+      },
+      {
+        "query": "cw 5000000 - yul - 2501",
+        "samples": 60,
+        "p50_ms": 5.356,
+        "p95_ms": 7.508,
+        "p99_ms": 11.816
+      }
+    ],
+    "index_load_ms": 929.365,
+    "index_retained_bytes_estimate": 33524394,
+    "snapshot_cache": {
+      "hits": 188,
+      "misses": 1,
+      "hit_ratio": 0.9947,
+      "ttl_seconds": 30.0,
+      "capacity": 2000
+    },
+    "plans": {
+      "full_key": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "const",
+          "possible_keys": "booking_key",
+          "key": "booking_key",
+          "key_len": "34",
+          "ref": "const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": "Using index"
+        }
+      ],
+      "partial_key": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "ix_bookings_cw_period",
+          "key": "ix_bookings_cw_period",
+          "key_len": "18",
+          "ref": "const,const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": null
+        }
+      ],
+      "summary_recent": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "index",
+          "possible_keys": null,
+          "key": "ix_bookings_updated_at",
+          "key_len": "15",
+          "ref": null,
+          "rows": 20,
+          "filtered": 100.0,
+          "Extra": "Backward index scan"
+        }
+      ],
+      "summary_mine": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "ix_bookings_agent_updated",
+          "key": "ix_bookings_agent_updated",
+          "key_len": "9",
+          "ref": "const",
+          "rows": 24804,
+          "filtered": 100.0,
+          "Extra": "Backward index scan"
+        }
+      ]
+    }
+  },
+  "lookup_baseline_commit": "d640d851a6221a8e7ccef92215b0a11e0efb7096"
+}

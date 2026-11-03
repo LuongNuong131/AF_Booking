@@ -4,7 +4,10 @@ import { effectScope } from 'vue'
 import { useRequest } from './useRequest'
 
 function failure(method = 'get', status?: number, retryAfter?: string) {
-  const config = { method, headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const config = {
+    method,
+    headers: new AxiosHeaders(),
+  } as InternalAxiosRequestConfig
   return new AxiosError(
     'Test failure',
     status ? 'ERR_BAD_RESPONSE' : 'ERR_NETWORK',
@@ -40,7 +43,10 @@ afterEach(() => {
 describe('useRequest bounded lifecycle', () => {
   it('becomes slow and times out even if the transport ignores abort; ignores late data', async () => {
     const deferredResult = deferred<string>()
-    const request = useRequest(() => deferredResult.promise, { timeoutMs: 8000, slowMs: 3000 })
+    const request = useRequest(() => deferredResult.promise, {
+      timeoutMs: 8000,
+      slowMs: 3000,
+    })
     const run = request.run()
     await vi.advanceTimersByTimeAsync(3000)
     expect(request.state.value).toBe('slow')

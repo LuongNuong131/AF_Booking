@@ -111,6 +111,8 @@ class StationService:
                 session,
                 "station_updated",
                 actor_id=user.id,
+                entity_type="station",
+                entity_id=code,
                 context=context,
                 meta={"station_code": code},
             )

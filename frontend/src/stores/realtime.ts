@@ -60,7 +60,10 @@ export const useRealtimeStore = defineStore('realtime', () => {
   }
   function release(): void {
     if (activeBookingKey.value)
-      sender?.({ event: 'lock.release', data: { booking_key: activeBookingKey.value } })
+      sender?.({
+        event: 'lock.release',
+        data: { booking_key: activeBookingKey.value },
+      })
     activeBookingKey.value = null
   }
   function reset(): void {

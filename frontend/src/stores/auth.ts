@@ -34,11 +34,16 @@ export const useAuthStore = defineStore('auth', () => {
   const restoreRequest = useRequest(
     async ({ signal, timeoutMs }) =>
       parseUser((await api.get<unknown>('/auth/me', { signal, timeout: timeoutMs })).data),
-    { timeoutMs: timeouts.profile },
+    { timeoutMs: timeouts.profile, retry: true },
   )
   const logoutRequest = useRequest(
     async ({ signal, timeoutMs }) =>
-      (await api.post('/auth/logout', undefined, { signal, timeout: timeoutMs })).data as unknown,
+      (
+        await api.post('/auth/logout', undefined, {
+          signal,
+          timeout: timeoutMs,
+        })
+      ).data as unknown,
     { timeoutMs: timeouts.profile },
   )
 

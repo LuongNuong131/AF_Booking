@@ -25,7 +25,9 @@ async function retryRoute() {
 <template>
   <div v-if="ui.routeFailed" class="route-retry global-route-retry" role="alert">
     <span>{{ t('route.slow') }}</span
-    ><button type="button" class="text-button" @click="retryRoute">{{ t('route.retry') }}</button>
+    ><button type="button" class="text-button" @click="retryRoute">
+      {{ t('route.retry') }}
+    </button>
   </div>
   <ErrorBoundary :reset-key="route.fullPath"
     ><RouterView v-if="route.meta.public || auth.isAuthenticated" />

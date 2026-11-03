@@ -227,6 +227,8 @@ class TaskService:
                 session,
                 "task_created",
                 actor_id=user.id,
+                entity_type="task",
+                entity_id=str(task.id),
                 context=context,
                 meta={"task_id": task.id},
             )
@@ -300,6 +302,8 @@ class TaskService:
                 session,
                 "task_" + operation,
                 actor_id=user.id,
+                entity_type="task",
+                entity_id=str(task.id),
                 context=context,
                 meta={"task_id": task.id},
             )

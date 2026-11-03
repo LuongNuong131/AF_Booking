@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { recordApi } from '../runtime/performance'
 import { timeouts } from '../config/timeouts'
 import { resolveEndpoints } from '../config/api-url'
 import { isApiError } from './errors'
@@ -19,7 +20,10 @@ api.interceptors.request.use((config) => {
   return config
 })
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    recordApi(response.config.url ?? '', response.headers['server-timing'])
+    return response
+  },
   (error: unknown) => {
     if (axios.isAxiosError(error) && !error.config?.skipAuth) {
       const sent = error.config?.sessionIdentity

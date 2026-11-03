@@ -81,15 +81,20 @@ async def profile(body: ProfilePatch, request: Request, user: Actor):
             await session.scalar(select(User).where(User.id == user.id).with_for_update()), user
         )
         values = effective_settings(live.settings, request.app.state.settings.business_timezone)
-        values.update(body.settings.model_dump(exclude_unset=True, exclude_none=True))
+        if body.settings:
+            values.update(body.settings.model_dump(exclude_unset=True, exclude_none=True))
         live.settings = values
+        if body.full_name is not None:
+            live.full_name = body.full_name
         record_audit(
             session,
             "profile_updated",
             actor_id=user.id,
             target_user_id=user.id,
             context=AuditContext.from_request(request),
-            meta={"fields": list(body.settings.model_fields_set)},
+            meta={"fields": list(body.model_fields_set)},
         )
         result = CurrentUser.from_model(live).public()
+    if body.full_name is not None:
+        request.app.state.admin.catalog("users")
     return result

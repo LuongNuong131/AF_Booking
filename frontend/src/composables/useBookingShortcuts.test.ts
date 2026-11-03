@@ -49,7 +49,12 @@ it('scopes shortcuts to the booking input, ignores IME/unrelated fields, and res
     { global: { plugins: [pinia] } },
   )
   const press = (target: HTMLElement, key: string, init: KeyboardEventInit = {}) => {
-    const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init })
+    const event = new KeyboardEvent('keydown', {
+      key,
+      bubbles: true,
+      cancelable: true,
+      ...init,
+    })
     target.dispatchEvent(event)
     return event
   }

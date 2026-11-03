@@ -11,7 +11,12 @@ export function normalizeRequestError(error: unknown): RequestFailure {
       retryAfterMs: parseRetryAfter(error.response?.headers?.['retry-after']),
     }
     if (isApiError(body))
-      return { ...common, code: body.code, message: body.message, details: body.details }
+      return {
+        ...common,
+        code: body.code,
+        message: body.message,
+        details: body.details,
+      }
     if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT')
       return { ...common, code: 'REQUEST_TIMEOUT', message: '' }
     if (axios.isCancel(error)) return { ...common, code: 'CANCELLED', message: '' }

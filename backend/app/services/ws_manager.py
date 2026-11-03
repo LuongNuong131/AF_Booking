@@ -49,6 +49,8 @@ class WebSocketManager:
         self._all: dict[str, Connection] = {}
         self._background: set[asyncio.Task] = set()
         self.stopping = False
+        self._booking_batch: dict[str, dict] = {}
+        self._batch_task: asyncio.Task | None = None
         self.clock = time.monotonic
         self.locks = LockManager(self.emit, settings.lock_ttl_seconds)
 
@@ -90,7 +92,21 @@ class WebSocketManager:
 
     async def broadcast(self, event: str, payload: dict) -> None:
         # No network await here: a blocked writer can only delay its own client.
+        if event == "booking.updated":
+            key = payload["booking_key"]
+            previous = self._booking_batch.get(key)
+            if previous is None or payload["version"] > previous["version"]:
+                self._booking_batch[key] = payload
+            if self._batch_task is None or self._batch_task.done():
+                self._batch_task = asyncio.create_task(self._flush_bookings())
+            return
         self.emit(event, payload)
+
+    async def _flush_bookings(self) -> None:
+        await asyncio.sleep(0.1)
+        batch, self._booking_batch = self._booking_batch, {}
+        for payload in batch.values():
+            self.emit("booking.updated", payload)
 
     async def send_user(self, user_id: int, event: str, payload: dict) -> None:
         self.emit(event, payload, user_id)
@@ -268,6 +284,10 @@ class WebSocketManager:
 
     async def stop(self) -> None:
         self.stopping = True
+        if self._batch_task is not None:
+            self._batch_task.cancel()
+            await asyncio.gather(self._batch_task, return_exceptions=True)
+        self._booking_batch.clear()
         connections = list(self._all.values())
         for connection in connections:
             self.retire(connection, 1001)

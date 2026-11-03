@@ -51,12 +51,18 @@ export function parseServerFrame(raw: unknown): WebSocketServerFrame | null {
         string(d.cw_number) &&
         string(d.station_code) &&
         id(d.version) &&
-        id(d.last_agent_id) &&
-        string(d.last_agent_name) &&
-        string(d.status_code) &&
-        string(d.position) &&
+        ((d.last_agent_id === null && d.last_agent_name === null) ||
+          (id(d.last_agent_id) && string(d.last_agent_name))) &&
+        (d.status_code === null || string(d.status_code)) &&
+        (d.position === null || string(d.position)) &&
+        (d.snapshot_rebuilt === undefined || typeof d.snapshot_rebuilt === 'boolean') &&
         timestamp(d.updated_at) &&
         typeof d.is_done === 'boolean'
+      break
+    case 'catalog.updated':
+      valid =
+        ['users', 'statuses'].includes(String(d.resource)) &&
+        typeof d.snapshots_changed === 'boolean'
       break
     case 'task.due':
       valid =

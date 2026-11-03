@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
@@ -12,7 +12,11 @@ import NotificationBell from '../components/NotificationBell.vue'
 import ThemeMenu from '../components/ThemeMenu.vue'
 import ShortcutHelp from '../components/ShortcutHelp.vue'
 import TaskOverlays from '../components/TaskOverlays.vue'
+import OutboxPanel from '../components/OutboxPanel.vue'
 import ErrorBoundary from '../components/ErrorBoundary.vue'
+const DevPerformance = import.meta.env.DEV
+  ? defineAsyncComponent(() => import('../components/DevPerformance.vue'))
+  : null
 const { t } = useI18n()
 const auth = useAuthStore(),
   ui = useUiStore(),
@@ -53,7 +57,10 @@ async function logout() {
           class="nav-item"
           :class="{
             active:
-              route.name === link.name || (link.name === 'summary' && route.name === 'booking'),
+              route.name === link.name ||
+              (link.name === 'summary' &&
+                ['booking', 'summary-folder'].includes(String(route.name))) ||
+              (link.name === 'admin' && String(route.name).startsWith('admin-')),
           }"
           @click="mobileOpen = false"
           ><BaseIcon :name="link.icon" /><span>{{ t(`nav.${link.name}`) }}</span></RouterLink
@@ -87,7 +94,7 @@ async function logout() {
           >
         </div>
         <div class="header-actions">
-          <ThemeMenu /><button
+          <OutboxPanel /><ThemeMenu /><button
             type="button"
             class="icon-button desktop-help"
             :aria-label="t('shortcuts.open')"
@@ -122,6 +129,6 @@ async function logout() {
       </main>
     </div>
     <ShortcutHelp />
-    <TaskOverlays />
+    <component :is="DevPerformance" v-if="DevPerformance" /><TaskOverlays />
   </div>
 </template>

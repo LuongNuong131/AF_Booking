@@ -32,7 +32,9 @@ function open(days = props.days ?? 1) {
 </script>
 <template>
   <aside v-if="visible" class="task-suggestion-bar" :class="{ strong }" role="status">
-    <button type="button" class="text-button" @click="open()">{{ t('task_prompt') }}</button>
+    <button type="button" class="text-button" @click="open()">
+      {{ t('task_prompt') }}
+    </button>
     <div>
       <button
         v-for="days in [1, 2, 3, 5, 7]"

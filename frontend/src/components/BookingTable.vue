@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { computed, toRef, onScopeDispose } from 'vue'
+import { useVirtualList } from '@vueuse/core'
+import { useBookingsStore } from '../stores/bookings'
+import { useRequest } from '../composables/useRequest'
+import { timeouts } from '../config/timeouts'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { formatDateTime } from '../utils/dateTime'
@@ -8,8 +13,29 @@ import StatusTag from './StatusTag.vue'
 import EmptyState from './EmptyState.vue'
 const { t } = useI18n(),
   auth = useAuthStore()
-defineProps<{ rows: BookingItem[]; loading?: boolean }>()
+const props = defineProps<{ rows: BookingItem[]; loading?: boolean }>()
 defineEmits<{ open: [key: string] }>()
+const { list, containerProps } = useVirtualList(toRef(props, 'rows'), {
+  itemHeight: 100,
+  overscan: 3,
+})
+const shown = computed(() => (props.rows.length > 50 ? list.value.map((v) => v.data) : props.rows))
+const store = useBookingsStore()
+const prefetch = useRequest((ctx, key: string) => store.lookup(ctx, key), {
+  timeoutMs: timeouts.lookup,
+})
+let hoverTimer: ReturnType<typeof setTimeout> | undefined
+function hover(key: string) {
+  clearTimeout(hoverTimer)
+  hoverTimer = setTimeout(() => {
+    void import('../views/BookingDetailView.vue')
+    void prefetch.run(key)
+  }, 150)
+}
+function leave() {
+  clearTimeout(hoverTimer)
+}
+onScopeDispose(leave)
 const columns = [
   'booking',
   'supplier',
@@ -24,7 +50,12 @@ const columns = [
 ]
 </script>
 <template>
-  <div class="booking-table-wrap" :aria-busy="loading">
+  <div
+    class="booking-table-wrap"
+    :class="{ 'table-virtual': rows.length > 50 }"
+    v-bind="rows.length > 50 ? containerProps : {}"
+    :aria-busy="loading"
+  >
     <div
       v-if="loading && !rows.length"
       class="skeleton-table"
@@ -47,7 +78,23 @@ const columns = [
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in rows" :key="row.booking_key" @click="$emit('open', row.booking_key)">
+        <tr
+          v-if="rows.length > 50 && list[0]?.index"
+          aria-hidden="true"
+          :style="{ height: `${list[0]!.index * 100}px` }"
+        >
+          <td :colspan="columns.length" style="padding: 0; border: 0" />
+        </tr>
+        <tr
+          v-for="row in shown"
+          :key="row.booking_key"
+          v-memo="[row, auth.timezone]"
+          @mouseenter="hover(row.booking_key)"
+          @mouseleave="leave"
+          @focusin="hover(row.booking_key)"
+          @focusout="leave"
+          @click="$emit('open', row.booking_key)"
+        >
           <td>
             <button
               type="button"
@@ -78,6 +125,15 @@ const columns = [
               formatDateTime(row.updated_at, auth.timezone)
             }}</time>
           </td>
+        </tr>
+        <tr
+          v-if="rows.length > 50"
+          aria-hidden="true"
+          :style="{
+            height: `${Math.max(0, rows.length - (list.at(-1)?.index ?? -1) - 1) * 100}px`,
+          }"
+        >
+          <td :colspan="columns.length" style="padding: 0; border: 0" />
         </tr>
       </tbody>
     </table>

@@ -32,16 +32,14 @@ async function render() {
   await flushPromises()
 }
 function basicMock() {
-  return vi
-    .spyOn(api, 'get')
-    .mockImplementation(async (url) => ({
-      data:
-        url === '/statuses'
-          ? statuses
-          : url === '/users/lookup'
-            ? []
-            : { items: [], total: 0, page: 1, size: 20 },
-    }))
+  return vi.spyOn(api, 'get').mockImplementation(async (url) => ({
+    data:
+      url === '/statuses'
+        ? statuses
+        : url === '/users/lookup'
+          ? []
+          : { items: [], total: 0, page: 1, size: 20 },
+  }))
 }
 it('does not navigate back or send a debounced request after leaving the page', async () => {
   const get = basicMock()
@@ -69,7 +67,9 @@ it('cancels immediately when typing, debounces the URL and ignores an older list
         finish = done
       })
     }
-    return Promise.resolve({ data: { items: [item(2)], total: 1, page: 1, size: 20 } })
+    return Promise.resolve({
+      data: { items: [item(2)], total: 1, page: 1, size: 20 },
+    })
   })
   await render()
   await wrapper!.get('input[placeholder^="Search booking"]').setValue('Hotel')

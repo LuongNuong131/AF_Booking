@@ -29,6 +29,8 @@ export function useSmartSearch(w: Workspace, opened: (key: string) => void) {
     disposed = false,
     pendingKey = '',
     opening: Promise<boolean> | null = null
+  let lastOpened = '',
+    lastOpenedAt = 0
   const request = useRequest(
     (ctx, q: string, p: number, force: boolean = false) => store.readSearch(ctx, q, p, force),
     { timeoutMs: timeouts.search, retry: true },
@@ -89,6 +91,8 @@ export function useSmartSearch(w: Workspace, opened: (key: string) => void) {
       await w.open(value)
       if (disposed || level.value !== 'booking' || pendingKey !== normalized) return false
       markOpened()
+      lastOpened = normalized
+      lastOpenedAt = Date.now()
       return !!w.key
     })()
     opening = active
@@ -108,7 +112,7 @@ export function useSmartSearch(w: Workspace, opened: (key: string) => void) {
     w.lookupRequest.cancel()
     w.validation = ''
     if (classified.kind === 'full_key' || classified.kind === 'partial_key') {
-      void openBooking(w.input)
+      timer = setTimeout(() => void openBooking(w.input), 150)
       return
     }
     if (classified.kind === 'none' && w.input.trim()) {
@@ -138,6 +142,12 @@ export function useSmartSearch(w: Workspace, opened: (key: string) => void) {
         markOpened()
         return
       }
+      if (
+        lastOpened === normalizeBookingKey(w.input) &&
+        Date.now() - lastOpenedAt < 10000 &&
+        (w.key || w.resolution)
+      )
+        return
       await openBooking(w.input, false)
       return
     }

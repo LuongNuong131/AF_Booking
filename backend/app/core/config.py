@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     stale_job_batch_size: int = Field(default=100, ge=1, le=500)
     lookup_timeout_seconds: float = Field(default=6, gt=0, le=60)
     note_save_timeout_seconds: float = Field(default=12, gt=0, le=60)
+    export_booking_key_style: Literal["display", "canonical"] = "display"
     export_timeout_seconds: float = Field(default=55, gt=0, le=300)
     search_db_timeout_seconds: float = Field(default=3, gt=0, le=3)
     search_max_requests: int = Field(default=120, ge=1, le=10000)

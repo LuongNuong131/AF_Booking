@@ -133,3 +133,11 @@ and verified database settings; start Vite as in frontend.md.
 Automated coverage includes these two-browser flows against disposable TLS TiDB,
 plus unit tests for deadlines, drafts, UUID retries, cache/session invalidation,
 request/realtime races, pagination, filters and unmount cleanup. See testing.md.
+
+
+Prompt 8B supersedes the original synchronous Save behavior: the durable outbox persists
+before clearing the form, shows pending timeline/snapshot/My bookings previews, and
+retries temporary failures with the same UUID. Offline Save is enabled after validation.
+Business conflicts roll back and restore text for review. Task suggestions appear after
+the server commits, while focus returns to search immediately on queueing. See
+[performance-8b.md](performance-8b.md) for recovery/cache/performance details.

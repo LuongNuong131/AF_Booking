@@ -183,8 +183,12 @@ onMounted(() => {
           maxlength="255"
           :placeholder="t('taskUi.defaultMessage')"
       /></label>
-      <p v-if="when" class="task-confirmation" role="status">{{ t('task_when', when) }}</p>
-      <p v-if="validation" class="field-error" role="alert">{{ t(validation) }}</p>
+      <p v-if="when" class="task-confirmation" role="status">
+        {{ t('task_when', when) }}
+      </p>
+      <p v-if="validation" class="field-error" role="alert">
+        {{ t(validation) }}
+      </p>
       <button type="submit" class="button primary" :disabled="busy || !!validation">
         {{ t(busy ? 'taskUi.saving' : editingId ? 'taskUi.saveChanges' : 'taskUi.create') }}</button
       ><RequestStatus
@@ -225,7 +229,9 @@ onMounted(() => {
           </button>
         </div>
       </article>
-      <p v-if="pending.length >= 5" class="booking-warning">{{ t('taskUi.limit') }}</p>
+      <p v-if="pending.length >= 5" class="booking-warning">
+        {{ t('taskUi.limit') }}
+      </p>
     </section></ElDialog
   >
 </template>

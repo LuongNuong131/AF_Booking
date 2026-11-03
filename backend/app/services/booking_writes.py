@@ -223,7 +223,7 @@ class BookingWrites:
                                 message="Assignments are not enabled yet.",
                             )
                         status = await session.scalar(
-                            select(Status).where(Status.code == body.status_code)
+                            select(Status).where(Status.code == body.status_code).with_for_update()
                         )
                         if status is None or not status.is_active:
                             raise ApiException(ErrorCode.STATUS_INACTIVE)
@@ -353,6 +353,8 @@ class BookingWrites:
                             session,
                             "booking_note_created",
                             actor_id=user.id,
+                            entity_type="note",
+                            entity_id=str(note.id),
                             context=context,
                             meta={
                                 "booking_key": booking.booking_key,
@@ -472,6 +474,8 @@ class BookingWrites:
                     session,
                     "folder_updated",
                     actor_id=user.id,
+                    entity_type="booking",
+                    entity_id=cw,
                     context=context,
                     meta={"cw_number": cw},
                 )

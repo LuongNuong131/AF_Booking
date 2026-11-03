@@ -11,6 +11,7 @@ from pydantic import TypeAdapter
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
 
+from app.schemas.admin import ADMIN_MODELS  # noqa: E402
 from app.schemas.auth import AUTH_MODELS  # noqa: E402
 from app.schemas.bookings import BOOKING_MODELS  # noqa: E402
 from app.schemas.contracts import CONTRACT_ENUMS, CONTRACT_MODELS, ErrorCode  # noqa: E402
@@ -64,6 +65,7 @@ def generate() -> str:
     for model in (
         *CONTRACT_MODELS,
         *AUTH_MODELS,
+        *ADMIN_MODELS,
         *BOOKING_MODELS,
         *FOLDER_MODELS,
         *REALTIME_MODELS,

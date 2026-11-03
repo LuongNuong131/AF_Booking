@@ -38,7 +38,11 @@ export const useTasksStore = defineStore('tasks', () => {
     } | null>(null)
   const noteSuggestion = ref<string | null>(null),
     rightTab = ref<'bookings' | 'tasks'>('bookings')
-  const openBookingRequest = ref<{ key: string; note: boolean; seq: number } | null>(null)
+  const openBookingRequest = ref<{
+    key: string
+    note: boolean
+    seq: number
+  } | null>(null)
   const actionError = ref<RequestFailure | null>(null),
     busyIds = ref<number[]>([])
   const dirty = ref(false)
@@ -283,7 +287,10 @@ export const useTasksStore = defineStore('tasks', () => {
       revision++
       if (!result) {
         if (suppressOld && !wasSuppressed) suppressed.delete(oldStamp)
-        merge({ ...before, booking: records.value[task.id]?.booking ?? before.booking })
+        merge({
+          ...before,
+          booking: records.value[task.id]?.booking ?? before.booking,
+        })
         if (removedDue && !dueIds.value.includes(task.id)) {
           dueIds.value.push(task.id)
           dueCount.value++
@@ -358,8 +365,16 @@ export const useTasksStore = defineStore('tasks', () => {
     for (const task of Object.values(records.value))
       if (task.booking_key === event.booking_key && task.booking.updated_at < event.updated_at) {
         task.booking = {
-          last_status: { code: event.status_code, label: useBookingsStatus(event.status_code) },
-          last_agent: { id: event.last_agent_id, full_name: event.last_agent_name },
+          last_status: event.status_code
+            ? {
+                code: event.status_code,
+                label: useBookingsStatus(event.status_code),
+              }
+            : null,
+          last_agent:
+            event.last_agent_id && event.last_agent_name
+              ? { id: event.last_agent_id, full_name: event.last_agent_name }
+              : null,
           is_done: event.is_done,
           updated_at: event.updated_at,
         }

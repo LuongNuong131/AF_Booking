@@ -241,3 +241,44 @@ BOOKING_CHROMIUM_PATH=/usr/bin/chromium BOOKING_E2E_ARTIFACTS=/tmp/booking-brows
 
 No migration or dependency change is required; head remains 0003. Manual checks and
 implementation boundaries: [smart-search.md](smart-search.md).
+
+## Prompts 8 and 8B
+
+Backend unit coverage includes safe export cells/business-day DST boundaries, warmup
+IP limiting, timing, coalesced versions and the prior authorization/request/cache tests.
+The ordinary run passes 135 tests and skips 105 tests that need separately configured
+databases/browser services. Skips are not counted as integration passes.
+
+The disposable TLS suites on **each** MySQL 8.0.46 and TiDB 8.5.0 pass:
+
+| Suite | Tests | Main coverage |
+| --- | ---: | --- |
+| auth | 16 | login, revocation, single SID, ACL and password hashing |
+| booking | 27 | canonical keys, notes/version/idempotency, lists and SQL/cache boundaries |
+| tasks | 4 | private scheduling/due/snooze/limits and creation replay |
+| realtime | 20 | real sockets, locks, private notifications, stale jobs and ordering-independent coalescing |
+| folder | 22 | query classification, supplier words/index, folder/station aggregation, ACL/ETag |
+| admin | 6 | user self-protection/kick/audit; delete/restore snapshot; dynamic statuses; timezone/columns/CSV/XLSX/formula protection; report/task privacy/profile; status ETag/auth and disconnected export connection invalidation |
+
+Run `tests/run_schema_checks.py --engine mysql --suite admin --report /tmp/admin-mysql.xml`
+from backend, repeat with TiDB and a distinct path. No real account credentials are
+required: each runner creates its own TLS DB and temporary accounts, then removes its
+container. New tests introduce no production test endpoint or default credential.
+
+Frontend Vitest passes 194 tests, including outbox persistence, UUID/backoff/order,
+business rollback, user isolation, limits/quota/cancellation; SWR LRU/ETag/old versions;
+warmup retries/disposal; Admin self-protection and Profile actions. Production strict
+TypeScript/build passes. Generated wire types, Ruff and format checks remain required.
+
+Six Chromium scripts cover authentication/theme/notifications, two-user booking
+conflicts/drafts, tasks/alerts, smart folders, Admin/QC/Profile and the durable outbox.
+The offline script queues two notes, confirms immediate previews/form clearing/focus,
+reloads with a retryable server response, then resumes online with sequential versions
+and verifies exactly three historical notes including the original. Admin browser checks
+include session kick, user access, delete/restore with realtime, live status labels,
+Supplier/Station edits, QC CSV/chart/guards, password change and mobile fit. The browser
+runner owns port 5173; do not run two browser suites simultaneously.
+
+For key/index measurements and raw before/after JSON/EXPLAIN use
+[performance-8b.md](performance-8b.md). Benchmarks use isolated local databases, not
+hosted provider latency. Current schema remains 0003; no new migration was needed.

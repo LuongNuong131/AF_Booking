@@ -12,7 +12,9 @@ describe('workspace readiness', () => {
     vi.mocked(checkServices)
       .mockResolvedValueOnce({ api: 'offline', database: 'unavailable' })
       .mockResolvedValueOnce({ api: 'online', database: 'connected' })
-    const wrapper = mount(OverviewView, { global: { plugins: [createPinia(), i18n] } })
+    const wrapper = mount(OverviewView, {
+      global: { plugins: [createPinia(), i18n] },
+    })
     await flushPromises()
     expect(wrapper.text()).toContain('The application service is unavailable.')
     await wrapper.get('button').trigger('click')

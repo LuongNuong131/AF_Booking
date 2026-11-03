@@ -52,7 +52,12 @@ export function classifyQuery(
     }
   const sp = /^([A-Z]{1,4})-([0-9]{2}(?:0[1-9]|1[0-2]))$/.exec(key)
   if (sp && pattern.test(sp[1]!))
-    return { kind: 'station_period', query: key, station_code: sp[1], period: sp[2] }
+    return {
+      kind: 'station_period',
+      query: key,
+      station_code: sp[1],
+      period: sp[2],
+    }
   if (pattern.test(query) && stations.includes(query))
     return { kind: 'station', query, station_code: query }
   if (/^CW(?:[0-9]|-|$)/.test(key) || /^[A-Z]{1,4}-[0-9]{4}$/.test(key))

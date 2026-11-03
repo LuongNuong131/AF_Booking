@@ -242,9 +242,22 @@ async def invoice_previews(session, ids: list[int]) -> dict[int, list[str]]:
     return result
 
 
+def stale_condition(settings):
+    return and_(
+        Booking.is_done.is_(False),
+        Booking.updated_at
+        <= func.timestampadd(
+            text("HOUR"),
+            -func.coalesce(Status.stale_after_hours, settings.stale_hours_default),
+            func.utc_timestamp(3),
+        ),
+    )
+
+
 class BookingReads:
     def __init__(self, engine, settings, index, cache):
         self.engine, self.settings, self.index, self.cache = engine, settings, index, cache
+        self._totals = {}
 
     def tx(self):
         return transaction(self.engine, self.settings)
@@ -571,15 +584,7 @@ class BookingReads:
         ):
             if filters.get(key):
                 conditions.append(comparison(filters[key]))
-        stale_expr = and_(
-            Booking.is_done.is_(False),
-            Booking.updated_at
-            <= func.timestampadd(
-                text("HOUR"),
-                -func.coalesce(Status.stale_after_hours, self.settings.stale_hours_default),
-                func.utc_timestamp(3),
-            ),
-        )
+        stale_expr = stale_condition(self.settings)
         if stale_only or filters.get("stale") is True:
             conditions.append(stale_expr)
         elif filters.get("stale") is False:
@@ -594,10 +599,24 @@ class BookingReads:
         if stale_only:
             order = "updated_at_asc"
         query = snapshot_query().where(*conditions)
+        count_key = (
+            self.cache.generation,
+            user_id if mine else None,
+            mine,
+            stale_only,
+            repr(sorted(filters.items())),
+        )
+        saved_total = self._totals.get(count_key)
         async with self.tx() as session:
-            total = await session.scalar(
-                select(func.count()).select_from(query.order_by(None).subquery())
-            )
+            if saved_total and saved_total[0] > time.monotonic():
+                total = saved_total[1]
+            else:
+                total = await session.scalar(
+                    select(func.count()).select_from(query.order_by(None).subquery())
+                )
+                self._totals[count_key] = (time.monotonic() + 15, total)
+                if len(self._totals) > 512:
+                    self._totals.pop(next(iter(self._totals)))
             rows = (
                 await session.execute(
                     query.order_by(*orders[order]).offset((page - 1) * size).limit(size)

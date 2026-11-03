@@ -15,7 +15,10 @@ afterEach(() => {
 it('plays optional sound after interaction and uses only previously granted notifications', async () => {
   const pinia = createPinia()
   setActivePinia(pinia)
-  useAuthStore().user = { ...user, settings: { task_sound: true, web_notifications: true } }
+  useAuthStore().user = {
+    ...user,
+    settings: { task_sound: true, web_notifications: true },
+  }
   const start = vi.fn(),
     permission = vi.fn(),
     displayed = vi.fn()
@@ -28,11 +31,19 @@ it('plays optional sound after interaction and uses only previously granted noti
       resume = vi.fn().mockResolvedValue(undefined)
       close = vi.fn().mockResolvedValue(undefined)
       createOscillator() {
-        return { frequency: { value: 0 }, connect: vi.fn(), start, stop: vi.fn() }
+        return {
+          frequency: { value: 0 },
+          connect: vi.fn(),
+          start,
+          stop: vi.fn(),
+        }
       }
       createGain() {
         return {
-          gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+          gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+          },
           connect: vi.fn(),
         }
       }
@@ -62,7 +73,10 @@ it('plays optional sound after interaction and uses only previously granted noti
     useTasksStore().setDueTasks([task()])
     await nextTick()
     expect(document.title).toContain('(1) Tasks due')
-    useAuthStore().user!.settings = { task_sound: false, web_notifications: false }
+    useAuthStore().user!.settings = {
+      task_sound: false,
+      web_notifications: false,
+    }
     alerts.alert(task())
     expect(start).toHaveBeenCalledTimes(2)
     expect(displayed).toHaveBeenCalledTimes(1)

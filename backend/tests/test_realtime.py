@@ -102,10 +102,10 @@ async def test_slow_client_does_not_delay_broadcast_and_is_closed():
     try:
         a = await attach(manager, 1, slow)
         await attach(manager, 2, fast)
-        await manager.broadcast("booking.updated", {"booking_key": KEY})
+        await manager.broadcast("notification.new", {"booking_key": KEY})
         await asyncio.wait_for(fast.sent.wait(), 0.5)
         await asyncio.sleep(0)
-        assert any(m["event"] == "booking.updated" for m in fast.messages)
+        assert any(m["event"] == "notification.new" for m in fast.messages)
         assert not a.finished.is_set()  # Fast client already received while slow send is blocked.
         await asyncio.wait_for(a.finished.wait(), 0.5)
         assert slow.closed == 4408 and 1 not in manager.connections
@@ -142,6 +142,7 @@ async def test_ping_idle_timeout_and_token_expiry_close():
         assert conn.socket.closed == 4408
         expired = await attach(manager, 2)
         expired.claims.exp = int(time.time()) - 1
+        assert not await manager.verify(expired)
         await asyncio.wait_for(expired.finished.wait(), 0.5)
         assert expired.socket.closed == 4401
         assert expired.socket.messages[-1]["data"]["reason"] == "token_expired"
@@ -188,3 +189,20 @@ def test_uvicorn_websocket_handshake_tokens_are_redacted(parameter):
     WebSocketTokenRedaction().filter(record)
     assert "private.jwt.value" not in record.getMessage()
     assert "?[REDACTED]" in record.getMessage()
+
+
+async def test_booking_broadcast_coalesces_per_key_and_retains_newest_version():
+    manager = WebSocketManager(Settings(_env_file=None))
+    socket = FakeSocket()
+    try:
+        await attach(manager, 1, socket)
+        for key, version in ((KEY, 2), (KEY, 4), (KEY, 3), ("CW9999999-YUL-2609", 1)):
+            await manager.broadcast("booking.updated", {"booking_key": key, "version": version})
+        await asyncio.sleep(0.04)
+        assert not any(m["event"] == "booking.updated" for m in socket.messages)
+        await asyncio.sleep(0.09)
+        updates = [m["data"] for m in socket.messages if m["event"] == "booking.updated"]
+        assert len(updates) == 2
+        assert next(m for m in updates if m["booking_key"] == KEY)["version"] == 4
+    finally:
+        await manager.stop()

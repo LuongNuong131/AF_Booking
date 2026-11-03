@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import socket
+import weakref
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -76,14 +77,26 @@ async def peer(live, rig, name="agent", token=None):
         yield websocket
 
 
+pending_frames = weakref.WeakKeyDictionary()
+
+
 async def event(websocket, name, key=None):
+    def matches(frame):
+        return frame["event"] == name and (key is None or frame["data"].get("booking_key") == key)
+
+    pending = pending_frames.setdefault(websocket, [])
+    for i, frame in enumerate(pending):
+        if matches(frame):
+            return pending.pop(i)["data"]
     async with asyncio.timeout(3):
         while True:
             frame = json.loads(await websocket.recv())
             if frame["event"] == "ping":
                 await websocket.send(json.dumps({"event": "pong", "data": {}}))
-            if frame["event"] == name and (key is None or frame["data"].get("booking_key") == key):
+            elif matches(frame):
                 return frame["data"]
+            else:
+                pending.append(frame)
 
 
 async def command(websocket, name, key=KEY):
@@ -116,6 +129,7 @@ async def test_note_commit_broadcast_cache_order_lock_release_and_private_takeov
             "position",
             "updated_at",
             "is_done",
+            "snapshot_rebuilt",
         }
         assert data["booking_key"] == KEY and data["version"] == 1 and data["last_agent_id"] == 3
         assert data["updated_at"].endswith("Z") and data["status_code"] == "BUNDLE"
@@ -134,7 +148,7 @@ async def test_note_commit_broadcast_cache_order_lock_release_and_private_takeov
         await event(b, "booking.updated")
         with pytest.raises(TimeoutError):
             async with asyncio.timeout(0.05):
-                await b.recv()
+                await event(b, "notification.new")
 
 
 async def test_advisory_denial_does_not_block_note_and_expiry_heartbeat_disconnect(live, rig):
@@ -342,7 +356,7 @@ async def test_stale_job_once_per_episode_preserves_clock_and_delivers_privately
         await rig.app.state.stale_reminders.run()
         with pytest.raises(TimeoutError):
             async with asyncio.timeout(0.05):
-                await other.recv()
+                await event(other, "notification.new")
         assert (await rig.save(version=1)).status_code == 200
         async with rig.app.state.engine.begin() as connection:
             await connection.execute(

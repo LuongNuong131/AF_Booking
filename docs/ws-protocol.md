@@ -124,3 +124,26 @@ From `backend`:
 ```
 
 The database suites open **real Uvicorn/WebSocket connections** on a test-only loopback port and use verified-TLS disposable DBs. They cover two-user post-commit updates/fresh lookup, private takeover/stale notifications, nonblocking locks, expiry/heartbeat/disconnect, same-SID replacement, new-login/kick/logout/disable, actual 4401 handshake close, fresh-row handshake validation, application ping/pong, malformed/binary/oversize frames, idempotent publication, stale batching/custom thresholds/old markers and startup catch-up. Unit tests exercise a hung sender, bounded queue eviction, SID-targeted revocation, scheduler isolation and token redaction (including encoded parameter names).
+
+## Prompt 8 / 8B extensions
+
+Moderation may emit a `booking.updated` snapshot with null `last_agent_id`,
+`last_agent_name`, `status_code` and `position` when no live notes remain. It adds
+`snapshot_rebuilt:true` for delete/restore; ordinary note events include false.
+This explicit nullable-field/flag extension is reflected in generated types and the
+client frame validator. Clear old snapshot fields and show review even for the same
+author. Invoices are retained. Snapshots/indexes are refreshed before publication.
+
+`catalog.updated` is a new server event with
+`{resource:'users'|'statuses',snapshots_changed:boolean}`. Status changes invalidate
+catalogues and current booking snapshots; user display-name changes invalidate rendered
+identities. The payload carries no settings, passwords, token or SID. Authentication
+and all other event names remain unchanged. Additional logout reasons include
+`password_reset` and `admin_role_changed`.
+
+Booking broadcasts are coalesced for 100 ms per canonical key, retaining the highest
+version. Notifications and lock/session events are delivered separately and may arrive
+before that booking frame. Do not assume cross-event ordering. Private notifications
+are not dropped by booking coalescing. Client booking rendering batches frames using
+requestAnimationFrame and ignores an older/equal version. HTTP snapshots/histories are
+authoritative; after reconnect use catch-up reads and resume the durable note outbox.

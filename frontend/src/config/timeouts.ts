@@ -27,7 +27,7 @@ export const timeouts = {
   notificationDebounce: 200,
   notice: 7_000,
   taskSuggestion: 10_000,
-  bookingCache: 12_000,
+  bookingCache: 30_000,
   catalogueCache: 60_000,
   searchDebounce: 300,
   smartSearchDebounce: 200,

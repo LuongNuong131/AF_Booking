@@ -29,6 +29,8 @@ def record_audit(
     *,
     actor_id: int | None,
     target_user_id: int | None = None,
+    entity_type: str | None = None,
+    entity_id: str | None = None,
     context: AuditContext | None = None,
     meta: dict[str, JsonValue] | None = None,
 ) -> None:
@@ -39,8 +41,8 @@ def record_audit(
         AuditLog(
             user_id=actor_id,
             action=action,
-            entity_type="user" if target_user_id else None,
-            entity_id=str(target_user_id) if target_user_id else None,
+            entity_type=entity_type or ("user" if target_user_id else None),
+            entity_id=entity_id or (str(target_user_id) if target_user_id else None),
             ip=context.ip if context else None,
             meta=data or None,
         )

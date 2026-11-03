@@ -65,7 +65,10 @@ const displayed = computed(() =>
   </div>
   <div v-if="months.length" class="month-list-footer">
     <span>{{
-      t('folderUi.showingMonths', { shown: Math.min(limit, months.length), total: months.length })
+      t('folderUi.showingMonths', {
+        shown: Math.min(limit, months.length),
+        total: months.length,
+      })
     }}</span
     ><button v-if="limit < months.length" type="button" class="text-button" @click="limit += 20">
       {{ t('folderUi.moreMonths') }}

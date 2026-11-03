@@ -20,7 +20,10 @@ it('keeps input and focus through slow, timeout and retry; releases loading butt
   const Harness = defineComponent({
     setup() {
       const value = ref('CW 2154654-RDU-2609')
-      request = useRequest(() => new Promise<string>(() => {}), { timeoutMs: 8000, slowMs: 3000 })
+      request = useRequest(() => new Promise<string>(() => {}), {
+        timeoutMs: 8000,
+        slowMs: 3000,
+      })
       return () =>
         h('div', [
           h('input', {
@@ -38,7 +41,10 @@ it('keeps input and focus through slow, timeout and retry; releases loading butt
         ])
     },
   })
-  const wrapper = mount(Harness, { attachTo: document.body, global: { plugins: [i18n] } })
+  const wrapper = mount(Harness, {
+    attachTo: document.body,
+    global: { plugins: [i18n] },
+  })
   const input = wrapper.get('input')
   ;(input.element as HTMLElement).focus()
   void request.run()

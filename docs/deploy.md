@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the backend and frontend through Prompt 7C. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; full invoice features remain. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
+This guide deploys the backend and frontend through Prompt 8B. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; Admin/QC/Profile and durable note sending are implemented; full invoice features remain. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 
@@ -29,6 +29,7 @@ Connect `LuongNuong131/AF_Booking` and create a Blueprint using the root `render
 | Build | `pip install --require-hashes -r requirements.txt` |
 | Start | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log --ws websockets-sansio --ws-max-size 4096` |
 | Health path | `/health` |
+| Region | Singapore (`singapore`) |
 
 The Blueprint selects Render's paid `starter` plan to avoid free-service sleep. Importing the file does not itself authorize or create a paid service; confirm the current plan and price in Render when deploying. A free service may be used for a demo, but cold starts cannot satisfy the responsiveness budget.
 
@@ -107,3 +108,12 @@ References: [TiDB SQLAlchemy](https://docs.pingcap.com/tidb/stable/dev-guide-sam
 
 
 Prompt 5's Render command selects the tested `websockets-sansio` backend and applies the transport byte limit from `WS_MAX_MESSAGE_BYTES` (default 4096). `uvicorn[standard]` and its WebSocket dependency are already in the verified lockfile; no dependency change is needed. The application separately enforces the byte limit. Browser clients must answer JSON `ping` with JSON `pong`; native control frames do not replace that contract. Scheduler catch-up runs on process startup, with a 20-minute stale scan, 30-second task scan and 25-second lock sweep by default. Keep exactly one running instance/worker while these are in memory; no Redis/distributed guarantees are claimed. A sleeping/stopped service cannot push, so unread notifications and read-time stale lists remain authoritative.
+
+
+Daily exports default to `EXPORT_BOOKING_KEY_STYLE=display`; set `canonical` only when
+an integration requires it. `EXPORT_TIMEOUT_SECONDS` defaults to 55. Frontend calls
+Render directly; Vercel has no API rewrite or Functions region. `vercel.json` caches
+hashed `/assets/` for a year with immutable, while Vite inserts API preconnect and
+bundles the local Inter font. Warmup reduces sleeping-API delay after opening Login;
+it does not guarantee a free instance cold-start budget. Use one backend instance/worker
+until auth caches, scheduler, locks and event coalescing are moved to shared storage.

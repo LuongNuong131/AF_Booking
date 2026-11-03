@@ -3,7 +3,10 @@ import { createPinia, setActivePinia } from 'pinia'
 import { api } from '../api/client'
 import { useBookingsStore } from './bookings'
 import { event, KEY, lookup, statuses } from '../test/bookingFixtures'
-const context = () => ({ signal: new AbortController().signal, timeoutMs: 8000 })
+const context = () => ({
+  signal: new AbortController().signal,
+  timeoutMs: 8000,
+})
 beforeEach(() => {
   setActivePinia(createPinia())
 })

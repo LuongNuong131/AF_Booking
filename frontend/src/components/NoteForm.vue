@@ -88,10 +88,12 @@ function selectStatus(code: string) {
     <p v-if="noteInvalid" id="note-required" class="field-error" role="status">
       {{ t('errors.NOTE_REQUIRED') }}
     </p>
-    <p v-if="draftFailed" class="field-error" role="alert">{{ t('bookingUi.draftFailed') }}</p>
+    <p v-if="draftFailed" class="field-error" role="alert">
+      {{ t('bookingUi.draftFailed') }}
+    </p>
     <slot name="fields" />
     <p v-if="!online" class="booking-warning offline-save" role="status">
-      {{ t('bookingUi.offlineDraft') }}
+      {{ t('network_offline') }}
     </p>
     <div class="note-actions">
       <div class="note-primary-actions">

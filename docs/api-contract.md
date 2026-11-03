@@ -221,7 +221,7 @@ These envelopes clarify fields that Prompt 1B left implicit; existing shared DTO
 - `GET /notifications` returns `{items,unread_count}`; items include `id,type,booking_key,display_key,by_agent,note_id,task_id,created_at,read_at`. Read/read-all return `{ok:true}`. Another owner's notification is 404.
 - `GET /statuses` returns active `Status[]` ordered by `sort_order,id`. `PATCH /folders/{cw}` accepts supplier name/type and returns `group` fields directly; Admin/QC only. This single folder operation is implemented early to keep index/cache edits correct.
 - `POST /notes/{id}/attachments` authenticates and checks note ownership (QC/Admin also allowed), then uses `NullStorage`. It intentionally returns **501 with code `INTERNAL`**, preserving the supplied error-code catalogue; a real provider/upload parser and download endpoint remain unimplemented. Another user's note is 404. Future upload limits: image/PDF, 5 MB each, 5 per note.
-- Lookup/detail expose `Server-Timing: key_index;dur=..., snapshot;dur=..., notes;dur=...`; browser CORS permits it. Default/lookup/save/export route budgets are 8/6/12/55 seconds. A timeout returns 504, pool/row-lock exhaustion returns 503 with `Retry-After: 5`. Export routes are reserved, but the decorator supports their future override.
+- Lookup/detail expose `Server-Timing: key_index;dur=..., snapshot;dur=..., notes;dur=...`; browser CORS permits it. Default/lookup/save/export route budgets are 8/6/12/55 seconds. A timeout returns 504, pool/row-lock exhaustion returns 503 with `Retry-After: 5`. Daily export uses the 55-second override in Prompt 8.
 
 Operational limits, configuration and curl examples: [bookings.md](bookings.md).
 
@@ -260,7 +260,7 @@ Successful notes refresh KeyIndex/invalidate snapshots before manager-owned post
 No endpoint, JSON field or event name changes. The frontend uses the four existing
 auth endpoints, private notification endpoints and Prompt 5 WebSocket frames.
 `SESSION_REPLACED` displays the exact English UI copy. At the end of Prompt 6, Task/profile mutations and Home/Summary were reserved;
-Prompts 7 and 7B implement those workflows below. Admin/Reports data screens remain reserved.
+Prompts 7 and 7B implement those workflows below. Prompt 8 implements Admin/Reports data screens below.
 Frontend configuration and refresh/request hooks are documented in [frontend.md](frontend.md).
 
 ## Prompt 7 read API clarifications
@@ -335,3 +335,82 @@ Summary's `view=folders` and `from` query fields are client routing state, not n
 filters. Station/type/q/page map to the existing folder list parameters. A folder
 booking event triggers targeted folder reconciliation, without a whole-page search
 reload. See [smart-search.md](smart-search.md) for cache, navigation and manual checks.
+
+## Admin, QC and Profile — Prompt 8
+
+These endpoints are implemented. They use the existing `/api/v1` prefix/error codes;
+additional response/request DTOs are generated from `schemas/admin.py`.
+
+| Endpoint | Body/query | Response |
+| --- | --- | --- |
+| `GET /admin/users` | `q,page,size` | `Page<AdminUser>` |
+| `POST /admin/users` | `username,full_name,role,temporary_password` | `AdminUser` |
+| `PATCH /admin/users/{id}` | optional `full_name,role,is_active` (omit unchanged; no null) | `AdminUser` |
+| `POST /admin/users/{id}/reset-password` | `temporary_password` | `AdminUser` |
+| `POST /admin/users/{id}/kick` | none | `{kicked:boolean}` |
+| `GET /admin/audit` | `page,size,user_id,action,entity,entity_id,date_from,date_to` | `Page<AuditEntry>` |
+| `GET /admin/bookings/{key}/notes` | `page,size` | `Page<AdminNote>` including deleted notes; explicit history addition |
+| `GET /admin/trash` | `q` (booking key), `page,size` | `Page<AdminNote>` for deleted notes |
+| `DELETE /admin/notes/{id}` | `{reason}` | rebuilt `BookingItem` |
+| `POST /admin/notes/{id}/restore` | none | rebuilt `BookingItem` |
+| `GET /admin/statuses` | none | all `AdminStatus[]`, including inactive |
+| `POST /admin/statuses` | full status creation fields | `AdminStatus` |
+| `PATCH /admin/statuses` | `id` plus any changed status fields | `AdminStatus` |
+| `GET /admin/stations` | `q,page,size` | `Page<StationOption>`; explicit admin pagination addition |
+| `GET /reports/performance` | `period=day|week|month,date_from,date_to` (local dates) | `PerformanceReport` |
+| `GET /export/daily` | `date,format=xlsx|csv,agent_id,status_code` | streamed download |
+| `PATCH /profile` | optional `full_name,settings` | `PublicUser` |
+| `GET /profile/stats` | none | `{notes_today,notes_this_week,timezone,login_history:AuditEntry[]}` |
+
+Admin routes require Admin. Reports/export require Admin or QC. Profile requires the
+active owner. `AdminUser` includes id, username, full_name, role, is_active, created_at,
+last_login_at and has_session; it omits SID, password hash and personal settings.
+Admin cannot disable/demote themselves (`FORBIDDEN`). Username duplicates use
+`VALIDATION_ERROR`. Temporary passwords have 12–1024 characters; names have 2–100.
+Delete reasons have 3–255 characters. Audit filters use exact action/entity values;
+time filters are aware UTC timestamps. Admin notes expose deletion actor/time/reason
+and escaped note text, never save-request replay blobs. Default page size is 20/max 100.
+
+`AdminStatus` adds `is_active,stale_after_hours` to the public status fields. Create
+requires `code,label,position_label`; code is uppercase `[A-Z][A-Z0-9_]{0,39}`.
+PATCH uses the base path with an `id` field, not an implicit `/statuses/{id}` route.
+Nullable fields are `stale_after_hours,default_task_days`; other supplied fields cannot
+be null. Disable with `is_active:false`; no hard-delete endpoint is exposed.
+
+`PerformanceReport` contains period/date_from/date_to/timezone, note_count, done_count,
+`users:[{agent,note_count,done_count}]`, `statuses:[{status,count}]`,
+`trend:[{date,count}]`, `stale_by_user:[{agent,count}]`,
+`stale_by_status:[{status,count}]`, `overdue_tasks_by_user:[{agent,count}]`.
+Counts exclude deleted notes; Done is the current snapshot in the date range. Stale
+and overdue are current totals. No task content is exposed. Cache TTL is 45 seconds.
+Daily export columns/timezone/injection/cancellation rules are documented in
+[admin-qc-profile.md](admin-qc-profile.md).
+
+### Explicit event extension for moderation/catalogues
+
+`booking.updated` adds `snapshot_rebuilt:boolean` (default false). Its
+`last_agent_id,last_agent_name,status_code,position` may be null after all notes are
+soft-deleted. The ID/name pair is null together. Clients must clear these fields rather
+than retaining the previous agent/status. Rebuilt snapshots trigger review even when
+the latest surviving author is the viewer. This is an explicit contract extension.
+
+New `catalog.updated` data is `{resource:'users'|'statuses',snapshots_changed:boolean}`.
+It is broadcast after committed catalogue/identity changes and contains no credentials
+or private settings. Clients invalidate catalogue/snapshot data and refresh active views
+without replacing unfinished drafts. See [ws-protocol.md](ws-protocol.md).
+
+## Responsiveness — Prompt 8B
+
+`GET /health/warm` is now public, rate limited to 10/minute/IP and runs SELECT 1.
+It returns `{status:'ok',database:'connected'}` or the existing readiness 503 envelope;
+exhaustion returns `RATE_LIMITED`/429 with Retry-After. `/health` remains DB-free.
+`GET /statuses` requires authentication before conditional evaluation and returns
+`Cache-Control: private, max-age=60`, `Vary: Authorization`, ETag and optional empty
+304. Other personal responses default to no-store. `Server-Timing` preserves lookup
+phase durations and adds `total` (to headers) and completed `db` cursor milliseconds.
+
+Booking frames coalesce by canonical key over 100 ms, keeping the greatest version;
+intermediate versions can be skipped. HTTP writes and histories still persist every
+note. Outbox retries reuse the original `client_request_id` and immutable attempted
+payload; a new business correction uses a new UUID/version after review.
+[performance-8b.md](performance-8b.md) covers queue recovery and measured limits.

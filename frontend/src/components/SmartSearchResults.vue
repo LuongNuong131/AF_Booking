@@ -6,7 +6,11 @@ import FolderCard from './FolderCard.vue'
 import BookingMonthList from './BookingMonthList.vue'
 import PageControls from './PageControls.vue'
 const props = defineProps<{ result: SearchResponse }>(),
-  emit = defineEmits<{ folder: [cw: string]; booking: [key: string]; page: [page: number] }>()
+  emit = defineEmits<{
+    folder: [cw: string]
+    booking: [key: string]
+    page: [page: number]
+  }>()
 const { t } = useI18n()
 const pagination = computed(() =>
   'total' in props.result ? { page: props.result.page, total: props.result.total } : null,
@@ -39,7 +43,9 @@ const pagination = computed(() =>
             @open="emit('folder', $event)"
           />
         </div>
-        <p v-if="!section.items.length" class="muted">{{ t('folderUi.noTypeFolders') }}</p>
+        <p v-if="!section.items.length" class="muted">
+          {{ t('folderUi.noTypeFolders') }}
+        </p>
       </section></template
     ><template v-else-if="result.kind === 'station_period'"
       ><h3 class="station-result-title">{{ result.station.code }} · {{ result.period_label }}</h3>

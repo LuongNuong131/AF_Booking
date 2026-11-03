@@ -11,7 +11,11 @@ it('injects bearer tokens and handles current-session 401/403 only', async () =>
   const identity = { token: 'current-test-token', epoch: 1 }
   const unauthorized = vi.fn(),
     forbidden = vi.fn()
-  const stop = configureApiSession({ identity: () => ({ ...identity }), unauthorized, forbidden })
+  const stop = configureApiSession({
+    identity: () => ({ ...identity }),
+    unauthorized,
+    forbidden,
+  })
   api.defaults.adapter = (async (config) => {
     expect(config.headers.get('Authorization')).toBe(
       config.skipAuth ? undefined : 'Bearer current-test-token',

@@ -3,7 +3,11 @@ import { useI18n } from 'vue-i18n'
 import { errorMessage } from '../api/request-error'
 import type { RequestFailure } from '../api/errors'
 const { t } = useI18n()
-defineProps<{ state: string; error?: RequestFailure | null; canCancel?: boolean }>()
+defineProps<{
+  state: string
+  error?: RequestFailure | null
+  canCancel?: boolean
+}>()
 defineEmits<{ retry: []; cancel: [] }>()
 </script>
 <template>

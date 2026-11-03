@@ -1,5 +1,7 @@
+import hashlib
 from typing import Annotated, Literal
 
+import orjson
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import AwareDatetime
 from sqlalchemy import or_, select
@@ -143,7 +145,7 @@ async def patch_folder(
 
 
 @router.get("/statuses", response_model=list[StatusDTO])
-async def statuses(request: Request, user: UserDep):
+async def statuses(request: Request, response: Response, user: UserDep):
     async with transaction(request.app.state.engine, request.app.state.settings) as session:
         rows = (
             await session.scalars(
@@ -152,7 +154,17 @@ async def statuses(request: Request, user: UserDep):
                 .order_by(Status.sort_order, Status.id)
             )
         ).all()
-        return [StatusDTO.model_validate(row, from_attributes=True) for row in rows]
+        result = [StatusDTO.model_validate(row, from_attributes=True) for row in rows]
+        etag = (
+            '"'
+            + hashlib.sha256(orjson.dumps([s.model_dump(mode="json") for s in result])).hexdigest()
+            + '"'
+        )
+        headers = {"ETag": etag, "Cache-Control": "private, max-age=60", "Vary": "Authorization"}
+        if request.headers.get("if-none-match") == etag:
+            return Response(status_code=304, headers=headers)
+        response.headers.update(headers)
+        return result
 
 
 @router.post("/notes/{id}/attachments", status_code=501)

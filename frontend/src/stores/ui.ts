@@ -4,7 +4,7 @@ import { readStorage, writeStorage } from '../utils/storage'
 import { timeouts } from '../config/timeouts'
 
 export type Theme = 'system' | 'light' | 'dark'
-export type RefreshReason = 'reconnect' | 'visible' | 'retry'
+export type RefreshReason = 'reconnect' | 'visible' | 'retry' | 'catalogue'
 interface Notice {
   id: number
   kind: 'info' | 'error' | 'success'

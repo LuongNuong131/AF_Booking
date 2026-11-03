@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, onScopeDispose, ref, watch } from 'vue'
+import { computed, shallowRef, onMounted, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useOutboxStore } from '../stores/outbox'
 import { useBookingsStore } from '../stores/bookings'
 import { useAuthStore } from '../stores/auth'
 import { useRequest } from '../composables/useRequest'
@@ -20,7 +21,17 @@ const emit = defineEmits<{ open: [key: string]; selectBookings: [] }>()
 const { t } = useI18n(),
   store = useBookingsStore(),
   auth = useAuthStore()
-const rows = ref<BookingItem[]>([]),
+const outbox = useOutboxStore()
+const visibleRows = computed(() => {
+  const pending = new Map(
+    outbox.entries.filter((e) => e.state !== 'blocked').map((e) => [e.key, e.preview]),
+  )
+  return [...pending.values()]
+    .reverse()
+    .concat(rows.value.filter((row) => !pending.has(row.booking_key)))
+    .slice(0, 10)
+})
+const rows = shallowRef<BookingItem[]>([]),
   page = ref(1),
   staleOnly = ref(false),
   mineTotal = ref(0),
@@ -143,6 +154,23 @@ const live = useBookingRows(
       .slice(0, 10)
   },
 )
+watch(
+  () => [
+    rows.value.map((row) => `${row.booking_key}:${row.version}:${row.last_note_preview}`).join('|'),
+    total.value,
+  ],
+  () => {
+    if (!request.pending.value && !disposed)
+      store.rememberList(
+        staleOnly.value ? '/bookings/stale' : '/bookings/mine',
+        staleOnly.value
+          ? { scope: 'mine', page: page.value, size: 10 }
+          : { page: page.value, size: 10 },
+        { items: rows.value, total: total.value, page: page.value, size: 10 },
+      )
+  },
+  { flush: 'post' },
+)
 useViewRefresh(() => {
   if (props.showTasks) {
     needsRefresh = true
@@ -223,15 +251,15 @@ function refreshList() {
         @retry="live.retry"
       />
       <div
-        v-if="request.pending.value && !rows.length"
+        v-if="request.pending.value && !visibleRows.length"
         class="mine-skeleton"
         role="status"
         :aria-label="t('common.loading')"
       >
         <div v-for="n in 4" :key="n" class="skeleton-line" />
       </div>
-      <TransitionGroup v-else-if="rows.length" name="booking-row" tag="ul" class="mine-list"
-        ><li v-for="row in rows" :key="row.booking_key">
+      <TransitionGroup v-else-if="visibleRows.length" name="booking-row" tag="ul" class="mine-list"
+        ><li v-for="row in visibleRows" :key="row.booking_key">
           <div class="mine-booking-entry">
             <button type="button" class="mine-booking" @click="emit('open', row.booking_key)">
               <div class="mine-row-heading">
@@ -242,10 +270,13 @@ function refreshList() {
                 {{ row.supplier.name }}<span>{{ row.station_code }}</span>
               </p>
               <p class="mine-period-type">
-                {{ t(`supplier_types.${row.supplier.type}`) }} · {{ row.period_label }}
+                {{ t(`supplier_types.${row.supplier.type}`) }} ·
+                {{ row.period_label }}
               </p>
               <p class="mine-position">{{ row.last_position }}</p>
-              <p class="mine-note">{{ row.last_note_preview || t('bookingUi.noNote') }}</p>
+              <p class="mine-note">
+                {{ row.last_note_preview || t('bookingUi.noNote') }}
+              </p>
               <div class="mine-row-footer">
                 <time :datetime="row.updated_at">{{
                   formatDateTime(row.updated_at, auth.timezone)

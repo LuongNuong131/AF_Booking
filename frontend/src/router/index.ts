@@ -33,13 +33,19 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
             path: '',
             name: 'home',
             component: () => import('../views/HomeView.vue'),
-            meta: { titleKey: 'pages.homeTitle', descriptionKey: 'pages.homeDescription' },
+            meta: {
+              titleKey: 'pages.homeTitle',
+              descriptionKey: 'pages.homeDescription',
+            },
           },
           {
             path: 'summary',
             name: 'summary',
             component: () => import('../views/SummaryView.vue'),
-            meta: { titleKey: 'pages.summaryTitle', descriptionKey: 'pages.summaryDescription' },
+            meta: {
+              titleKey: 'pages.summaryTitle',
+              descriptionKey: 'pages.summaryDescription',
+            },
           },
           {
             path: 'summary/folders/:cw',
@@ -51,18 +57,24 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
             path: 'summary/:key',
             name: 'booking',
             component: () => import('../views/BookingDetailView.vue'),
-            meta: { titleKey: 'pages.bookingTitle', descriptionKey: 'pages.bookingDescription' },
+            meta: {
+              titleKey: 'pages.bookingTitle',
+              descriptionKey: 'pages.bookingDescription',
+            },
           },
           {
             path: 'profile',
             name: 'profile',
             component: () => import('../views/ProfileView.vue'),
-            meta: { titleKey: 'pages.profileTitle', descriptionKey: 'pages.profileDescription' },
+            meta: {
+              titleKey: 'pages.profileTitle',
+              descriptionKey: 'pages.profileDescription',
+            },
           },
           {
             path: 'reports',
             name: 'reports',
-            component: () => import('../views/WorkspaceView.vue'),
+            component: () => import('../views/ReportsView.vue'),
             meta: {
               titleKey: 'pages.reportsTitle',
               descriptionKey: 'pages.reportsDescription',
@@ -70,14 +82,46 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
             },
           },
           {
-            path: 'admin/:pathMatch(.*)*',
-            name: 'admin',
-            component: () => import('../views/WorkspaceView.vue'),
+            path: 'admin',
+            component: () => import('../views/admin/AdminLayout.vue'),
             meta: {
               titleKey: 'pages.adminTitle',
               descriptionKey: 'pages.adminDescription',
               roles: ['admin'],
             },
+            children: [
+              { path: '', name: 'admin', redirect: { name: 'admin-users' } },
+              {
+                path: 'users',
+                name: 'admin-users',
+                component: () => import('../views/admin/AdminUsers.vue'),
+              },
+              {
+                path: 'audit',
+                name: 'admin-audit',
+                component: () => import('../views/admin/AdminAudit.vue'),
+              },
+              {
+                path: 'bookings',
+                name: 'admin-bookings',
+                component: () => import('../views/admin/AdminBookings.vue'),
+              },
+              {
+                path: 'trash',
+                name: 'admin-trash',
+                component: () => import('../views/admin/AdminTrash.vue'),
+              },
+              {
+                path: 'statuses',
+                name: 'admin-statuses',
+                component: () => import('../views/admin/AdminStatuses.vue'),
+              },
+              {
+                path: 'suppliers',
+                name: 'admin-suppliers',
+                component: () => import('../views/admin/AdminSuppliers.vue'),
+              },
+            ],
           },
         ],
       },
@@ -100,7 +144,12 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
           .replace(/^CW\s+/, 'CW')
       if (!/^CW\d{5,10}$/.test(cw)) return { name: 'summary', query: { view: 'folders' } }
       if (raw !== cw)
-        return { name: 'summary-folder', params: { cw }, query: to.query, replace: true }
+        return {
+          name: 'summary-folder',
+          params: { cw },
+          query: to.query,
+          replace: true,
+        }
     }
     if (to.name === 'booking') {
       const raw = String(to.params.key ?? '')

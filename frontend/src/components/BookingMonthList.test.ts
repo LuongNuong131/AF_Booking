@@ -13,7 +13,10 @@ it('shows twenty first and enables windowed scrolling for folders over fifty mon
     ...months()[0]!,
     booking_key: `CW2154927-YUL-${String(2000 + Math.floor(i / 12)).slice(-2)}${String((i % 12) + 1).padStart(2, '0')}`,
   }))
-  const wrapper = mount(BookingMonthList, { props: { months: rows }, global: { plugins: [i18n] } })
+  const wrapper = mount(BookingMonthList, {
+    props: { months: rows },
+    global: { plugins: [i18n] },
+  })
   expect(wrapper.find('.month-list.virtual').exists()).toBe(true)
   expect(wrapper.text()).toContain('Showing 20 of 60 month(s)')
   expect(wrapper.findAll('.month-row').length).toBeLessThan(20)

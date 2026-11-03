@@ -45,7 +45,13 @@ export function draftStorage(userId: number) {
   ) {
     const values = read()
     if (status_code || note || invoice_text || no_invoice)
-      values[key] = { status_code, note, invoice_text, no_invoice, at: Date.now() }
+      values[key] = {
+        status_code,
+        note,
+        invoice_text,
+        no_invoice,
+        at: Date.now(),
+      }
     else delete values[key]
     const bounded = Object.fromEntries(
       Object.entries(values)

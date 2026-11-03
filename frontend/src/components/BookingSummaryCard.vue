@@ -57,11 +57,15 @@ const identity = computed(() =>
       </div>
       <div>
         <dt>{{ t('bookingUi.lastAgent') }}</dt>
-        <dd>{{ booking.snapshot.last_agent?.full_name || t('common.unknown') }}</dd>
+        <dd>
+          {{ booking.snapshot.last_agent?.full_name || t('common.unknown') }}
+        </dd>
       </div>
       <div>
         <dt>{{ t('bookingUi.updatedAt') }}</dt>
-        <dd>{{ formatDateTime(booking.snapshot.updated_at, auth.timezone) }}</dd>
+        <dd>
+          {{ formatDateTime(booking.snapshot.updated_at, auth.timezone) }}
+        </dd>
       </div>
     </dl>
     <p v-else class="muted new-history">{{ t('new_booking') }}</p>

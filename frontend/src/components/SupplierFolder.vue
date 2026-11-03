@@ -71,7 +71,9 @@ function newMonth() {
         <label
           >{{ t('bookingUi.period')
           }}<input v-model="month" type="month" min="2000-01" max="2099-12" required /></label
-        ><button type="submit" class="button primary">{{ t('folderUi.openMonth') }}</button>
+        ><button type="submit" class="button primary">
+          {{ t('folderUi.openMonth') }}
+        </button>
       </form>
       <BookingMonthList :months="value.months" @open="emit('open', $event)"
     /></template>

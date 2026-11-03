@@ -103,3 +103,22 @@ def test_production_hides_api_documentation() -> None:
     with TestClient(create_app(config)) as client:
         assert client.get("/docs").status_code == 404
         assert client.get("/openapi.json").status_code == 404
+
+
+def test_warmup_opens_pool_and_rate_limits_ip_without_auth():
+    with (
+        patch("app.main.create_database_engine", return_value=AsyncMock()),
+        patch("app.api.v1.health.ping_database", new_callable=AsyncMock) as ping,
+        TestClient(create_app(settings())) as client,
+    ):
+        for _ in range(10):
+            response = client.get("/api/v1/health/warm")
+            assert response.status_code == 200
+            assert "total;dur=" in response.headers["server-timing"]
+            assert "db;dur=" in response.headers["server-timing"]
+        assert ping.await_count == 10
+        response = client.get("/api/v1/health/warm")
+        assert response.status_code == 429
+        assert response.json()["code"] == "RATE_LIMITED"
+        assert int(response.headers["retry-after"]) > 0
+        assert client.get("/health").status_code == 200

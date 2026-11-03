@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Full invoice management/reports, assignments/watch, service-worker Web Push, exports, and recovery tools. Do not describe this as the completed booking application.
+Full invoice management/reports, assignments/watch, service-worker Web Push, invoice exports, and integrity/recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -127,3 +127,19 @@ Full invoice management/reports, assignments/watch, service-worker Web Push, exp
 ## Deployment status
 
 Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud database. Hosted resources and credentials must be configured in those providers. A successful local test or Git push does not establish a live production deployment.
+
+## Implemented: Prompt 8 Admin/QC/Profile
+
+- Admin users, audit filters, booking moderation/history, trash/restore, dynamic statuses and paginated Supplier/Station management; fresh transaction authorization and self-lock/demotion prevention.
+- Snapshot rebuild/version/event on soft delete/restore, no loss of invoices. Nullable cleared-snapshot events and explicit `catalog.updated` are documented in API/WS contracts.
+- SQL performance aggregates, private-task counts, 45-second report cache, lazy Chart.js, streaming safe daily CSV and write-only XLSX with business-timezone boundaries and disconnect cleanup.
+- Profile display name, password/session revocation, timezone/reminder preferences, personal counts and login history.
+- Schema head remains 0003; dependencies/locks include openpyxl and Chart.js.
+
+## Implemented: Prompt 8B responsiveness
+
+- Durable per-user 50-note outbox, immediate timeline/snapshot/My bookings preview, backoff with immutable UUID replay, business-error rollback/conflict review and offline/reload recovery.
+- Warmup endpoint/UI and IP rate limit, parallel bootstrap, 150 ms key prefetch/Enter sharing, 30-second LRU/SWR, status ETag/304 and local catalogue persistence.
+- Route/detail hover/idle preloads, virtualized long timeline/table, shallow list state, v-memo, animation-frame updates, 100 ms server coalescing, GZip/ORJSON and HTTP/DB timing diagnostics.
+- Local font/preconnect/immutable assets, direct Render requests, Singapore Blueprint region. Raw MySQL/TiDB before/after lookup reports and limitations are in docs/performance-8b.md.
+- Test evidence is recorded in docs/testing.md. Hosted deployment credentials remain operator-provided; no provider resources have been provisioned.

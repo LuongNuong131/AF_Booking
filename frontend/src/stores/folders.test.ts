@@ -32,7 +32,11 @@ it('uses a shared 50-entry LRU for search and folders and revalidates stale resu
   await store.readDetail(ctx(), CW)
   expect(get).toHaveBeenCalledTimes(2)
   get.mockImplementation(async (_url, config) => ({
-    data: { kind: 'none', query: (config?.params as { q?: string } | undefined)?.q, items: [] },
+    data: {
+      kind: 'none',
+      query: (config?.params as { q?: string } | undefined)?.q,
+      items: [],
+    },
   }))
   for (let i = 0; i < 51; i++) await store.readSearch(ctx(), `supplier ${i}`)
   expect(store.cache.size).toBe(50)

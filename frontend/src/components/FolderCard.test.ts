@@ -10,7 +10,10 @@ afterEach(() => vi.restoreAllMocks())
 it('shows supplier identity, type, station, months, latest status and stale/open badges', async () => {
   setActivePinia(createPinia())
   useAuthStore().user = user
-  const wrapper = mount(FolderCard, { props: { folder: folder() }, global: { plugins: [i18n] } })
+  const wrapper = mount(FolderCard, {
+    props: { folder: folder() },
+    global: { plugins: [i18n] },
+  })
   for (const text of [
     CW,
     folder().supplier_name,

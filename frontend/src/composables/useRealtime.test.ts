@@ -47,7 +47,15 @@ function setup() {
     socketFactory: factory,
   })
   realtime.start()
-  return { ...realtime, sockets, states, onReady, onFrame, onForceLogout, factory }
+  return {
+    ...realtime,
+    sockets,
+    states,
+    onReady,
+    onFrame,
+    onForceLogout,
+    factory,
+  }
 }
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => vi.useRealTimers())
@@ -55,9 +63,12 @@ it('requires authenticated snapshot, answers ping, reacquires and renews the act
   const rt = setup(),
     socket = rt.sockets[0]!
   expect(rt.states.at(-1)).toBe('connecting')
-  expect(rt.send({ event: 'lock.release', data: { booking_key: 'CW2154654-RDU-2609' } })).toBe(
-    false,
-  )
+  expect(
+    rt.send({
+      event: 'lock.release',
+      data: { booking_key: 'CW2154654-RDU-2609' },
+    }),
+  ).toBe(false)
   socket.frame('ping')
   expect(socket.sent).toContainEqual({ event: 'pong', data: {} })
   socket.frame('lock.snapshot', { locks: [] })
@@ -123,7 +134,10 @@ it('bounds the handshake, ignores old socket events and malformed frames', async
 })
 it('force logout stops timers and cannot reconnect', async () => {
   const rt = setup()
-  rt.sockets[0]!.frame('session.force_logout', { reason: 'new_login', message: 'Bye' })
+  rt.sockets[0]!.frame('session.force_logout', {
+    reason: 'new_login',
+    message: 'Bye',
+  })
   expect(rt.onForceLogout).toHaveBeenCalledWith('new_login')
   await vi.advanceTimersByTimeAsync(60000)
   expect(rt.sockets).toHaveLength(1)

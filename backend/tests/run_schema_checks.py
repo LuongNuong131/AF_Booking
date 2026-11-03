@@ -118,6 +118,7 @@ def main() -> None:
             "realtime",
             "frontend",
             "tasks",
+            "admin",
             "search-performance",
         ],
         default="schema",
@@ -213,6 +214,7 @@ def main() -> None:
                 "realtime": "tests/test_realtime_database.py",
                 "frontend": "tests/test_frontend_database.py",
                 "tasks": "tests/test_tasks_database.py",
+                "admin": "tests/test_admin_database.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]
             test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]

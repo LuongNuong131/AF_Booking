@@ -19,7 +19,9 @@ watch(() => props.resetKey, retry)
   <section v-if="failed" class="boundary-card" role="alert">
     <h2>{{ t('boundary.title') }}</h2>
     <p>{{ t('boundary.body') }}</p>
-    <button type="button" class="button primary" @click="retry">{{ t('boundary.retry') }}</button>
+    <button type="button" class="button primary" @click="retry">
+      {{ t('boundary.retry') }}
+    </button>
   </section>
   <div v-else :key="generation" class="boundary-content"><slot /></div>
 </template>

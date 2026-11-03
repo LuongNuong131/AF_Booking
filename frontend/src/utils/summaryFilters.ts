@@ -32,7 +32,10 @@ const validDate = (value: string) =>
   /^20\d{2}-\d{2}-\d{2}$/.test(value) &&
   !Number.isNaN(Date.parse(value)) &&
   new Date(value).toISOString().slice(0, 10) === value
-export function readSummaryQuery(query: LocationQuery): { filters: SummaryFilters; page: number } {
+export function readSummaryQuery(query: LocationQuery): {
+  filters: SummaryFilters
+  page: number
+} {
   const f = emptyFilters()
   f.q = text(query.q)
   f.status_code = text(query.status_code, 40)

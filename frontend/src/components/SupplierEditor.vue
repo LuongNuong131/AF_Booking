@@ -37,7 +37,10 @@ function start() {
 }
 async function save() {
   if (name.value.trim().length < 3 || request.pending.value) return
-  const result = await request.run({ supplier_name: name.value.trim(), supplier_type: type.value })
+  const result = await request.run({
+    supplier_name: name.value.trim(),
+    supplier_type: type.value,
+  })
   if (result) {
     editing.value = false
     emit('updated', result)
@@ -57,7 +60,9 @@ async function save() {
         >{{ t('bookingUi.type')
         }}<select v-model="type">
           <option value="hotel">{{ t('supplier_types.hotel') }}</option>
-          <option value="transportation">{{ t('supplier_types.transportation') }}</option>
+          <option value="transportation">
+            {{ t('supplier_types.transportation') }}
+          </option>
         </select></label
       >
       <div class="supplier-editor-actions">

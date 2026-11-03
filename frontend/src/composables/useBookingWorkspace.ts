@@ -1,4 +1,6 @@
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
+import { useOutboxStore } from '../stores/outbox'
+import type { OutgoingNote } from '../stores/outbox'
 import { useOnline } from '@vueuse/core'
 import { api } from '../api/client'
 import { useRequest } from './useRequest'
@@ -26,6 +28,7 @@ import type {
 } from '../types/api.generated'
 
 export function useBookingWorkspace() {
+  const outbox = useOutboxStore()
   const bookings = useBookingsStore(),
     realtime = useRealtimeStore(),
     auth = useAuthStore(),
@@ -34,7 +37,7 @@ export function useBookingWorkspace() {
     key = ref<string | null>(null),
     current = shallowRef<BookingLookup | null>(null)
   const resolution = shallowRef<BookingLookup | null>(null),
-    notes = ref<Note[]>([]),
+    notes = shallowRef<Note[]>([]),
     cursor = ref<string | null>(null)
   const statusCode = ref(''),
     note = ref(''),
@@ -50,12 +53,12 @@ export function useBookingWorkspace() {
   const draftFailed = ref(false),
     draftPending = ref(false)
   const online = useOnline()
+  const lastSaved = shallowRef<{ key: string; status: string; at: number } | null>(null)
   let lookupInput = '',
     disposed = false
   let generation = 0,
     draftTimer: ReturnType<typeof setTimeout> | undefined
   let restoringDraft = false
-  let attempt: { signature: string; id: string } | null = null
   const draft = draftStorage(auth.user!.id)
   const lookupRequest = useRequest(
     (ctx, value: string, force: boolean = false) => bookings.lookup(ctx, value, force),
@@ -90,7 +93,21 @@ export function useBookingWorkspace() {
     timeoutMs: timeouts.lookup,
     retry: true,
   })
-  const snapshot = computed(() => current.value?.snapshot ?? null)
+  const pendingEntries = computed(() =>
+    outbox.entries.filter((e) => e.key === key.value && e.state !== 'blocked'),
+  )
+  const snapshot = computed(
+    () => pendingEntries.value.at(-1)?.preview ?? current.value?.snapshot ?? null,
+  )
+  const visibleCurrent = computed(() =>
+    current.value && snapshot.value
+      ? { ...current.value, snapshot: snapshot.value }
+      : current.value,
+  )
+  const visibleNotes = computed(() => [
+    ...pendingEntries.value.map((e) => e.note).reverse(),
+    ...notes.value,
+  ])
   const selectedStatus = computed(() => bookings.statuses.find((s) => s.code === statusCode.value))
   const inputMatches = computed(() => {
     const parsed = parseBookingKey(input.value)
@@ -135,7 +152,6 @@ export function useBookingWorkspace() {
       !!key.value &&
       inputMatches.value &&
       stationMatches.value &&
-      online.value &&
       !!selectedStatus.value &&
       (!selectedStatus.value.note_required || !!note.value.trim()) &&
       (!needsSupplier.value || supplierName.value.trim().length >= 3) &&
@@ -190,14 +206,17 @@ export function useBookingWorkspace() {
     restoringDraft = false
     hasDraft.value = false
     draftRestored.value = false
-    attempt = null
   }
   function engage() {
     if (key.value && inputMatches.value) realtime.acquire(key.value)
   }
   function newerRemote(value: string, version: number) {
     const update = realtime.bookingUpdates.get(value)
-    return !!update && update.version > version && update.last_agent_id !== auth.user?.id
+    return (
+      !!update &&
+      update.version > version &&
+      (update.snapshot_rebuilt || update.last_agent_id !== auth.user?.id)
+    )
   }
   function accept(result: BookingLookup) {
     const value = result.resolution.key
@@ -268,13 +287,22 @@ export function useBookingWorkspace() {
     saveRequest.error.value = null
     saveRequest.state.value = 'idle'
     validation.value = ''
-    attempt = null
     input.value = 'key' in parsed ? parsed.display_key : formatBookingKey(parsed.normalized)
     lookupInput = input.value
+    const cached = bookings.peekLookup('key' in parsed ? parsed.key : parsed.normalized)
+    if (cached) {
+      if (cached.data.resolution.status === 'exact') accept(cached.data)
+      else resolution.value = cached.data
+    }
     const result = await lookupRequest.run('key' in parsed ? parsed.key : parsed.normalized)
     if (!result || ticket !== generation) return
-    if (result.resolution.status === 'exact') accept(result)
-    else resolution.value = result
+    if (result.resolution.status === 'exact') {
+      if (key.value === result.resolution.key && current.value) {
+        current.value = result
+        notes.value = result.history.items
+        cursor.value = result.history.next_cursor
+      } else accept(result)
+    } else resolution.value = result
   }
   function acceptResolved() {
     if (resolution.value?.resolution.status === 'resolved_from_partial') accept(resolution.value)
@@ -324,95 +352,91 @@ export function useBookingWorkspace() {
     cursor.value = result.history.next_cursor
     conflict.value = false
     hasUpdate.value = key.value ? newerRemote(key.value, result.version) : false
-    attempt = null
   }
   async function save(): Promise<boolean> {
     if (disposed || !canSave.value || !key.value) return false
-    const value = key.value,
-      ticket = generation
     const submittedStatus = statusCode.value,
-      submittedNote = note.value,
-      submittedInvoice = invoiceText.value,
-      submittedNoInvoice = noInvoice.value
+      submittedNote = note.value
     const payloadBase = {
       status_code: submittedStatus,
       note: submittedNote.trim() || null,
       expected_version: current.value?.version ?? 0,
       ...(showInvoice.value
-        ? { invoices: noInvoice.value ? { no_invoice: true } : { add: invoiceNumbers.value } }
+        ? {
+            invoices: noInvoice.value ? { no_invoice: true } : { add: invoiceNumbers.value },
+          }
         : {}),
       ...(!current.value?.exists ? { confirm_new: true } : {}),
       ...(needsSupplier.value
-        ? { supplier_name: supplierName.value.trim(), supplier_type: supplierType.value }
+        ? {
+            supplier_name: supplierName.value.trim(),
+            supplier_type: supplierType.value,
+          }
         : {}),
     }
-    const signature = JSON.stringify([value, payloadBase])
-    if (attempt?.signature !== signature) attempt = { signature, id: crypto.randomUUID() }
-    flushDraft()
-    const result = await saveRequest.run(value, { ...payloadBase, client_request_id: attempt.id })
-    if (!result || ticket !== generation || key.value !== value) {
-      if (
-        ticket === generation &&
-        ['STATUS_INACTIVE', 'NOTE_REQUIRED', 'INVOICE_REQUIRED'].includes(
-          saveRequest.error.value?.code ?? '',
-        )
-      )
-        void statusRequest.run(true)
-      if (saveRequest.error.value?.code === 'VERSION_CONFLICT' && ticket === generation) {
-        attempt = null
-        conflict.value = true
-        void loadConflict()
-      }
+    const entry = outbox.enqueue(current.value!, {
+      ...payloadBase,
+      client_request_id: crypto.randomUUID(),
+    })
+    if (!entry) {
+      validation.value = i18n.global.t('outboxUi.cannotQueue')
       return false
     }
-    const item = bookings.item(result.snapshot)
-    if ((current.value?.version ?? 0) <= result.snapshot.version) {
-      current.value = {
-        ...current.value!,
-        exists: true,
-        group_exists: true,
-        group: {
-          cw_number: item.cw_number,
-          station_code: item.station_code,
-          supplier_name: item.supplier_name,
-          supplier_type: item.supplier_type,
-        },
-        snapshot: item,
-        version: item.version,
-        done_warning: null,
-      }
-    }
-    notes.value = [result.note, ...notes.value.filter((n) => n.id !== result.note.id)].sort(
-      (a, b) => b.created_at.localeCompare(a.created_at) || b.id - a.id,
-    )
-    if (
-      statusCode.value === submittedStatus &&
-      note.value === submittedNote &&
-      invoiceText.value === submittedInvoice &&
-      noInvoice.value === submittedNoInvoice
-    )
-      discardDraft()
-    else flushDraft() // New typing during the request is a new draft, not part of the saved note.
-    attempt = null
+    discardDraft()
     realtime.release()
-    bookings.invalidate()
-    if (item.last_agent && item.last_status)
-      bookings.observe({
-        booking_key: item.booking_key,
-        display_key: item.display_key,
-        cw_number: item.cw_number,
-        station_code: item.station_code,
-        version: item.version,
-        last_agent_id: item.last_agent.id,
-        last_agent_name: item.last_agent.full_name,
-        status_code: item.last_status.code,
-        position: item.last_position ?? '',
-        updated_at: item.updated_at,
-        is_done: item.is_done,
-      })
-    ui.notify(i18n.global.t('bookingUi.saved'), 'success')
     return true
   }
+  function restoreOutgoing(entry: OutgoingNote) {
+    statusCode.value = entry.payload.status_code
+    note.value = entry.payload.note ?? ''
+    invoiceText.value = entry.payload.invoices?.add?.join(', ') ?? ''
+    noInvoice.value = entry.payload.invoices?.no_invoice ?? false
+    supplierName.value = entry.payload.supplier_name ?? entry.base.group?.supplier_name ?? ''
+    supplierType.value = entry.payload.supplier_type ?? entry.base.group?.supplier_type ?? 'hotel'
+    saveRequest.error.value = entry.error
+    saveRequest.state.value = 'error'
+    outbox.take(entry.id)
+    flushDraft()
+    if (entry.error?.code === 'VERSION_CONFLICT') {
+      conflict.value = true
+      void loadConflict()
+    } else if (entry.error?.code === 'STATUS_INACTIVE') void statusRequest.run(true)
+  }
+  const stopOutbox = outbox.subscribe((entry, result) => {
+    if (disposed || entry.key !== key.value) return
+    if (result) {
+      const latest = Math.max(
+        current.value?.version ?? 0,
+        realtime.bookingUpdates.get(entry.key)?.version ?? 0,
+      )
+      if (result.snapshot.version < latest) {
+        // A replay acknowledges the old commit; moderation may since have removed it.
+        hasUpdate.value = true
+        void refresh()
+        return
+      }
+      lastSaved.value = { key: entry.key, status: entry.payload.status_code, at: Date.now() }
+      const item = bookings.item(result.snapshot)
+      if (current.value && current.value.version <= item.version)
+        current.value = {
+          ...current.value,
+          snapshot: item,
+          version: item.version,
+          exists: true,
+          group_exists: true,
+          group: {
+            cw_number: item.cw_number,
+            station_code: item.station_code,
+            supplier_name: item.supplier.name,
+            supplier_type: item.supplier.type,
+          },
+          done_warning: null,
+        }
+      notes.value = [result.note, ...notes.value.filter((n) => n.id !== result.note.id)]
+      ui.notify(i18n.global.t('bookingUi.saved'), 'success')
+    } else if (!statusCode.value && !note.value) restoreOutgoing(entry)
+  })
+
   function clear() {
     if (saveRequest.pending.value) {
       validation.value = i18n.global.t('bookingUi.waitForSave')
@@ -442,15 +466,28 @@ export function useBookingWorkspace() {
     draftRestored.value = false
     hasUpdate.value = false
     bookings.homeKey = ''
-    attempt = null
     saveRequest.error.value = null
     saveRequest.state.value = 'idle'
   }
+  watch(
+    [key, () => outbox.reviewId],
+    () => {
+      const entry = outbox.entries.find(
+        (e) => e.id === outbox.reviewId && e.key === key.value && e.state === 'blocked',
+      )
+      if (entry) {
+        if (!note.value && !statusCode.value) restoreOutgoing(entry)
+        else ui.notify(i18n.global.t('outboxUi.finishDraft'))
+        outbox.reviewId = null
+      }
+    },
+    { flush: 'post' },
+  )
   const unsubscribe = bookings.subscribe((event) => {
     if (
       event.booking_key === key.value &&
       event.version > (current.value?.version ?? 0) &&
-      event.last_agent_id !== auth.user?.id
+      (event.snapshot_rebuilt || event.last_agent_id !== auth.user?.id)
     )
       hasUpdate.value = true
   })
@@ -461,14 +498,18 @@ export function useBookingWorkspace() {
     generation++
     realtime.release()
     unsubscribe()
+    stopOutbox()
   })
   return {
     input,
     key,
-    current,
+    current: visibleCurrent,
     snapshot,
     resolution,
-    notes,
+    notes: visibleNotes,
+    pendingEntries,
+    restoreOutgoing,
+    lastSaved,
     cursor,
     statusCode,
     note,

@@ -9,6 +9,7 @@ import jwt
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError
 from pydantic import BaseModel, ConfigDict, StrictInt, ValidationError, field_validator
+from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings
 from app.core.errors import ApiException
@@ -98,7 +99,7 @@ class PasswordService:
 
     async def _run(self, function: Callable[[], T]) -> T:
         await self._slots.acquire()
-        work = asyncio.create_task(asyncio.to_thread(function))
+        work = asyncio.create_task(run_in_threadpool(function))
 
         def completed(task: asyncio.Task[T]) -> None:
             self._slots.release()

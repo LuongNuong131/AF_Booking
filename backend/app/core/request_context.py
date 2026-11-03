@@ -2,6 +2,7 @@ import logging
 import re
 import time
 from contextvars import ContextVar
+from dataclasses import dataclass
 from uuid import uuid4
 
 from starlette.datastructures import Headers, MutableHeaders
@@ -10,6 +11,14 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 request_id: ContextVar[str] = ContextVar("request_id", default="-")
 request_path: ContextVar[str] = ContextVar("request_path", default="-")
 logger = logging.getLogger("uvicorn.error")
+
+
+@dataclass
+class QueryTiming:
+    milliseconds: float = 0
+
+
+query_timing: ContextVar[QueryTiming | None] = ContextVar("query_timing", default=None)
 SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
 
@@ -27,6 +36,8 @@ class RequestContextMiddleware:
         context_token = request_id.set(identifier)
         path_token = request_path.set(scope["path"])
         started = time.monotonic()
+        timing = QueryTiming()
+        timing_token = query_timing.set(timing)
         status = 500
 
         async def add_headers(message: Message) -> None:
@@ -35,8 +46,17 @@ class RequestContextMiddleware:
                 status = message["status"]
                 headers = MutableHeaders(scope=message)
                 headers["X-Request-ID"] = identifier
-                if scope["path"].startswith("/api/v1/auth/"):
-                    headers["Cache-Control"] = "no-store"
+                headers["Server-Timing"] = (
+                    (
+                        headers.get("Server-Timing", "") + ", "
+                        if headers.get("Server-Timing")
+                        else ""
+                    )
+                    + f"total;dur={(time.monotonic() - started) * 1000:.2f}, "
+                    f"db;dur={timing.milliseconds:.2f}"
+                )
+                if scope["path"].startswith("/api/v1/"):
+                    headers.setdefault("Cache-Control", "no-store")
             await send(message)
 
         try:
@@ -52,6 +72,7 @@ class RequestContextMiddleware:
             )
             request_id.reset(context_token)
             request_path.reset(path_token)
+            query_timing.reset(timing_token)
 
 
 class WebSocketTokenRedaction(logging.Filter):

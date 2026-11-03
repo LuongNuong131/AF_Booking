@@ -36,9 +36,12 @@ const nav = reactive(useSmartSearch(w, (key) => emit('opened', key)))
 const inputRef = ref<HTMLInputElement | null>(null),
   formScope = ref<HTMLElement | null>(null)
 const station = ref('')
-const suggestion = ref<{ key: string; strong: boolean; days: number | null; nonce: number } | null>(
-  null,
-)
+const suggestion = ref<{
+  key: string
+  strong: boolean
+  days: number | null
+  nonce: number
+} | null>(null)
 let suggestionNonce = 0
 let disposed = false
 onScopeDispose(() => {
@@ -46,8 +49,13 @@ onScopeDispose(() => {
 })
 const stationRequest = useRequest(
   async ({ signal, timeoutMs }, q: string) =>
-    (await api.get<StationOption[]>('/stations', { params: { q }, signal, timeout: timeoutMs }))
-      .data,
+    (
+      await api.get<StationOption[]>('/stations', {
+        params: { q },
+        signal,
+        timeout: timeoutMs,
+      })
+    ).data,
   { timeoutMs: timeouts.search, retry: true },
 )
 const fetchStations = useDebounceFn(() => {
@@ -66,20 +74,27 @@ async function open(value?: string) {
 async function lookup() {
   await nav.submit()
 }
-async function save() {
-  const status = w.selectedStatus
-  if (await w.save()) {
+watch(
+  () => w.lastSaved,
+  (saved) => {
+    if (!saved || saved.key !== w.key) return
+    const status = store.statuses.find((s) => s.code === saved.status)
     suggestion.value = {
-      key: w.key!,
+      key: saved.key,
       strong: status?.suggest_task ?? false,
       days: status?.default_task_days ?? null,
       nonce: ++suggestionNonce,
     }
-    emit('saved', w.key!)
+    emit('saved', saved.key)
+  },
+)
+async function save() {
+  if (await w.save()) {
     await nextTick()
     inputRef.value?.focus()
   }
 }
+
 function clear() {
   if (props.detail) return
   nav.root()
@@ -151,7 +166,12 @@ const stationMismatch = computed(() => {
   const d = error.details as Record<string, unknown>
   const key = typeof d.suggested_key === 'string' ? parseBookingKey(d.suggested_key) : null
   return key && 'key' in key && typeof d.expected_station === 'string'
-    ? { key: key.key, display: key.display_key, expected: d.expected_station, cw: key.cw_number }
+    ? {
+        key: key.key,
+        display: key.display_key,
+        expected: d.expected_station,
+        cw: key.cw_number,
+      }
     : null
 })
 watch(
@@ -218,7 +238,9 @@ defineExpose({
           <BaseIcon name="close" />
         </button>
       </div>
-      <p id="booking-format" class="input-hint">{{ t('folderUi.searchHint') }}</p>
+      <p id="booking-format" class="input-hint">
+        {{ t('folderUi.searchHint') }}
+      </p>
       <p v-if="w.validation" id="booking-input-error" class="field-error" role="alert">
         {{ w.validation }}
       </p>
@@ -327,13 +349,25 @@ defineExpose({
         class="resolution-panel"
         role="status"
       >
-        <p>{{ t('key_did_you_mean', { display_key: w.resolution.resolution.display_key }) }}</p>
+        <p>
+          {{
+            t('key_did_you_mean', {
+              display_key: w.resolution.resolution.display_key,
+            })
+          }}
+        </p>
         <button type="button" class="button primary" @click="lookup">
           {{ t('bookingUi.useBooking') }}
         </button>
       </div>
       <div v-else-if="w.resolution?.resolution.status === 'ambiguous'" class="resolution-panel">
-        <p>{{ t('key_ambiguous', { cw: parseBookingKey(w.input)?.cw_number || '' }) }}</p>
+        <p>
+          {{
+            t('key_ambiguous', {
+              cw: parseBookingKey(w.input)?.cw_number || '',
+            })
+          }}
+        </p>
         <button
           v-for="candidate in w.resolution.resolution.candidates"
           :key="candidate.key"
@@ -350,7 +384,9 @@ defineExpose({
         class="resolution-panel"
         @submit.prevent="w.applyStation(station)"
       >
-        <p>{{ t(w.resolution.group_exists ? 'station_required' : 'new_cw_station_prompt') }}</p>
+        <p>
+          {{ t(w.resolution.group_exists ? 'station_required' : 'new_cw_station_prompt') }}
+        </p>
         <label class="field-label" for="station-input">{{ t('station_input_label') }}</label>
         <div class="station-input-row">
           <input
@@ -461,7 +497,9 @@ defineExpose({
                 }}</label
                 ><select id="new-supplier-type" v-model="w.supplierType">
                   <option value="hotel">{{ t('supplier_types.hotel') }}</option>
-                  <option value="transportation">{{ t('supplier_types.transportation') }}</option>
+                  <option value="transportation">
+                    {{ t('supplier_types.transportation') }}
+                  </option>
                 </select>
                 <div class="supplier-type-options">
                   <button

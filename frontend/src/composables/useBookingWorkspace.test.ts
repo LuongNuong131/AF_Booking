@@ -3,6 +3,7 @@ import { effectScope, type EffectScope } from 'vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { AxiosError, AxiosHeaders, type InternalAxiosRequestConfig } from 'axios'
 import { api } from '../api/client'
+import { useOutboxStore } from '../stores/outbox'
 import { useAuthStore } from '../stores/auth'
 import { useBookingsStore } from '../stores/bookings'
 import { useRealtimeStore } from '../stores/realtime'
@@ -19,16 +20,21 @@ beforeEach(() => {
   auth.token = 'test-only'
   auth.ready = true
   useBookingsStore().statuses = structuredClone(statuses)
+  useOutboxStore().start(user.id)
   scope = effectScope()
 })
 afterEach(() => {
   scope.stop()
+  useOutboxStore().stop()
   vi.restoreAllMocks()
   vi.useRealTimers()
 })
 const setup = () => scope.run(() => useBookingWorkspace())!
 function apiFailure(code: string, status = 409) {
-  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const config = {
+    method: 'post',
+    headers: new AxiosHeaders(),
+  } as InternalAxiosRequestConfig
   return new AxiosError('Test', '', config, undefined, {
     status,
     statusText: '',
@@ -60,7 +66,7 @@ it('normalizes input and sends canonical lookup/save keys with the loaded versio
     }),
     expect.any(Object),
   )
-  expect(w.notes.value.map((n) => n.id)).toEqual([2, 1])
+  await vi.waitFor(() => expect(w.notes.value.map((n) => n.id)).toEqual([2, 1]))
   expect(w.note.value).toBe('')
   expect(useRealtimeStore().activeBookingKey).toBeNull()
 })
@@ -89,7 +95,12 @@ it('requires a station and Supplier before saving a brand new CW', async () => {
     group: null,
     group_exists: false,
     booking_key: null,
-    resolution: { status: 'needs_station', input_kind: 'partial', key: null, display_key: null },
+    resolution: {
+      status: 'needs_station',
+      input_kind: 'partial',
+      key: null,
+      display_key: null,
+    },
     history: { items: [], next_cursor: null },
   }
   const full = {
@@ -147,7 +158,10 @@ it('blocks saving a key whose station differs from the known supplier folder', a
 })
 it('reuses the exact request UUID on an uncertain manual retry and blocks duplicate saves', async () => {
   vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })
-  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const config = {
+    method: 'post',
+    headers: new AxiosHeaders(),
+  } as InternalAxiosRequestConfig
   const post = vi
     .spyOn(api, 'post')
     .mockRejectedValueOnce(new AxiosError('timeout', 'ECONNABORTED', config))
@@ -156,9 +170,10 @@ it('reuses the exact request UUID on an uncertain manual retry and blocks duplic
   await w.open(KEY)
   w.statusCode.value = 'BUNDLE'
   w.note.value = 'Same operation'
-  expect(await w.save()).toBe(false)
-  expect(w.saveRequest.state.value).toBe('timeout')
   expect(await w.save()).toBe(true)
+  await vi.waitFor(() => expect(useOutboxStore().entries[0]?.state).toBe('retrying'))
+  useOutboxStore().retry()
+  await vi.waitFor(() => expect(useOutboxStore().count).toBe(0))
   expect(post.mock.calls[0]?.[1]).toEqual(post.mock.calls[1]?.[1])
   expect(post).toHaveBeenCalledTimes(2)
 })
@@ -174,8 +189,8 @@ it('409 requires review, preserves text, then uses a new version and UUID', asyn
   await w.open(KEY)
   w.statusCode.value = 'BUNDLE'
   w.note.value = 'Review me'
-  expect(await w.save()).toBe(false)
-  expect(w.conflict.value).toBe(true)
+  expect(await w.save()).toBe(true)
+  await vi.waitFor(() => expect(w.conflict.value).toBe(true))
   await vi.waitFor(() => expect(w.conflictRequest.data.value?.version).toBe(2))
   expect(w.current.value?.version).toBe(1)
   expect(w.canSave.value).toBe(false)
@@ -183,6 +198,7 @@ it('409 requires review, preserves text, then uses a new version and UUID', asyn
   expect(w.note.value).toBe('Review me')
   expect(w.current.value?.version).toBe(2)
   await w.save()
+  await vi.waitFor(() => expect(post).toHaveBeenCalledTimes(2))
   expect(post.mock.calls[1]?.[1]).toMatchObject({ expected_version: 2 })
   expect((post.mock.calls[1]?.[1] as { client_request_id: string }).client_request_id).not.toBe(
     (post.mock.calls[0]?.[1] as { client_request_id: string }).client_request_id,
@@ -207,6 +223,9 @@ it('retains new typing during an in-flight save and cancels stale lookup results
   w.note.value = 'Typing while saving'
   finish({ data: saved() })
   await first
+  await vi.waitFor(() => expect(useOutboxStore().count).toBe(0))
+  w.engage()
+  await new Promise((resolve) => setTimeout(resolve, 510))
   expect(w.note.value).toBe('Typing while saving')
   expect(draftStorage(3).get(KEY)?.note).toBe('Typing while saving')
 })
@@ -256,7 +275,9 @@ it('loads history in batches of 20 and merges duplicate cursor rows by id', asyn
   const get = vi
     .spyOn(api, 'get')
     .mockResolvedValueOnce({ data: first })
-    .mockResolvedValueOnce({ data: { items: [first.history.items[0]], next_cursor: null } })
+    .mockResolvedValueOnce({
+      data: { items: [first.history.items[0]], next_cursor: null },
+    })
   const w = setup()
   await w.open(KEY)
   await w.loadMore()
@@ -326,4 +347,21 @@ it('reports a real storage failure without losing the in-memory note', async () 
   scope.stop()
   expect(w.draftFailed.value).toBe(true)
   expect(w.note.value).toBe('Keep me')
+})
+
+it('does not resurrect a moderated note from an older committed UUID replay', async () => {
+  vi.spyOn(api, 'get').mockResolvedValueOnce({ data: lookup() }).mockResolvedValue({ data: lookup(3) })
+  let finish!: (value: unknown) => void
+  vi.spyOn(api, 'post').mockImplementation(() => new Promise(done => { finish = done }))
+  const w = setup()
+  await w.open(KEY)
+  w.statusCode.value = 'BUNDLE'
+  w.note.value = 'Originally committed'
+  expect(await w.save()).toBe(true)
+  await w.refresh()
+  expect(w.current.value?.version).toBe(3)
+  finish({ data: saved(2) })
+  await vi.waitFor(() => expect(useOutboxStore().count).toBe(0))
+  expect(w.notes.value.map(n => n.id)).toEqual([3])
+  expect(w.current.value?.version).toBe(3)
 })

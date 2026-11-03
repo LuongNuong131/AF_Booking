@@ -7,7 +7,10 @@ import { timeouts } from '../config/timeouts'
 import type { StationOption } from '../types/api.generated'
 import RequestStatus from './RequestStatus.vue'
 defineProps<{ modelValue: string }>()
-const emit = defineEmits<{ 'update:modelValue': [value: string]; change: [] }>(),
+const emit = defineEmits<{
+    'update:modelValue': [value: string]
+    change: []
+  }>(),
   { t } = useI18n(),
   id = useId()
 let timer: ReturnType<typeof setTimeout> | undefined,

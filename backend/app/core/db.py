@@ -1,10 +1,12 @@
 import asyncio
 import ssl
+import time
 
 from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 from app.core.config import Settings
+from app.core.request_context import query_timing
 
 
 def create_database_engine(settings: Settings) -> AsyncEngine | None:
@@ -31,6 +33,16 @@ def create_database_engine(settings: Settings) -> AsyncEngine | None:
         pool_timeout=settings.db_pool_timeout_seconds,
         hide_parameters=True,
     )
+
+    @event.listens_for(engine.sync_engine, "before_cursor_execute")
+    def before_query(conn, cursor, statement, parameters, context, executemany):
+        context._booking_started = time.perf_counter()
+
+    @event.listens_for(engine.sync_engine, "after_cursor_execute")
+    def after_query(conn, cursor, statement, parameters, context, executemany):
+        timing = query_timing.get()
+        if timing is not None:
+            timing.milliseconds += (time.perf_counter() - context._booking_started) * 1000
 
     @event.listens_for(engine.sync_engine, "connect")
     def set_select_timeout(connection, record) -> None:

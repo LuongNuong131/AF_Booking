@@ -267,29 +267,27 @@ class AuthService:
             )
         await self.notify_old_session(caller.id, caller.session_id, "password_changed")
 
-    async def kick_session(
-        self,
-        user_id: int,
-        *,
-        actor_id: int | None = None,
-        context: AuditContext | None = None,
-    ) -> bool:
+    async def kick_session(self, user_id, *, actor_id=None, context=None, caller=None):
         old_session = None
         async with self.mutation(user_id) as session:
-            row = await session.scalar(select(User).where(User.id == user_id).with_for_update())
-            if row is None:
-                raise ApiException(ErrorCode.NOT_FOUND)
+            if caller is not None:
+                from app.services.admin import locked_admin
+
+                row = await locked_admin(session, caller, user_id)
+            else:
+                row = await session.scalar(select(User).where(User.id == user_id).with_for_update())
+                if row is None:
+                    raise ApiException(ErrorCode.NOT_FOUND)
             old_session = row.current_session_id
             row.current_session_id = None
-            if old_session:
-                record_audit(
-                    session,
-                    "session_kicked",
-                    actor_id=actor_id,
-                    target_user_id=user_id,
-                    context=context,
-                    meta={"reason": "admin_kick"},
-                )
+            record_audit(
+                session,
+                "session_kicked",
+                actor_id=actor_id,
+                target_user_id=user_id,
+                context=context,
+                meta={"reason": "admin_kick", "had_session": old_session is not None},
+            )
         await self.notify_old_session(user_id, old_session, "admin_kick")
         return old_session is not None
 

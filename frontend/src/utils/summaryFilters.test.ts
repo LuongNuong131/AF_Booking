@@ -24,7 +24,10 @@ it('round-trips all filters and normalizes full/partial booking searches', () =>
     date_from: '2026-11-01',
     date_to: '2026-11-03',
   }
-  expect(readSummaryQuery(summaryQuery(filters, 2))).toEqual({ filters, page: 2 })
+  expect(readSummaryQuery(summaryQuery(filters, 2))).toEqual({
+    filters,
+    page: 2,
+  })
   expect(summaryParams(filters, 2, 'UTC')).toMatchObject({
     q: 'CW2154654-RDU-2609',
     period: '2609',
@@ -43,11 +46,19 @@ it('round-trips all filters and normalizes full/partial booking searches', () =>
   )
 })
 it('validates date/period conflicts and rejects malformed query values/return targets', () => {
-  expect(summaryValidation({ ...emptyFilters(), q: 'CW2154654-2609', period: '2026-10' })).toBe(
-    'bookingUi.periodConflict',
-  )
   expect(
-    summaryValidation({ ...emptyFilters(), date_from: '2026-11-03', date_to: '2026-11-01' }),
+    summaryValidation({
+      ...emptyFilters(),
+      q: 'CW2154654-2609',
+      period: '2026-10',
+    }),
+  ).toBe('bookingUi.periodConflict')
+  expect(
+    summaryValidation({
+      ...emptyFilters(),
+      date_from: '2026-11-03',
+      date_to: '2026-11-01',
+    }),
   ).toBe('bookingUi.invalidDates')
   const { filters, page } = readSummaryQuery({
     page: '-999',

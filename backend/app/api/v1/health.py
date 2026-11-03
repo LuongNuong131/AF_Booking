@@ -12,6 +12,12 @@ from app.schemas.contracts import ApiError, ErrorCode
 router = APIRouter(tags=["health"])
 
 
+@router.get("/health/warm")
+async def warm(request: Request):
+    request.app.state.warm_limiter.check(request.client.host if request.client else "unknown")
+    return await ready(request)
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     service: str = "booking-tracker-api"

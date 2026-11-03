@@ -49,7 +49,10 @@ it('shows a zoned confirmation and rejects dates in the past without a request',
   expect(post).not.toHaveBeenCalled()
 })
 it('keeps fields editable through failure and reuses the UUID on explicit retry', async () => {
-  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const config = {
+    method: 'post',
+    headers: new AxiosHeaders(),
+  } as InternalAxiosRequestConfig
   const post = vi
     .spyOn(api, 'post')
     .mockRejectedValue(new AxiosError('timeout', 'ECONNABORTED', config))
@@ -62,7 +65,10 @@ it('keeps fields editable through failure and reuses the UUID on explicit retry'
   await wrapper!.get('form').trigger('submit')
   await flushPromises()
   expect(post.mock.calls[0]?.[1]).toEqual(post.mock.calls[1]?.[1])
-  expect(post.mock.calls[0]?.[1]).toMatchObject({ remind_date: '2026-11-04', remind_time: '09:00' })
+  expect(post.mock.calls[0]?.[1]).toMatchObject({
+    remind_date: '2026-11-04',
+    remind_time: '09:00',
+  })
 })
 it('allows editing an overdue message while keeping its existing reminder date', async () => {
   const old = { ...task(), remind_at: '2026-11-02T01:00:00.000Z' }

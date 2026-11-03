@@ -12,7 +12,11 @@ const route = useRoute(),
 const cw = computed(() => String(route.params.cw)),
   folder = computed(() => store.detail(cw.value)?.folder)
 function open(key: string) {
-  void router.push({ name: 'booking', params: { key }, query: { from: route.fullPath } })
+  void router.push({
+    name: 'booking',
+    params: { key },
+    query: { from: route.fullPath },
+  })
 }
 </script>
 <template>

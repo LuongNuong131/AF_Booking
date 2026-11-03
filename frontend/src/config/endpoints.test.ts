@@ -9,7 +9,10 @@ it('uses VITE_API_URL before the legacy alias and derives the matching WebSocket
       },
       true,
     ),
-  ).toEqual({ apiUrl: 'https://primary.example/api/v1', wsUrl: 'wss://primary.example/api/v1/ws' })
+  ).toEqual({
+    apiUrl: 'https://primary.example/api/v1',
+    wsUrl: 'wss://primary.example/api/v1/ws',
+  })
   expect(resolveEndpoints({ VITE_API_BASE_URL: 'https://old.example/api/v1' }, true).apiUrl).toBe(
     'https://old.example/api/v1',
   )
