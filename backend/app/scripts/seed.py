@@ -24,14 +24,19 @@ class StatusSeed:
     suggest_task: bool = False
     invoice_required: bool = False
     note_required: bool = False
+    default_task_days: int | None = None
 
 
 # Position labels remain provisional; Prompt 4 requires notes for Rejection/Parking.
 # Existing Admin-managed values are never changed on a subsequent seed run.
 STATUS_SEEDS = (
     StatusSeed("DONE", "Done", 10, is_done=True, invoice_required=True),
-    StatusSeed("REJECTION", "Rejection", 20, suggest_task=True, note_required=True),
-    StatusSeed("PARKING", "Parking", 30, suggest_task=True, note_required=True),
+    StatusSeed(
+        "REJECTION", "Rejection", 20, suggest_task=True, note_required=True, default_task_days=3
+    ),
+    StatusSeed(
+        "PARKING", "Parking", 30, suggest_task=True, note_required=True, default_task_days=2
+    ),
     StatusSeed("BUNDLE", "Bundle", 40),
     StatusSeed("HRS_PREVIEW", "HRS Preview", 50),
 )
@@ -81,7 +86,7 @@ async def seed_database(
                     note_required=entry.note_required,
                     is_active=True,
                     stale_after_hours=None,
-                    default_task_days=None,
+                    default_task_days=entry.default_task_days,
                 )
             )
             created += 1

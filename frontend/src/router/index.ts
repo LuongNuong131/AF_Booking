@@ -121,6 +121,11 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
                 name: 'admin-suppliers',
                 component: () => import('../views/admin/AdminSuppliers.vue'),
               },
+              {
+                path: 'integrity',
+                name: 'admin-integrity',
+                component: () => import('../views/admin/AdminIntegrity.vue'),
+              },
             ],
           },
         ],

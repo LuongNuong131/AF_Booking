@@ -6,9 +6,9 @@ import { i18n } from '../i18n'
 import { api } from '../api/client'
 import { useAuthStore } from '../stores/auth'
 import { useFoldersStore } from '../stores/folders'
-import { user, statuses } from '../test/bookingFixtures'
+import { lookup, KEY, user, statuses } from '../test/bookingFixtures'
 import { CW, FKEY, folder, folderDetail, folderResult, folderLookup } from '../test/folderFixtures'
-import {draftStorage}from '../utils/bookingDrafts'
+import { draftStorage } from '../utils/bookingDrafts'
 import {
   createShortcutRegistry,
   shortcutRegistryKey,
@@ -105,4 +105,61 @@ it('moves keyboard focus to a folder result with the arrow keys', async () => {
   await flushPromises()
   await wrapper!.get('#booking-input').trigger('keydown', { key: 'ArrowDown' })
   expect(document.activeElement).toBe(wrapper!.get('.folder-card').element)
+})
+
+it('shows typo suggestions with keyboard navigation and requires a deliberate new-booking confirmation', async () => {
+  const missing = {
+    ...lookup(0),
+    booking_key: 'CW2154655-RDU-2609',
+    display_key: 'CW 2154655-RDU-2609',
+    resolution: {
+      ...lookup().resolution,
+      key: 'CW2154655-RDU-2609',
+      display_key: 'CW 2154655-RDU-2609',
+    },
+    group: { ...lookup().group!, cw_number: 'CW2154655' },
+    exists: false,
+    snapshot: null,
+    suggestions: [
+      {
+        booking_key: KEY,
+        display_key: 'CW 2154654-RDU-2609',
+        last_status: { code: 'BUNDLE', label: 'Bundle' },
+        last_agent: { id: 3, full_name: 'Agent' },
+        updated_at: '2026-11-03T08:00:00Z',
+        distance: 1,
+      },
+    ],
+  }
+  const get = vi.spyOn(api, 'get').mockImplementation(async (url, config) => ({
+    data:
+      url === '/statuses'
+        ? statuses
+        : (config?.params as { key?: string } | undefined)?.key === KEY
+          ? lookup()
+          : missing,
+  }))
+  render()
+  await flushPromises()
+  await wrapper!.get('#booking-input').setValue('CW2154655-RDU-2609')
+  await vi.advanceTimersByTimeAsync(150)
+  await flushPromises()
+  await wrapper!.findAll('.status-options button')[2]!.trigger('click')
+  expect(wrapper!.get('.save-note').attributes('disabled')).toBeDefined()
+  const confirmation = wrapper!
+    .findAll('.booking-new-confirm button')
+    .find((b) => b.text() === 'This is a new booking')!
+  await confirmation.trigger('click')
+  expect(wrapper!.get('.save-note').attributes('disabled')).toBeUndefined()
+  const noteField = wrapper!.get('#booking-note')
+  ;(noteField.element as HTMLTextAreaElement).focus()
+  await noteField.trigger('keydown', { key: 'ArrowDown' })
+  expect(document.activeElement).toBe(noteField.element)
+  await wrapper!.get('#booking-input').trigger('keydown', { key: 'ArrowDown' })
+  const suggestion = wrapper!.get('.booking-new-confirm [data-search-result]')
+  expect(document.activeElement).toBe(suggestion.element)
+  await suggestion.trigger('click')
+  await flushPromises()
+  expect((get.mock.calls.at(-1)?.[1]?.params as { key?: string } | undefined)?.key).toBe(KEY)
+  expect(wrapper!.find('.booking-new-confirm').exists()).toBe(false)
 })

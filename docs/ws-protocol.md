@@ -147,3 +147,11 @@ before that booking frame. Do not assume cross-event ordering. Private notificat
 are not dropped by booking coalescing. Client booking rendering batches frames using
 requestAnimationFrame and ignores an older/equal version. HTTP snapshots/histories are
 authoritative; after reconnect use catch-up reads and resume the durable note outbox.
+
+
+Prompt 8C integrity repair reuses booking.updated with snapshot_rebuilt:true after
+commit; a no-op repair emits nothing. It preserves operational updated_at but raises
+version, so clients must compare versions rather than assuming time always advances.
+MAX(non-deleted note id) now determines the final snapshot after moderation/repair.
+No integrity-specific socket event is added; its Admin progress page uses bounded
+progress-only reads while a run is active.

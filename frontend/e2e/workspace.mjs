@@ -137,6 +137,7 @@ try {
   await a.page.getByLabel('Station code', { exact: true }).fill('yul')
   await a.page.getByRole('button', { name: 'Continue', exact: true }).click()
   await a.page.getByLabel('Supplier name', { exact: true }).fill('New Airport Hotel')
+  await a.page.getByRole('button', { name: 'This is a new booking', exact: true }).click()
   await write(a.page, 'First update for a new supplier')
   await save(a.page)
   await expect(a.page.locator('.booking-summary-card')).toContainText('New Airport Hotel')

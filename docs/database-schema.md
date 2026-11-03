@@ -1,6 +1,6 @@
 # Database schema — Prompt 2
 
-Schema foundations and migration checks began in Prompt 2. Prompt 4 adds migration `0002`, storing `booking_notes.request_fingerprint` (SHA-256) and `save_result` (JSON) so retries return the original note/snapshot after later updates. Prompt 7B adds migration `0003`, storing `booking_tasks.request_fingerprint` and `create_result` for durable task-creation replay. Apply `alembic upgrade head` before running the booking/task API. The initial migration remains frozen.
+Schema foundations and migration checks began in Prompt 2. Prompt 4 adds migration `0002`, storing `booking_notes.request_fingerprint` (SHA-256) and `save_result` (JSON) so retries return the original note/snapshot after later updates. Prompt 7B adds migration `0003`, storing `booking_tasks.request_fingerprint` and `create_result` for durable task-creation replay. Apply `alembic upgrade head` before running the booking/task API. The initial migration remains frozen. Prompt 8C adds migration `0004`: nullable unsigned SMALLINT reminder days and the twelfth application table, `integrity_runs`. See [safeguards-integrity.md](safeguards-integrity.md) before upgrading existing status defaults.
 
 ## Files and storage rules
 

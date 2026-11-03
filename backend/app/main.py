@@ -26,6 +26,7 @@ from app.services.booking_reads import BookingReads
 from app.services.booking_writes import BookingWrites
 from app.services.exports import ExportService
 from app.services.folders import FolderService
+from app.services.integrity import IntegrityService
 from app.services.key_index import KeyIndex
 from app.services.reports import ReportService
 from app.services.scheduler import Scheduler
@@ -96,6 +97,15 @@ def create_app(
             ws_manager,
             application.state.reports,
         )
+        application.state.integrity = IntegrityService(
+            application.state.engine, config, application.state.admin
+        )
+        scheduler.add_job(
+            "integrity.nightly",
+            application.state.integrity.tick,
+            interval=30,
+            timeout=config.scheduler_job_timeout_seconds,
+        )
         stale_reminders = StaleReminders(application.state.engine, config, ws_manager)
         application.state.scheduler = scheduler
         application.state.stale_reminders = stale_reminders
@@ -121,6 +131,7 @@ def create_app(
             yield
         finally:
             await scheduler.stop()
+            await application.state.integrity.stop()
             await ws_manager.stop()
             await index.stop()
             if application.state.engine is not None:

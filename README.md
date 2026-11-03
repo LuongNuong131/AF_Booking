@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: Prompts 1–8B, with later-prompt features still pending.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin user/audit/note/status/Supplier management, QC reports/daily CSV/XLSX and personal profiles. Save now uses an optimistic durable outbox with UUID retries, SWR lookup/cache, warmup and measured performance. See [Admin/QC/Profile](docs/admin-qc-profile.md) and [responsiveness/benchmarks](docs/performance-8b.md). Full invoice management, assignments/watch, push and integrity/recovery tools remain for their prompts.
+**Current scope: Prompts 1–8C, with later-prompt features still pending.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin user/audit/note/status/Supplier management, QC reports/daily CSV/XLSX and personal profiles. Save now uses an optimistic durable outbox with UUID retries, SWR lookup/cache, warmup and measured performance. See [Admin/QC/Profile](docs/admin-qc-profile.md) and [responsiveness/benchmarks](docs/performance-8b.md). Full invoice management, assignments/watch, push and broader recovery tools remain for their prompts.
 
 ## Stack and hosting
 
@@ -61,3 +61,9 @@ Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.m
 Database migrate/seed/rollback commands, provisional status rules, index rationale, and real EXPLAIN reports: [docs/database-schema.md](docs/database-schema.md).
 
 Deployment instructions: [docs/deploy.md](docs/deploy.md). Implementation boundaries and next steps: [PROJECT_STATE.md](PROJECT_STATE.md). Product constraints: [docs/product-context.md](docs/product-context.md).
+
+
+Prompt 8C adds typo suggestions/new-booking confirmation, duplicate-note review,
+status reminder defaults and nightly/Admin snapshot integrity checks. Upgrade to
+migration **0004** before starting this version; read
+[safeguards and integrity](docs/safeguards-integrity.md) for defaults and repair scope.

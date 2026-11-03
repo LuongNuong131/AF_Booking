@@ -131,6 +131,8 @@ try {
   await page.getByLabel('Supplier name', { exact: true }).fill('AB')
   await expect(page.locator('.save-note')).toBeDisabled()
   await page.getByLabel('Supplier name', { exact: true }).fill('New Crew Hotel')
+  await expect(page.locator('.save-note')).toBeDisabled()
+  await page.getByRole('button', { name: 'This is a new booking', exact: true }).click()
   await expect(page.locator('.save-note')).toBeEnabled()
   await search.fill('YUL-2608')
   await expect(page.locator('.smart-results .month-row')).toHaveCount(2)

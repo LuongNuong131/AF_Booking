@@ -50,7 +50,7 @@ class Status(Base):
     is_active: Mapped[bool] = mapped_column(mysql.BOOLEAN, server_default=text("1"))
     stale_after_hours: Mapped[int | None] = mapped_column(mysql.INTEGER(unsigned=True))
     suggest_task: Mapped[bool] = mapped_column(mysql.BOOLEAN, server_default=text("0"))
-    default_task_days: Mapped[int | None] = mapped_column(mysql.INTEGER(unsigned=True))
+    default_task_days: Mapped[int | None] = mapped_column(mysql.SMALLINT(unsigned=True))
     invoice_required: Mapped[bool] = mapped_column(mysql.BOOLEAN, server_default=text("0"))
 
 
@@ -278,3 +278,20 @@ class BookingInvoice(CreatedAt, Base):
     booking_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
     invoice_number: Mapped[str] = mapped_column(ascii_varchar(40), nullable=False)
     added_by: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+
+
+class IntegrityRun(Base):
+    __tablename__ = "integrity_runs"
+    __table_args__ = (Index("ix_integrity_runs_started_at", "started_at", "id"), TABLE_OPTIONS)
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    started_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(), server_default=text("CURRENT_TIMESTAMP(3)")
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    checked: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), server_default=text("0"))
+    mismatched: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), server_default=text("0"))
+    fixed: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), server_default=text("0"))
+    status: Mapped[str] = mapped_column(mysql.VARCHAR(16), nullable=False)
+    details: Mapped[dict[str, JsonValue]] = mapped_column(
+        mysql.JSON(none_as_null=True), nullable=False
+    )

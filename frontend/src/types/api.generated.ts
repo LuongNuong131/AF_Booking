@@ -65,6 +65,18 @@ export type HeartbeatFrame = { "event": "ping" | "pong"; "data": EmptyData }
 
 export type InputKind = "full" | "partial" | "invalid"
 
+export type IntegrityDetails = { "mode": "report" | "fix"; "trigger": "manual" | "scheduled"; "requested_by"?: number | null; "source_run_id"?: number | null; "scheduled_day"?: string | null; "high_water_id"?: number; "items"?: Array<IntegrityFinding>; "truncated"?: boolean; "error"?: string | null }
+
+export type IntegrityDifference = { "actual": JsonValue; "expected": JsonValue }
+
+export type IntegrityFinding = { "booking_key": string; "display_key": string; "fields": { [key: string]: IntegrityDifference }; "repairable"?: boolean; "fixed"?: boolean }
+
+export type IntegrityFix = { "run_id": number }
+
+export type IntegrityHistory = { "items": Array<IntegrityRunDTO>; "total": number; "page": number; "size": number; "autofix_enabled": boolean; "run_time": string; "timezone": string }
+
+export type IntegrityRunDTO = { "id": number; "started_at": string; "finished_at": string | null; "checked": number; "mismatched": number; "fixed": number; "status": "running" | "completed" | "failed" | "interrupted"; "details": IntegrityDetails }
+
 export type Invoice = { "id": number; "invoice_number": string; "added_by": AgentSummary; "created_at": string }
 
 export type InvoiceChange = { "add"?: Array<string>; "remove_ids"?: Array<number>; "no_invoice"?: boolean }

@@ -282,3 +282,22 @@ runner owns port 5173; do not run two browser suites simultaneously.
 For key/index measurements and raw before/after JSON/EXPLAIN use
 [performance-8b.md](performance-8b.md). Benchmarks use isolated local databases, not
 hosted provider latency. Current schema remains 0003; no new migration was needed.
+
+
+## Prompt 8C
+
+Current checks pass 143 backend unit tests (115 separately configured integration
+cases skipped in that ordinary run), 201 Vitest tests and strict production build.
+On EACH disposable TLS MySQL/TiDB, schema parity/downgrade/re-upgrade to 0004 (1),
+auth (16), booking (27), folder (22), Admin (6), realtime (20), tasks (4) and safeguards
+(8) pass. Old migration files remain unchanged. Shared fixtures explicitly declare
+intended repeated/new operations; the safeguard suite tests both confirmation guards
+without those overrides. New tests also cover nullable source data, fresh locked
+repair, preserved clock/invoices, system scheduling and cancellation/restart.
+
+The 50k-booking/50k-note benchmark checks every booking, limits the sample to 200,
+repairs all 250 injected mismatches and measures concurrent lookup; raw data and
+reproduction commands are in [safeguards-integrity.md](safeguards-integrity.md).
+The browser runner now has seven scripts, adding genuine suggestion-keyboard,
+new/duplicate confirmation, status reminder and Admin integrity repair/mobile/ACL
+flows. Its corruption command exists only in the disposable test harness.

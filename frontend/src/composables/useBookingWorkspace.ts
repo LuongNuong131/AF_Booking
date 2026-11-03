@@ -25,6 +25,7 @@ import type {
   NoteSaveRequest,
   NoteSaveResponse,
   SupplierType,
+  Suggestion,
 } from '../types/api.generated'
 
 export function useBookingWorkspace() {
@@ -52,6 +53,25 @@ export function useBookingWorkspace() {
     noInvoice = ref(false)
   const draftFailed = ref(false),
     draftPending = ref(false)
+  const newConfirmed = ref(false),
+    duplicate = ref(false)
+  const duplicateNote = shallowRef<Note | null>(null),
+    duplicateSeconds = ref(0)
+  const validationSuggestions = shallowRef<Suggestion[]>([])
+  watch(
+    key,
+    () => {
+      newConfirmed.value = false
+      duplicate.value = false
+      validationSuggestions.value = []
+    },
+    { flush: 'sync' },
+  )
+  const suggestions = computed(() =>
+    validationSuggestions.value.length
+      ? validationSuggestions.value
+      : (current.value?.suggestions ?? []),
+  )
   const online = useOnline()
   const lastSaved = shallowRef<{ key: string; status: string; at: number } | null>(null)
   let lookupInput = '',
@@ -152,6 +172,7 @@ export function useBookingWorkspace() {
       !!key.value &&
       inputMatches.value &&
       stationMatches.value &&
+      (!!current.value?.exists || newConfirmed.value) &&
       !!selectedStatus.value &&
       (!selectedStatus.value.note_required || !!note.value.trim()) &&
       (!needsSupplier.value || supplierName.value.trim().length >= 3) &&
@@ -353,7 +374,7 @@ export function useBookingWorkspace() {
     conflict.value = false
     hasUpdate.value = key.value ? newerRemote(key.value, result.version) : false
   }
-  async function save(): Promise<boolean> {
+  async function save(allowDuplicate = false): Promise<boolean> {
     if (disposed || !canSave.value || !key.value) return false
     const submittedStatus = statusCode.value,
       submittedNote = note.value
@@ -366,7 +387,8 @@ export function useBookingWorkspace() {
             invoices: noInvoice.value ? { no_invoice: true } : { add: invoiceNumbers.value },
           }
         : {}),
-      ...(!current.value?.exists ? { confirm_new: true } : {}),
+      ...(!current.value?.exists ? { confirm_new: newConfirmed.value } : {}),
+      ...(allowDuplicate ? { allow_duplicate: true } : {}),
       ...(needsSupplier.value
         ? {
             supplier_name: supplierName.value.trim(),
@@ -401,6 +423,16 @@ export function useBookingWorkspace() {
       conflict.value = true
       void loadConflict()
     } else if (entry.error?.code === 'STATUS_INACTIVE') void statusRequest.run(true)
+    else if (entry.error?.code === 'NEW_BOOKING_NEEDS_CONFIRM') {
+      newConfirmed.value = false
+      const details = entry.error.details as { suggestions?: Suggestion[] } | undefined
+      validationSuggestions.value = details?.suggestions ?? []
+    } else if (entry.error?.code === 'DUPLICATE_RECENT_NOTE') {
+      const details = entry.error.details as { note?: Note; seconds?: number } | undefined
+      duplicateNote.value = details?.note ?? null
+      duplicateSeconds.value = details?.seconds ?? 0
+      duplicate.value = true
+    }
   }
   const stopOutbox = outbox.subscribe((entry, result) => {
     if (disposed || entry.key !== key.value) return
@@ -502,6 +534,11 @@ export function useBookingWorkspace() {
   })
   return {
     input,
+    newConfirmed,
+    suggestions,
+    duplicate,
+    duplicateNote,
+    duplicateSeconds,
     key,
     current: visibleCurrent,
     snapshot,

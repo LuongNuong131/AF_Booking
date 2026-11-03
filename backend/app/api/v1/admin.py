@@ -24,6 +24,7 @@ from app.schemas.admin import (
 from app.schemas.bookings import BookingItem
 from app.schemas.contracts import ErrorCode, Page
 from app.schemas.folders import StationOption
+from app.schemas.integrity import IntegrityFix, IntegrityHistory, IntegrityRunDTO
 from app.services.audit import AuditContext
 from app.services.session_cache import CurrentUser
 
@@ -175,4 +176,21 @@ async def export(
     day = date or datetime.now(ZoneInfo(request.app.state.settings.business_timezone)).date()
     return await request.app.state.exports.daily(
         day, format, agent_id, status_code, request, user, AuditContext.from_request(request)
+    )
+
+
+@router.get("/admin/integrity", response_model=IntegrityHistory)
+async def integrity_history(request: Request, user: Admin, page: PageNumber = 1, size: Size = 20):
+    return await request.app.state.integrity.history(page, size)
+
+
+@router.post("/admin/integrity/run", response_model=IntegrityRunDTO, status_code=202)
+async def integrity_run(request: Request, user: Admin):
+    return await request.app.state.integrity.start(user, AuditContext.from_request(request))
+
+
+@router.post("/admin/integrity/fix", response_model=IntegrityRunDTO, status_code=202)
+async def integrity_fix(body: IntegrityFix, request: Request, user: Admin):
+    return await request.app.state.integrity.start(
+        user, AuditContext.from_request(request), source_run_id=body.run_id
     )

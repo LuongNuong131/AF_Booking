@@ -126,6 +126,8 @@ it('requires a station and Supplier before saving a brand new CW', async () => {
   w.supplierName.value = ' AB '
   expect(w.canSave.value).toBe(false)
   w.supplierName.value = 'New Hotel'
+  expect(w.canSave.value).toBe(false)
+  w.newConfirmed.value = true
   expect(w.canSave.value).toBe(true)
 })
 it('keeps a draft on foreign realtime updates and refreshes without replacing the note', async () => {
@@ -350,9 +352,16 @@ it('reports a real storage failure without losing the in-memory note', async () 
 })
 
 it('does not resurrect a moderated note from an older committed UUID replay', async () => {
-  vi.spyOn(api, 'get').mockResolvedValueOnce({ data: lookup() }).mockResolvedValue({ data: lookup(3) })
+  vi.spyOn(api, 'get')
+    .mockResolvedValueOnce({ data: lookup() })
+    .mockResolvedValue({ data: lookup(3) })
   let finish!: (value: unknown) => void
-  vi.spyOn(api, 'post').mockImplementation(() => new Promise(done => { finish = done }))
+  vi.spyOn(api, 'post').mockImplementation(
+    () =>
+      new Promise((done) => {
+        finish = done
+      }),
+  )
   const w = setup()
   await w.open(KEY)
   w.statusCode.value = 'BUNDLE'
@@ -362,6 +371,43 @@ it('does not resurrect a moderated note from an older committed UUID replay', as
   expect(w.current.value?.version).toBe(3)
   finish({ data: saved(2) })
   await vi.waitFor(() => expect(useOutboxStore().count).toBe(0))
-  expect(w.notes.value.map(n => n.id)).toEqual([3])
+  expect(w.notes.value.map((n) => n.id)).toEqual([3])
   expect(w.current.value?.version).toBe(3)
+})
+
+it('restores a duplicate note for confirmation and sends only an explicit override', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })
+  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const post = vi
+    .spyOn(api, 'post')
+    .mockRejectedValueOnce(
+      new AxiosError('Duplicate', '', config, undefined, {
+        status: 409,
+        statusText: '',
+        headers: {},
+        config,
+        data: {
+          code: 'DUPLICATE_RECENT_NOTE',
+          message: 'Duplicate',
+          details: { note: saved(1).note, seconds: 4 },
+        },
+      }),
+    )
+    .mockResolvedValueOnce({ data: saved(2) })
+  const w = setup()
+  await w.open(KEY)
+  w.statusCode.value = 'BUNDLE'
+  w.note.value = 'Repeated message'
+  expect(await w.save()).toBe(true)
+  await vi.waitFor(() => expect(w.duplicate.value).toBe(true))
+  expect(w.note.value).toBe('Repeated message')
+  expect(w.duplicateSeconds.value).toBe(4)
+  expect(post).toHaveBeenCalledTimes(1)
+  w.duplicate.value = false
+  expect(await w.save(true)).toBe(true)
+  await vi.waitFor(() => expect(post).toHaveBeenCalledTimes(2))
+  expect(post.mock.calls[1]?.[1]).toMatchObject({ allow_duplicate: true, note: 'Repeated message' })
+  expect((post.mock.calls[1]?.[1] as { client_request_id: string }).client_request_id).not.toBe(
+    (post.mock.calls[0]?.[1] as { client_request_id: string }).client_request_id,
+  )
 })

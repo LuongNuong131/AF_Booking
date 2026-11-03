@@ -76,7 +76,15 @@ class BackendListener:
 
 @pytest.mark.parametrize(
     "browser_script",
-    ["smoke.mjs", "workspace.mjs", "tasks.mjs", "folders.mjs", "admin.mjs", "outbox.mjs"],
+    [
+        "smoke.mjs",
+        "workspace.mjs",
+        "tasks.mjs",
+        "folders.mjs",
+        "admin.mjs",
+        "outbox.mjs",
+        "safeguards.mjs",
+    ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
     rig, browser_account, tmp_path, browser_script
@@ -173,6 +181,16 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
                                 )
                             )
                         await rig.app.state.tasks.due_job()
+                    elif event.get("action") == "integrity_drift":
+                        async with rig.app.state.engine.begin() as connection:
+                            await connection.execute(
+                                update(Booking)
+                                .where(Booking.booking_key == "CW2154654-RDU-2609")
+                                .values(
+                                    last_position="Broken snapshot", updated_at=Booking.updated_at
+                                )
+                            )
+                        rig.app.state.snapshot_cache.clear()
                     elif event.get("action") == "takeover":
                         assert (await rig.save(user="other", version=1)).status_code == 200
                     elif event.get("action") == "folder_update":

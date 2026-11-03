@@ -30,6 +30,7 @@ from app.models import (
     BookingInvoice,
     BookingNote,
     BookingTask,
+    IntegrityRun,
     Notification,
     Station,
     Status,
@@ -56,6 +57,8 @@ class Rig:
             "note": "Checking supplier mail",
             "expected_version": version,
             "client_request_id": str(uuid4()),
+            "confirm_new": True,
+            "allow_duplicate": True,
             "supplier_name": "Example Hotel",
             "supplier_type": "hotel",
         }
@@ -100,6 +103,7 @@ async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
         await app.state.key_index.stop()
         async with app.state.engine.begin() as connection:
             for model in (
+                IntegrityRun,
                 Attachment,
                 Notification,
                 BookingInvoice,

@@ -3634,3 +3634,12 @@ kbd {
   .admin-users-table { min-width:900px; }
   .admin-users-table td:nth-child(3), .admin-users-table td:nth-child(5) { white-space:nowrap; }
 }
+
+.booking-new-confirm {padding:16px; margin:12px 0; border:1px solid #d6a43b; border-radius:10px; background:color-mix(in srgb, #f4b63f 12%, var(--surface));}
+.booking-new-confirm p {margin:0 0 10px;font-size:13px;}
+.integrity-history-card {display:grid; gap:14px;}
+.integrity-history-card > header {display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:space-between;}
+.integrity-counts {display:flex; gap:18px; flex-wrap:wrap; font-size:13px;}
+.integrity-differences {width:100%;border-collapse:collapse;font-size:12px;}
+.integrity-differences td,.integrity-differences th {padding:8px;text-align:left;overflow-wrap:anywhere;vertical-align:top;border-bottom:1px solid var(--line);}
+.integrity-finding {margin-top:12px; border:1px solid var(--line); padding:14px; border-radius:8px;}

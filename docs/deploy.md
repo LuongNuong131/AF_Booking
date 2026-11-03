@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the backend and frontend through Prompt 8B. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; Admin/QC/Profile and durable note sending are implemented; full invoice features remain. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
+This guide deploys the backend and frontend through Prompt 8C. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; Admin/QC/Profile and durable note sending are implemented; full invoice features remain. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 
@@ -117,3 +117,11 @@ hashed `/assets/` for a year with immutable, while Vite inserts API preconnect a
 bundles the local Inter font. Warmup reduces sleeping-API delay after opening Login;
 it does not guarantee a free instance cold-start budget. Use one backend instance/worker
 until auth caches, scheduler, locks and event coalescing are moved to shared storage.
+
+
+Apply migration 0004 before deploying Prompt 8C. Existing null Rejection/Parking
+reminder days become 3/2; review these in Admin statuses after upgrade. Integrity is
+report-only by default, nightly at INTEGRITY_RUN_TIME=02:00 in BUSINESS_TIMEZONE.
+INTEGRITY_AUTOFIX=true explicitly enables repair; the Admin page displays that mode.
+Run history is durable in TiDB, but an asleep service catches up after it wakes.
+See docs/safeguards-integrity.md for repair bounds and timeout settings.

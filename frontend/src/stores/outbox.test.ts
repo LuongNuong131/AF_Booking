@@ -156,3 +156,27 @@ it('cancels loading on sign-out without discarding the durable note', async () =
   expect(persisted).toHaveLength(1)
   expect(persisted[0].state).toBe('queued')
 })
+
+it.each(['NEW_BOOKING_NEEDS_CONFIRM', 'DUPLICATE_RECENT_NOTE'])(
+  'stops automatic outbox retries for %s',
+  async (code) => {
+    const outbox = useOutboxStore(),
+      config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+    const post = vi
+      .spyOn(api, 'post')
+      .mockRejectedValue(
+        new AxiosError('Review', '', config, undefined, {
+          status: code === 'DUPLICATE_RECENT_NOTE' ? 409 : 422,
+          statusText: '',
+          headers: {},
+          config,
+          data: { code, message: code },
+        }),
+      )
+    outbox.enqueue(lookup(), payload())
+    await settle()
+    expect(outbox.entries[0]?.state).toBe('blocked')
+    await vi.advanceTimersByTimeAsync(60000)
+    expect(post).toHaveBeenCalledTimes(1)
+  },
+)

@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Full invoice management/reports, assignments/watch, service-worker Web Push, invoice exports, and integrity/recovery tools. Do not describe this as the completed booking application.
+Full invoice management/reports, assignments/watch, service-worker Web Push, invoice exports, and broader recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -143,3 +143,12 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 - Route/detail hover/idle preloads, virtualized long timeline/table, shallow list state, v-memo, animation-frame updates, 100 ms server coalescing, GZip/ORJSON and HTTP/DB timing diagnostics.
 - Local font/preconnect/immutable assets, direct Render requests, Singapore Blueprint region. Raw MySQL/TiDB before/after lookup reports and limitations are in docs/performance-8b.md.
 - Test evidence is recorded in docs/testing.md. Hosted deployment credentials remain operator-provided; no provider resources have been provisioned.
+
+## Implemented: Prompt 8C safeguards and snapshot integrity
+
+- Bounded numeric CW edits/month suggestions through KeyIndex or a single indexed fallback; explicit new-booking confirmation in UI/server.
+- Normalized same-user/status/booking duplicate detection over 60 seconds, preserving UUID replay; explicit Send anyway/Cancel and outbox business-error recovery.
+- Status-specific reminder date/selected chip; new migration 0004 narrows the early task-day field and seeds assumed 3/2 defaults without editing prior migrations.
+- Durable integrity_runs, high-water/keyset 1000-row MAX-live-note-ID scans, 50 ms yields, 200 findings limit, nightly business-time scheduling/catch-up, report-only default and opt-in autofix.
+- Admin history/progress/details/confirmed repair, per-booking locks/fresh ACL/audit/cache/index/realtime and preserved operational clock/invoices. Interrupted runs recover explicitly.
+- docs/safeguards-integrity.md records API/migration/manual checks and 50k-booking/50k-note measurements on both engines; raw reports include EXPLAIN and concurrent lookup latency.

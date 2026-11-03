@@ -155,10 +155,14 @@ onMounted(() => {
     <form class="task-form" :aria-label="t('taskUi.reminderForm')" @submit.prevent="submit">
       <div class="task-quick-days">
         <button
-          v-for="days in [1, 2, 3, 5, 7]"
+          v-for="days in [
+            ...new Set([1, 2, 3, 5, 7, ...(config.presetDays ? [config.presetDays] : [])]),
+          ].sort((a, b) => a - b)"
           :key="days"
           type="button"
           class="button"
+          :class="{ selected: date === quickReminderDate(today, days, skip) }"
+          :aria-pressed="date === quickReminderDate(today, days, skip)"
           @click="quick(days)"
         >
           {{

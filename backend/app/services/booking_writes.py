@@ -1,7 +1,7 @@
 import hashlib
 import json
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.dialects.mysql import insert
@@ -27,6 +27,7 @@ from app.services.audit import record_audit
 from app.services.auth import AuthService
 from app.services.booking_reads import invoice_previews, snapshot_from_row, snapshot_query
 from app.services.key_index import GroupEntry, KeyEntry
+from app.services.suggestions import Suggestions
 from app.utils.booking_key import ParsedKey, PartialKey, build_key, parse, to_display
 from app.utils.text import clean_note
 
@@ -55,6 +56,7 @@ class BookingWrites:
     def __init__(self, engine, settings, index, cache, ws_manager):
         self.engine, self.settings, self.index, self.cache = engine, settings, index, cache
         self.ws_manager = ws_manager
+        self.suggestions = Suggestions(engine, settings, index)
 
     async def invoices(self, session, booking, change, user, status):
         rows = (
@@ -278,6 +280,17 @@ class BookingWrites:
                             .with_for_update()
                         )
                         if booking is None:
+                            if not body.confirm_new:
+                                suggestions = await self.suggestions.find(parsed.key, session)
+                                if suggestions:
+                                    raise ApiException(
+                                        ErrorCode.NEW_BOOKING_NEEDS_CONFIRM,
+                                        details={
+                                            "suggestions": [
+                                                s.model_dump(mode="json") for s in suggestions
+                                            ]
+                                        },
+                                    )
                             if body.expected_version != 0:
                                 raise ApiException(
                                     ErrorCode.VERSION_CONFLICT,
@@ -308,6 +321,43 @@ class BookingWrites:
                             raise ApiException(
                                 ErrorCode.VERSION_CONFLICT, details=latest.model_dump(mode="json")
                             )
+                        if not body.allow_duplicate:
+                            recent = (
+                                await session.scalars(
+                                    select(BookingNote)
+                                    .where(
+                                        BookingNote.booking_id == booking.id,
+                                        BookingNote.agent_id == user.id,
+                                        BookingNote.status_id == status.id,
+                                        BookingNote.created_at >= now - timedelta(seconds=60),
+                                        BookingNote.created_at <= now,
+                                        BookingNote.deleted_at.is_(None),
+                                    )
+                                    .order_by(BookingNote.id.desc())
+                                )
+                            ).all()
+                            normalized = " ".join((cleaned or "").split()).casefold()
+                            for previous in recent:
+                                if " ".join((previous.note or "").split()).casefold() == normalized:
+                                    dto = Note(
+                                        id=previous.id,
+                                        agent={"id": live.id, "full_name": live.full_name},
+                                        status={"code": status.code, "label": status.label},
+                                        position=previous.position_label,
+                                        note=previous.note,
+                                        created_at=previous.created_at,
+                                        attachments=[],
+                                        invoice_change=previous.invoice_change,
+                                    )
+                                    raise ApiException(
+                                        ErrorCode.DUPLICATE_RECENT_NOTE,
+                                        details={
+                                            "note": dto.model_dump(mode="json"),
+                                            "seconds": max(
+                                                0, int((now - previous.created_at).total_seconds())
+                                            ),
+                                        },
+                                    )
                         change = await self.invoices(session, booking, body.invoices, live, status)
                         note = BookingNote(
                             booking_id=booking.id,

@@ -88,13 +88,17 @@ watch(
     emit('saved', saved.key)
   },
 )
-async function save() {
-  if (await w.save()) {
+async function save(allowDuplicate = false) {
+  if (await w.save(allowDuplicate === true)) {
     await nextTick()
     inputRef.value?.focus()
   }
 }
 
+async function confirmDuplicate() {
+  w.duplicate = false
+  await save(true)
+}
 function clear() {
   if (props.detail) return
   nav.root()
@@ -108,7 +112,7 @@ function stationInput(event: Event) {
     .slice(0, 3)
 }
 useBookingShortcuts({
-  enabled: () => !w.conflict,
+  enabled: () => !w.conflict && !w.duplicate,
   input: () => inputRef.value,
   scope: () => formScope.value,
   lookup,
@@ -133,6 +137,12 @@ function back() {
 function resultsKeyboard(event: KeyboardEvent) {
   if (props.detail || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+  const target = event.target as HTMLElement
+  if (
+    target.closest('textarea,select,[contenteditable="true"]') ||
+    (target instanceof HTMLInputElement && target !== inputRef.value)
+  )
+    return
   const results = Array.from(
     formScope.value?.querySelectorAll<HTMLButtonElement>('[data-search-result]') ?? [],
   )
@@ -422,6 +432,32 @@ defineExpose({
             {{ t('bookingUi.refresh') }}
           </button>
         </div>
+        <aside v-if="!w.current.exists" class="booking-new-confirm" role="status">
+          <p v-if="w.suggestions.length">{{ t('suggest_title') }}</p>
+          <p v-else>{{ t('new_booking') }}</p>
+          <button
+            v-for="suggestion in w.suggestions"
+            :key="suggestion.booking_key"
+            type="button"
+            data-search-result
+            class="candidate-button"
+            @click="open(suggestion.booking_key)"
+          >
+            <strong>{{ suggestion.display_key }}</strong
+            ><span
+              >{{ suggestion.last_status?.label }} · {{ suggestion.last_agent?.full_name }}</span
+            >
+          </button>
+          <button
+            type="button"
+            class="button"
+            :class="{ selected: w.newConfirmed }"
+            :aria-pressed="w.newConfirmed"
+            @click="w.newConfirmed = !w.newConfirmed"
+          >
+            {{ t('confirm_new') }}
+          </button>
+        </aside>
         <BookingSummaryCard :booking="w.current" @supplier-updated="w.refresh" />
         <BookingTimeline
           :notes="w.notes"
@@ -449,7 +485,7 @@ defineExpose({
             :draft-failed="w.draftFailed"
             :draft-pending="w.draftPending"
             :restored="w.draftRestored"
-            @save="save"
+            @save="save()"
             @discard="w.discardDraft"
             @engage="w.engage"
             ><template #fields
@@ -534,6 +570,24 @@ defineExpose({
         </div>
       </template>
     </template>
+    <ElDialog
+      v-model="w.duplicate"
+      :destroy-on-close="true"
+      :title="t('guardUi.duplicateTitle')"
+      width="600px"
+      align-center
+      :close-on-click-modal="false"
+    >
+      <p>{{ t('duplicate_note', { seconds: w.duplicateSeconds }) }}</p>
+      <BookingTimeline v-if="w.duplicateNote" :notes="[w.duplicateNote]" compact />
+      <template #footer
+        ><button type="button" class="button" @click="w.duplicate = false">
+          {{ t('guardUi.cancel') }}</button
+        ><button type="button" class="button primary" @click="confirmDuplicate">
+          {{ t('guardUi.sendAnyway') }}
+        </button></template
+      >
+    </ElDialog>
     <ElDialog
       v-model="w.conflict"
       :title="

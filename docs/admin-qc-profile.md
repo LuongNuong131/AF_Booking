@@ -4,7 +4,7 @@ Admin pages are `/admin/users`, `/admin/audit`, `/admin/bookings`, `/admin/trash
 `/admin/statuses` and `/admin/suppliers`. Reports are `/reports` for Admin/QC.
 Every active user can open `/profile`. Both router guards and backend dependencies
 check roles; critical mutations also lock and recheck the actor's current SID/role
-inside the transaction. No schema migration is needed beyond `0003`.
+inside the transaction. Prompt 8 required no new migration; Prompt 8C now requires `0004`.
 
 ## Accounts and audit
 
@@ -29,7 +29,7 @@ Trash shows the author, deletion actor/time/reason and a confirmed Restore actio
 Admin operations wait for the committed server response; they have no optimistic UI.
 
 Delete/restore locks group, booking and note in that order after authenticating the
-actor, then rebuilds from the latest surviving note by `(created_at,id)`. It restores
+actor, then rebuilds from the latest surviving note by its greatest ID (Prompt 8C). It restores
 last status, stored position, agent and preview; Done time is that note's original
 creation time. With no surviving notes these fields and Done time become null.
 The booking/folder and invoices remain. Every effective mutation increments version,

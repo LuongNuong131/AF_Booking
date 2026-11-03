@@ -18,6 +18,7 @@ from app.services.booking_reads import invoice_previews, snapshot_from_row, snap
 from app.services.booking_writes import group_entry
 from app.services.key_index import KeyEntry
 from app.services.session_cache import CurrentUser
+from app.services.snapshot_values import apply_snapshot, note_snapshot
 from app.services.tasks import effective_settings, now_utc
 from app.utils.booking_key import to_display
 
@@ -266,9 +267,7 @@ class AdminService:
             total = await session.scalar(select(func.count()).select_from(query.subquery()))
             rows = (
                 await session.execute(
-                    query.order_by(BookingNote.created_at.desc(), BookingNote.id.desc())
-                    .offset((page - 1) * size)
-                    .limit(size)
+                    query.order_by(BookingNote.id.desc()).offset((page - 1) * size).limit(size)
                 )
             ).all()
         items = [
@@ -335,18 +334,23 @@ class AdminService:
                         select(BookingNote, Status.is_done)
                         .join(Status, Status.id == BookingNote.status_id)
                         .where(BookingNote.booking_id == book.id, BookingNote.deleted_at.is_(None))
-                        .order_by(BookingNote.created_at.desc(), BookingNote.id.desc())
+                        .order_by(BookingNote.id.desc())
                         .limit(1)
                     )
                 ).first()
                 n = latest.BookingNote if latest else None
-                book.last_note_id = n.id if n else None
-                book.last_agent_id = n.agent_id if n else None
-                book.last_status_id = n.status_id if n else None
-                book.last_position = n.position_label if n else None
-                book.last_note_preview = n.note[:255] if n and n.note else None
-                book.is_done = bool(latest.is_done) if latest else False
-                book.done_at = n.created_at if n and book.is_done else None
+                apply_snapshot(
+                    book,
+                    note_snapshot(
+                        n.id if n else None,
+                        n.agent_id if n else None,
+                        n.status_id if n else None,
+                        n.position_label if n else None,
+                        n.created_at if n else None,
+                        n.note if n else None,
+                        latest.is_done if latest else False,
+                    ),
+                )
                 book.updated_at = now_utc()
                 book.version += 1
                 book.stale_notified_at = None

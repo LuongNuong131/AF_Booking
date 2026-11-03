@@ -28,6 +28,7 @@ from app.schemas.contracts import (
     Task,
 )
 from app.services.key_index import GroupEntry, KeyEntry
+from app.services.suggestions import Suggestions
 from app.utils.booking_key import (
     ParsedKey,
     PartialKey,
@@ -258,6 +259,7 @@ class BookingReads:
     def __init__(self, engine, settings, index, cache):
         self.engine, self.settings, self.index, self.cache = engine, settings, index, cache
         self._totals = {}
+        self.suggestions = Suggestions(engine, settings, index)
 
     def tx(self):
         return transaction(self.engine, self.settings)
@@ -454,6 +456,8 @@ class BookingReads:
         if entry:
             result.snapshot = await self.snapshot(entry.id)
             result.version = result.snapshot.version
+        elif resolution.key:
+            result.suggestions = await self.suggestions.find(resolution.key)
         snapped = time.perf_counter()
         if entry:
             async with self.tx() as session:

@@ -216,7 +216,7 @@ These envelopes clarify fields that Prompt 1B left implicit; existing shared DTO
 - `client_request_id` is a required UUID. The normalized request (including actor and canonical key) is fingerprinted. An identical retry returns the original committed response, even after newer notes, supplier edits, or a lost HTTP response. Reusing a UUID for another payload/user/key returns 422 `VALIDATION_ERROR`. This is not a mechanism for editing an existing note.
 - Notes are at most 5,000 input characters. Control/format characters are removed; CRLF becomes LF and line breaks/tabs are retained. Whitespace-only notes fail when required. A new folder requires a cleaned 3–255-character supplier name and supplier type. Existing-folder supplier fields are ignored. Station mismatch includes `expected_station`, `suggested_key`, `display_key`.
 - Inline `invoices` accepts the shared `InvoiceChange`, validates/uppercases/deduplicates numbers, enforces the 20-number limit and owner/QC/Admin removal, maintains invoice state/count and records the change in the note. DONE's `invoice_required` guard is active. Cross-booking duplicate warnings and independent invoice APIs/reports remain for Prompt 8F.
-- Suggestions and the `confirm_new` / `allow_duplicate` guards belong to Prompt 8C: `suggestions` is currently empty and these flags reserve their contract fields. `assign_to` / `assign_message` return `ASSIGNMENT_INVALID` until Prompt 8D; requests are never silently treated as assigned.
+- Prompt 8C implements near-key suggestions plus the `confirm_new` / `allow_duplicate` guards; see the explicit implementation contract below. `assign_to` / `assign_message` return `ASSIGNMENT_INVALID` until Prompt 8D; requests are never silently treated as assigned.
 - Overall list adds `cw_number`, `station_code`, `supplier_type`, `period`, and `supplier` filters from Prompt 4. `q` matches a normalized booking-key prefix; supplier matches a normalized name prefix. `invoice` is an exact normalized invoice match. Dates must include a timezone and filter `updated_at` inclusively. Sort values are `updated_at_desc` (default) and `updated_at_asc`, with matching ID tie breakers. Pages are 1-based, sizes 1–100. Mine defaults to 10 and overall/stale to 20. Stale scope defaults to `mine`; Done is always excluded, thresholds are status-specific or 24 hours, and order is oldest activity first.
 - `GET /notifications` returns `{items,unread_count}`; items include `id,type,booking_key,display_key,by_agent,note_id,task_id,created_at,read_at`. Read/read-all return `{ok:true}`. Another owner's notification is 404.
 - `GET /statuses` returns active `Status[]` ordered by `sort_order,id`. `PATCH /folders/{cw}` accepts supplier name/type and returns `group` fields directly; Admin/QC only. This single folder operation is implemented early to keep index/cache edits correct.
@@ -414,3 +414,43 @@ intermediate versions can be skipped. HTTP writes and histories still persist ev
 note. Outbox retries reuse the original `client_request_id` and immutable attempted
 payload; a new business correction uses a new UUID/version after review.
 [performance-8b.md](performance-8b.md) covers queue recovery and measured limits.
+
+
+## Safeguards and integrity — Prompt 8C
+
+Existing `Suggestion`, `NoteSaveRequest.confirm_new/allow_duplicate` and error-code
+names are now active; no path or field was renamed. Missing full/resolved keys return
+at most three suggestions. Unknown partial keys still return needs_station with no
+suggestions. A missing write with suggestions requires confirm_new:true or returns
+NEW_BOOKING_NEEDS_CONFIRM/422 with `details:{suggestions:Suggestion[]}`. Same-operation
+UUID replay precedes all new guards. Duplicate matching live notes in the last 60 s
+return DUPLICATE_RECENT_NOTE/409 with `details:{note:Note,seconds:number}`; only an
+explicit allow_duplicate:true bypasses comparison. Both are nonretryable business
+errors for the outbox; the frontend must not silently confirm new bookings.
+
+| Admin endpoint | Query/body | Response |
+| --- | --- | --- |
+| GET /admin/integrity | page,size (default 20, max 100) | `{items:IntegrityRunDTO[],total,page,size,autofix_enabled,run_time,timezone}` |
+| POST /admin/integrity/run | none | 202 IntegrityRunDTO; mode uses INTEGRITY_AUTOFIX (default false) |
+| POST /admin/integrity/fix | `{run_id:number}` of a finished mismatched run | 202 new IntegrityRunDTO, full rescan/repair; does not edit the old report |
+
+IntegrityRunDTO has `id,started_at,finished_at,checked,mismatched,fixed,status,details`.
+Status is running/completed/failed/interrupted. Details contains mode report|fix,
+trigger manual|scheduled, requested_by, source_run_id, scheduled_day, high_water_id,
+items (max 200), truncated and sanitized error. Each finding has booking_key,
+display_key, fields `{field:{actual,expected}}`, repairable and fixed. Samples are
+bounded; counts and the repair pass cover the complete high-water scan. Missing
+references use NOT_FOUND; invalid fix source uses VALIDATION_ERROR; concurrent start
+uses SERVICE_BUSY/503 with Retry-After. Role is Admin for every integrity endpoint.
+
+Snapshot authority is now the greatest non-deleted note ID, as specified in Prompt
+8C. Admin moderation uses the same rule. Integrity also compares last_note_preview;
+repair preserves invoices and operational updated_at, increments version and emits
+the existing nullable booking.updated with snapshot_rebuilt:true. No new WebSocket
+event or error code is invented. Run start/fix and individual repairs are audited.
+
+Migration 0004 refines the already-present task-day column to SMALLINT NULL and adds
+integrity_runs; prior migrations are unchanged. Rejection/Parking receive assumed
+3/2-day defaults when null, preserving other configured values. See
+[safeguards-integrity.md](safeguards-integrity.md) for scheduling, MAX-ID semantics,
+cancellation, UI confirmations and measured scan/API latency.

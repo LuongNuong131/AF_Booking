@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     ws_max_message_bytes: int = Field(default=4096, ge=256, le=65536)
     lock_ttl_seconds: float = Field(default=150, gt=0, le=600)
     lock_sweep_interval_seconds: float = Field(default=25, gt=0, le=30)
+    integrity_autofix: bool = False
+    integrity_run_time: str = Field(default="02:00", pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+    integrity_timeout_seconds: float = Field(default=600, gt=0, le=3600)
     scheduler_enabled: bool = True
     scheduler_job_timeout_seconds: float = Field(default=120, gt=0, le=300)
     task_job_interval_seconds: float = Field(default=30, gt=0, le=60)

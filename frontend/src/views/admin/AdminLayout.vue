@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 const { t } = useI18n()
-const sections = ['users', 'audit', 'bookings', 'trash', 'statuses', 'suppliers']
+const sections = ['users', 'audit', 'bookings', 'trash', 'statuses', 'suppliers', 'integrity']
 </script>
 <template>
   <section class="admin-layout">

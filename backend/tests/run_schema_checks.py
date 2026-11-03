@@ -119,6 +119,8 @@ def main() -> None:
             "frontend",
             "tasks",
             "admin",
+            "safeguards",
+            "integrity-performance",
             "search-performance",
         ],
         default="schema",
@@ -215,10 +217,12 @@ def main() -> None:
                 "frontend": "tests/test_frontend_database.py",
                 "tasks": "tests/test_tasks_database.py",
                 "admin": "tests/test_admin_database.py",
+                "safeguards": "tests/test_safeguards_database.py",
+                "integrity-performance": "tests/test_integrity_performance.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]
             test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]
-            if args.suite not in {"schema", "search-performance"}:
+            if args.suite not in {"schema", "search-performance", "integrity-performance"}:
                 test_command.append(f"--junitxml={args.report.resolve()}")
             if args.suite == "frontend":
                 test_command.append("--tb=short")
