@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Frontend sign-in/booking screens, full invoice management/reports, reminder task mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
+Frontend Home/Summary business content, booking entry/history, reminder UI, full invoice management/reports, reminder task mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -74,11 +74,23 @@ Frontend sign-in/booking screens, full invoice management/reports, reminder task
 - Independent asyncio scheduler jobs with startup catch-up, isolation/deadlines; durable once-per-stale-episode notifications preserve the booking activity clock and version.
 - Real Uvicorn/WebSocket peers against disposable TLS MySQL/TiDB, plus unit tests for hung senders, bounded queues, scheduler failures and encoded-token redaction. No new migration; one instance/worker remains required.
 
+## Implemented: Prompt 6 frontend foundation
+
+- Real English sign-in and session restoration, bearer/error handling, immediate replaced-session logout and private-store cleanup; per-tab session storage.
+- Role-guarded routes, canonical booking URLs, responsive dashboard shell, role navigation, user identity, theme controls and realtime indicator.
+- Persistent light/dark/system themes, Element Plus on-demand components, visible keyboard focus and error boundaries.
+- Private notification list/badge/read actions and canonical booking navigation; realtime frame validation, ping/pong, bounded reconnect and view refresh.
+- Abortable generation-guarded requests with slow/timeout/retry UI, one GET-only retry, total deadlines, route watchdog and hidden-tab refresh.
+- Scoped VueUse keyboard registration/help, shared key/date/avatar/status/empty components; tasks due-list/counter foundation.
+- Strict TS with `@` alias; public VITE_API_URL/VITE_WS_URL and legacy API alias; build validation and frontend documentation.
+- Vitest coverage and real Chromium/Vue/FastAPI/TLS TiDB flow, including roles, theme reload, notifications, backend restart and second-login logout; browser CI/screenshots.
+- Home/Summary/booking detail, Admin and Reports remain layout shells. Profile displays account/theme only; reserved API mutations are not fabricated. No schema or backend application change.
+
 ## Next implementation steps
 
 1. Confirm the provisional Position labels when the business mapping is available.
 2. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
-3. Continue later prompts for task mutations and frontend screens, including realtime UI.
+3. Continue later prompts for task mutations and frontend Home/Summary/booking workflows.
 
 ## Deployment status
 

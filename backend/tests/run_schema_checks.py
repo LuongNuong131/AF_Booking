@@ -1,4 +1,4 @@
-"""Run schema or auth checks in a new disposable Docker database with verified TLS."""
+"""Run integration checks in a new disposable Docker database with verified TLS."""
 
 import argparse
 import asyncio
@@ -110,7 +110,15 @@ def main() -> None:
     parser.add_argument("--engine", choices=["mysql", "tidb"], required=True)
     parser.add_argument(
         "--suite",
-        choices=["schema", "auth", "booking", "folder", "realtime", "search-performance"],
+        choices=[
+            "schema",
+            "auth",
+            "booking",
+            "folder",
+            "realtime",
+            "frontend",
+            "search-performance",
+        ],
         default="schema",
     )
     parser.add_argument("--report", type=Path, required=True)
@@ -202,11 +210,14 @@ def main() -> None:
                 "booking": "tests/test_booking_database.py",
                 "folder": "tests/test_folder_database.py",
                 "realtime": "tests/test_realtime_database.py",
+                "frontend": "tests/test_frontend_database.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]
             test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]
             if args.suite not in {"schema", "search-performance"}:
                 test_command.append(f"--junitxml={args.report.resolve()}")
+            if args.suite == "frontend":
+                test_command.append("--tb=short")
             subprocess.run(
                 test_command,
                 cwd=BACKEND,

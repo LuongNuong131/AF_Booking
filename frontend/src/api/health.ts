@@ -10,12 +10,19 @@ export interface ServiceState {
 export async function checkServices(): Promise<ServiceState> {
   try {
     const response = await api.get<unknown>('/ready', {
+      skipAuth: true,
       validateStatus: (status) => status === 200 || status === 503,
     })
     const body = response.data
-    if (response.status === 200 && body && typeof body === 'object'
-      && 'status' in body && body.status === 'ok'
-      && 'database' in body && body.database === 'connected') {
+    if (
+      response.status === 200 &&
+      body &&
+      typeof body === 'object' &&
+      'status' in body &&
+      body.status === 'ok' &&
+      'database' in body &&
+      body.database === 'connected'
+    ) {
       return { api: 'online', database: 'connected' }
     }
     if (response.status === 503 && isApiError(body) && body.code === 'SERVICE_BUSY') {

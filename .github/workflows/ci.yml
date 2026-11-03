@@ -33,7 +33,7 @@ jobs:
       run:
         working-directory: frontend
     env:
-      VITE_API_BASE_URL: https://api.example.com/api/v1
+      VITE_API_URL: https://api.example.com/api/v1
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -77,3 +77,32 @@ jobs:
             /tmp/realtime-report.xml
             /tmp/folder-report.xml
             /tmp/search-performance.json
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: pip install --require-hashes -r backend/requirements-dev.txt
+      - run: npm ci --prefix frontend
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: python backend/tests/run_schema_checks.py --engine tidb --suite frontend --report /tmp/browser.xml
+        env:
+          BOOKING_E2E_ARTIFACTS: /tmp/booking-browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-checks
+          path: |
+            /tmp/browser.xml
+            /tmp/booking-browser

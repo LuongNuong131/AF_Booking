@@ -38,7 +38,7 @@ Frontend checks, from `frontend`:
 
 ```sh
 npm test
-VITE_API_BASE_URL=https://api.example.com/api/v1 npm run build
+VITE_API_URL=https://api.example.com/api/v1 npm run build
 ```
 
 Vitest verifies readiness response handling, production URL validation, the visible failed-connection/retry flow, recognized error envelopes, and interpolation of every shared English UI string. The build includes strict Vue/TypeScript checking and route splitting. It uses an example URL only for build validation; use the real Render URL for deployment.
@@ -88,3 +88,43 @@ Prompt 5 adds realtime manager/lease/scheduler/token-redaction unit checks and r
 These use the installed Uvicorn `websockets-sansio` backend on a loopback-only listener and the same isolated verified-TLS databases. They verify two-user post-commit updates and fresh lookup, private takeover/stale events, advisory denial/save/expiry/disconnect, same-SID replacement, new login and revocation helpers, actual 4401 close codes, fresh-row handshake checks, JSON ping/pong/idle close, invalid/binary/oversize messages, no duplicate replay events, stale thresholds/batch markers and immediate scheduler catch-up. The ordinary DB fixtures explicitly disable background jobs for isolation; the catch-up test starts the registered scheduler and observes its immediate event. Unit tests separately simulate a permanently blocked sender, bounded queue overflow, SID targeting and failure isolation. These tests establish local protocol/transaction behavior, not hosted Render WSS readiness. See [ws-protocol.md](ws-protocol.md).
 
 Prompt 5 verification: **122 backend unit tests passed**, with 86 database tests skipped in that ordinary run. Separate disposable MySQL and TiDB runs each passed **20 real WebSocket/stale tests, 25 booking regressions and 16 auth regressions**. Frontend: **48 tests**, strict types and production build passed. Ruff/format and generated frame/type drift checks passed. No new migration or dependency lock change was needed. Hosted WSS/provider probes remain unrun without a configured hosted deployment.
+
+## Prompt 6 frontend and real browser checks
+
+From `frontend`, run `npm test` and a configured `npm run build` as above. Vitest
+covers abort/late-result races, hard deadlines and GET-only retries, bearer/session
+interceptors, guards/canonical routes, scoped keyboard bindings, notification races,
+themes, DST formatting, section error boundaries and route/visibility watchdogs.
+
+The browser suite starts the actual Vue dev server and Uvicorn against an owned,
+verified-TLS disposable TiDB database. It uses generated test accounts/passwords
+without a production test endpoint. From the checkout root:
+
+```sh
+cd frontend
+npx playwright install --with-deps chromium
+cd ..
+BOOKING_E2E_ARTIFACTS=/tmp/booking-browser \
+backend/.venv/bin/python backend/tests/run_schema_checks.py \
+  --engine tidb --suite frontend --report /tmp/browser.xml
+```
+
+For an already installed system Chromium, set `BOOKING_CHROMIUM_PATH` to its executable
+path instead of installing Playwright's browser. The harness owns port 5173 and requires
+it to be free. It stops only its own servers/container. Screenshots go to the requested
+artifact directory; generated credentials never belong in screenshots or logs.
+
+The flow checks actual login failure/success, Agent/QC/Admin navigation, protected
+routes, persisted dark mode, private takeover notification/read/navigation, display-to-
+canonical URL redirects, backend stop/start with automatic WebSocket reconnect plus
+notification refresh, second-login force logout, mobile layout/popover fit, and logout.
+Browser errors fail the test. GitHub Actions runs this in a separate browser job and
+uploads its JUnit report and screenshots. It does not use a hosted TiDB account or
+establish live Vercel/Render readiness.
+
+Latest Prompt 6 local verification: **88 frontend Vitest tests passed**, strict
+Vue/TypeScript and the production build passed, and **122 backend unit tests passed**.
+The ordinary backend run skipped 87 database tests; separately, the new **one real
+Chromium/TLS TiDB integration test passed** with all flows above. Ruff/format and the
+generated-contract check passed. The previous MySQL/TiDB backend suite results remain
+historical evidence; this prompt changes no backend application logic or migration.

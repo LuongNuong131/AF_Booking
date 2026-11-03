@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the foundation, database schema, and backend authentication. It does not provision provider accounts or implement booking workflows. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
+This guide deploys the backend and the Prompt 6 frontend foundation. It does not provision provider accounts. Home/Summary/booking business screens remain for later prompts. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 
@@ -27,7 +27,7 @@ Connect `LuongNuong131/AF_Booking` and create a Blueprint using the root `render
 | Root directory | `backend` |
 | Python | 3.12 (`PYTHON_VERSION=3.12.12` in the Blueprint) |
 | Build | `pip install --require-hashes -r requirements.txt` |
-| Start | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log` |
+| Start | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log --ws websockets-sansio --ws-max-size 4096` |
 | Health path | `/health` |
 
 The Blueprint selects Render's paid `starter` plan to avoid free-service sleep. Importing the file does not itself authorize or create a paid service; confirm the current plan and price in Render when deploying. A free service may be used for a demo, but cold starts cannot satisfy the responsiveness budget.
@@ -46,7 +46,7 @@ Required environment settings:
 
 Origins must use HTTPS in production and have no path or trailing slash. Add custom domains explicitly. Arbitrary Vercel preview URLs are not automatically trusted. A Vercel preview that needs the backend must have its exact origin included intentionally, or use a separate staging backend.
 
-The connection pool defaults to 5 connections, no overflow, pre-ping, a 280-second recycle, and a 5-second pool/connect timeout. The ready probe has a bounded query deadline. Business query/transaction timeouts and route-specific export/note deadlines will be added with those features.
+The connection pool defaults to 5 connections, no overflow, pre-ping, a 280-second recycle, and a 5-second pool/connect timeout. The ready probe has a bounded query deadline. Booking lookups and note transactions have bounded query, lock and route deadlines; see bookings.md.
 
 Run **one service instance and one Uvicorn worker** while auth cache invalidation/login lockouts and realtime connection/lock state are in memory. Multiple instances require shared coordination. Direct database changes or another process can remain cached until the 12-second TTL; admin code must use the provided invalidation/revocation helpers. A rolling deployment can briefly overlap processes, so cross-process revocation is bounded by TTL until shared invalidation exists. Configure Uvicorn's trusted proxy IPs for the actual Render proxy when needed; the app does not blindly trust client forwarding headers.
 
@@ -84,7 +84,8 @@ Import the GitHub repository into Vercel:
 | Install | `npm ci` |
 | Build | `npm run build` |
 | Output | `dist` |
-| `VITE_API_BASE_URL` | `https://YOUR-API.onrender.com/api/v1` |
+| `VITE_API_URL` | `https://YOUR-API.onrender.com/api/v1` |
+| `VITE_WS_URL` | `wss://YOUR-API.onrender.com/api/v1/ws` (optional; derived from API URL if unset) |
 | `VITE_TIMEOUT_SCALE` | `1` (optional) |
 
 `frontend/vercel.json` includes the SPA fallback for client-side routes. Vercel serves the static frontend only; the browser calls Render directly. WebSockets connect directly to Render over WSS rather than through a Vercel serverless function.
@@ -94,12 +95,13 @@ Import the GitHub repository into Vercel:
 ## 4. Verify the complete deployment
 
 - Confirm both backend probes return their expected payloads.
-- Open the Vercel app and verify both service cards show **Connected**.
+- Sign in with a provisioned account; verify role navigation and the **Live** realtime indicator.
+- Switch theme and reload; open Profile and the notification dropdown. Sign in again from another browser context and verify the earlier session returns to Login.
 - Reload a non-root path to verify the SPA fallback.
 - Check the browser network panel for CORS errors and mixed-content requests.
 - Confirm no database credentials appear in the frontend bundle or repository.
 
-Backend auth and booking APIs are implemented; verify them with [auth.md](auth.md) and [bookings.md](bookings.md). WebSocket updates/locks/session logout and stale reminders are implemented; see [ws-protocol.md](ws-protocol.md). Frontend sign-in/booking/realtime screens and reminder task mutations remain for later prompts. Keep a single instance/worker while the key index, snapshot cache and session invalidation are process-local; see the cache limits in bookings.md. Performance targets are goals, not measured guarantees.
+Backend auth and booking APIs are implemented; verify them with [auth.md](auth.md) and [bookings.md](bookings.md). WebSocket updates/locks/session logout and stale reminders are implemented; see [ws-protocol.md](ws-protocol.md). Frontend sign-in, guarded layout, notification dropdown and realtime session/reconnect handling are implemented; see [frontend.md](frontend.md). Home/Summary/booking workflows and reminder task mutations remain for later prompts. Keep a single instance/worker while the key index, snapshot cache and session invalidation are process-local; see the cache limits in bookings.md. Performance targets are goals, not measured guarantees.
 
 References: [TiDB SQLAlchemy](https://docs.pingcap.com/tidb/stable/dev-guide-sample-application-python-sqlalchemy/), [TiDB MySQL compatibility](https://docs.pingcap.com/tidb/stable/mysql-compatibility/), [Render Blueprints](https://render.com/docs/blueprint-spec), [Vercel Vite](https://vercel.com/docs/frameworks/frontend/vite).
 

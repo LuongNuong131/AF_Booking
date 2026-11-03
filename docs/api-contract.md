@@ -254,3 +254,12 @@ Search limit: `q` at most 100 characters, page size 1–20, default 120 requests
 Server booking/lock/notification payloads include `display_key` wherever `booking_key` occurs. Client lock commands send only canonical `booking_key`, consistent with the client identity rule. `notification.new` adds `type` for every notification (required for stale) and nullable `by_agent_name` for system reminders. Lock snapshot is `{locks:[{booking_key,display_key,user_id,user_name,expires_at}]}`; denial identifies the holder. Force logout data is `{reason,message}` without SID/token. `task.due` stays reserved and is not assigned an invented payload here.
 
 Successful notes refresh KeyIndex/invalidate snapshots before manager-owned post-commit publication, which survives cancellation of the committed HTTP request. The saver’s own lease is released; another holder's advisory lease never prohibits note saving. UUID replays return the original response without duplicating booking events/notifications. Existing HTTP fields/errors are unchanged. Stale notifications/markers commit together without changing `updated_at`, version or last agent, and HTTP stale lists remain read-time truth. Default app wiring uses the real revocation manager; one backend process/instance is required.
+
+## Frontend foundation — Prompt 6
+
+No endpoint, JSON field or event name changes. The frontend uses the four existing
+auth endpoints, private notification endpoints and Prompt 5 WebSocket frames.
+`SESSION_REPLACED` displays the exact English UI copy. Task/profile mutations,
+Admin/Reports data screens and Home/Summary business UI remain reserved; shell routes
+and the due-task store do not imply those endpoints are implemented.
+Frontend configuration and refresh/request hooks are documented in [frontend.md](frontend.md).

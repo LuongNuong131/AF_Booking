@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: deployment foundation, schema, auth, and booking backend (Prompts 1–5).** FastAPI implements booking lookup, supplier folders, append-only notes, optimistic versions, idempotent saves, lists, stale detection, and private notifications. It includes a RAM key index, snapshot cache, bounded database transactions, and verified TLS. Supplier/station search, folder pages and station naming are implemented. WebSocket updates, advisory locks, SID-targeted logout and stale reminder jobs are implemented. Frontend booking/sign-in/realtime screens remain for later prompts.
+**Current scope: backend through Prompt 5 and frontend foundation from Prompt 6.** FastAPI implements authentication, booking notes/lookup/lists, Supplier/station search, private notifications, WebSocket updates, advisory locks and stale reminders. Vue now provides real sign-in, role guards, light/dark layout, notifications, realtime reconnect/session logout and shared keyboard/request utilities. Home and Summary business content, booking entry/history, reminder UI and later features remain for their implementation prompts.
 
 ## Stack and hosting
 
@@ -37,7 +37,7 @@ test -f .env || cp .env.example .env
 npm run dev
 ```
 
-The development page uses the backend at port 8000. All UI copy is in `frontend/src/locales/en.json`; routes load asynchronously. Frontend API requests have finite timeouts, connection checks can be retried, and loading state is released in `finally`.
+The development app uses the backend at port 8000. Sign in with an operator-provisioned account. Protected routes restore the session after reload; navigation follows the current role. See [frontend.md](docs/frontend.md) for public API/WSS variables, keyboard hooks, request deadlines and component structure. All UI copy is in `frontend/src/locales/en.json`.
 
 ## Validation
 
@@ -51,10 +51,10 @@ cd backend
 ```sh
 cd frontend
 npm test
-VITE_API_BASE_URL=https://YOUR-API.onrender.com/api/v1 npm run build
+VITE_API_URL=https://YOUR-API.onrender.com/api/v1 npm run build
 ```
 
-The production URL must use HTTPS and end in `/api/v1`. Missing or invalid production configuration fails the build. Database integration tests require `TEST_DATABASE_URL`; see [testing](docs/testing.md). GitHub Actions runs the unit tests, lint, type checking, and production build.
+The production API URL must use HTTPS and end in `/api/v1`; `VITE_WS_URL` must use WSS and end in `/api/v1/ws`, or is derived when unset. Missing or invalid production configuration fails the build. Database integration tests require `TEST_DATABASE_URL`; see [testing](docs/testing.md). GitHub Actions runs the unit tests, lint, type checking, and production build.
 
 Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.md). Frontend types are generated from Pydantic schemas with `backend/.venv/bin/python scripts/generate_contract_types.py`; run the same command with `--check` to detect drift. Auth, booking and Prompt 4B search/folder/station endpoints are implemented; see [booking curl examples](docs/bookings.md) and [search/folder documentation](docs/folder-search.md).
 
