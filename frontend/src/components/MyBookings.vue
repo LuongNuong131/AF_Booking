@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onScopeDispose, ref } from 'vue'
+import { computed, onMounted, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBookingsStore } from '../stores/bookings'
 import { useAuthStore } from '../stores/auth'
@@ -13,8 +13,10 @@ import StatusTag from './StatusTag.vue'
 import RequestStatus from './RequestStatus.vue'
 import PageControls from './PageControls.vue'
 import EmptyState from './EmptyState.vue'
+import TaskButton from './TaskButton.vue'
 import BaseIcon from './BaseIcon.vue'
-const emit = defineEmits<{ open: [key: string] }>()
+const props = defineProps<{ showTasks?: boolean }>()
+const emit = defineEmits<{ open: [key: string]; selectBookings: [] }>()
 const { t } = useI18n(),
   store = useBookingsStore(),
   auth = useAuthStore()
@@ -25,7 +27,8 @@ const rows = ref<BookingItem[]>([]),
   staleTotal = ref(0),
   movement = ref('')
 const newKeys = ref(new Set<string>())
-let disposed = false
+let disposed = false,
+  needsRefresh = false
 const total = computed(() => (staleOnly.value ? staleTotal.value : mineTotal.value))
 const request = useRequest(
   (ctx, force: boolean = false) =>
@@ -85,6 +88,10 @@ async function showNew() {
 let countTimer: ReturnType<typeof setTimeout> | undefined
 const live = useBookingRows(
   (event) => {
+    if (props.showTasks) {
+      needsRefresh = true
+      return false
+    }
     clearTimeout(countTimer)
     countTimer = setTimeout(() => {
       void counts(true, true)
@@ -137,6 +144,10 @@ const live = useBookingRows(
   },
 )
 useViewRefresh(() => {
+  if (props.showTasks) {
+    needsRefresh = true
+    return
+  }
   void load(true)
   void counts(true, true)
 })
@@ -148,6 +159,20 @@ onScopeDispose(() => {
   disposed = true
   clearTimeout(countTimer)
 })
+watch(
+  () => props.showTasks,
+  (value) => {
+    if (!value && needsRefresh) {
+      needsRefresh = false
+      void load(true)
+      void counts(true, true)
+    }
+  },
+)
+function selectBookings() {
+  emit('selectBookings')
+  if (staleOnly.value) void toggleStale()
+}
 function refreshList() {
   movement.value = ''
   void load(true)
@@ -158,17 +183,13 @@ function refreshList() {
   <section class="my-bookings-card" :aria-label="t('bookingUi.myBookings')">
     <header class="mine-header">
       <div class="mine-tabs">
-        <button
-          type="button"
-          class="mine-tab"
-          :aria-pressed="!staleOnly"
-          @click="staleOnly ? toggleStale() : undefined"
-        >
+        <button type="button" class="mine-tab" :aria-pressed="!showTasks" @click="selectBookings">
           {{ t('bookingUi.myBookings') }}<span>{{ mineTotal }}</span></button
         ><slot name="tabs" />
       </div>
       <button
         type="button"
+        v-if="!showTasks"
         class="stale-chip"
         :class="{ active: staleOnly }"
         :aria-pressed="staleOnly"
@@ -177,18 +198,14 @@ function refreshList() {
         <BaseIcon name="clock" />{{ t('bookingUi.staleCount', { count: staleTotal }) }}
       </button>
     </header>
-    <div class="mine-list-body">
+    <div v-if="!showTasks" class="mine-list-body">
       <p class="mine-description">{{ t('bookingUi.mineDescription') }}</p>
       <button v-if="newKeys.size" type="button" class="new-items-banner" @click="showNew">
         {{ t('bookingUi.newItems', { count: newKeys.size }) }}
       </button>
       <p v-if="movement" class="movement-hint" role="status">
         {{ movement }}
-        <button
-          type="button"
-          class="text-button"
-          @click="refreshList"
-        >
+        <button type="button" class="text-button" @click="refreshList">
           {{ t('bookingUi.refresh') }}
         </button>
       </p>
@@ -215,36 +232,37 @@ function refreshList() {
       </div>
       <TransitionGroup v-else-if="rows.length" name="booking-row" tag="ul" class="mine-list"
         ><li v-for="row in rows" :key="row.booking_key">
-          <button type="button" class="mine-booking" @click="emit('open', row.booking_key)">
-            <div class="mine-row-heading">
-              <strong>{{ row.display_key }}</strong
-              ><StatusTag :status="row.last_status" />
-            </div>
-            <p class="mine-supplier">
-              {{ row.supplier.name }}<span>{{ row.station_code }}</span>
-            </p>
-            <p class="mine-position">{{ row.last_position }}</p>
-            <p class="mine-note">{{ row.last_note_preview || t('bookingUi.noNote') }}</p>
-            <div class="mine-row-footer">
-              <time :datetime="row.updated_at">{{
-                formatDateTime(row.updated_at, auth.timezone)
-              }}</time
-              ><span v-if="row.is_stale" class="stale-age"
-                ><BaseIcon name="clock" />{{
-                  t('bookingUi.staleHours', {
-                    hours: Math.max(
-                      0,
-                      Math.floor(
-                        row.stale_hours ?? (Date.now() - Date.parse(row.updated_at)) / 3600000,
+          <div class="mine-booking-entry">
+            <button type="button" class="mine-booking" @click="emit('open', row.booking_key)">
+              <div class="mine-row-heading">
+                <strong>{{ row.display_key }}</strong
+                ><StatusTag :status="row.last_status" />
+              </div>
+              <p class="mine-supplier">
+                {{ row.supplier.name }}<span>{{ row.station_code }}</span>
+              </p>
+              <p class="mine-position">{{ row.last_position }}</p>
+              <p class="mine-note">{{ row.last_note_preview || t('bookingUi.noNote') }}</p>
+              <div class="mine-row-footer">
+                <time :datetime="row.updated_at">{{
+                  formatDateTime(row.updated_at, auth.timezone)
+                }}</time
+                ><span v-if="row.is_stale" class="stale-age"
+                  ><BaseIcon name="clock" />{{
+                    t('bookingUi.staleHours', {
+                      hours: Math.max(
+                        0,
+                        Math.floor(
+                          row.stale_hours ?? (Date.now() - Date.parse(row.updated_at)) / 3600000,
+                        ),
                       ),
-                    ),
-                  })
-                }}</span
-              >
-            </div>
-          </button>
-        </li></TransitionGroup
-      >
+                    })
+                  }}</span
+                >
+              </div></button
+            ><TaskButton :booking-key="row.booking_key" :count="row.my_pending_tasks" compact />
+          </div></li
+      ></TransitionGroup>
       <EmptyState
         v-else
         :title="t(staleOnly ? 'bookingUi.noStale' : 'bookingUi.emptyMine')"
@@ -252,5 +270,6 @@ function refreshList() {
       />
       <PageControls :page="page" :total="total" :size="10" @change="changePage" />
     </div>
+    <slot v-else name="tasks" />
   </section>
 </template>

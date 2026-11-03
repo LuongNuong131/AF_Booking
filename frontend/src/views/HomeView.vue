@@ -1,17 +1,37 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useBookingsStore } from '../stores/bookings'
 import BookingWorkspace from '../components/BookingWorkspace.vue'
+import { useTasksStore } from '../stores/tasks'
+import TaskList from '../components/TaskList.vue'
 import MyBookings from '../components/MyBookings.vue'
 const { t } = useI18n(),
-  store = useBookingsStore()
+  store = useBookingsStore(),
+  tasks = useTasksStore()
 const initialKey = store.homeKey || undefined
 const workspace = ref<InstanceType<typeof BookingWorkspace> | null>(null)
 function open(key: string) {
   void workspace.value?.open(key)
   workspace.value?.focus()
 }
+watch(
+  () => tasks.openBookingRequest,
+  async (request) => {
+    if (!request) return
+    await nextTick()
+    if (!request.key) {
+      tasks.rightTab = 'tasks'
+      tasks.openBookingRequest = null
+      return
+    }
+    if (await workspace.value?.open(request.key)) {
+      if (request.note) workspace.value?.focusNote()
+      if (tasks.openBookingRequest?.seq === request.seq) tasks.openBookingRequest = null
+    }
+  },
+  { immediate: true },
+)
 </script>
 <template>
   <section class="home-view">
@@ -24,7 +44,22 @@ function open(key: string) {
       <span class="workspace-date">{{ t('bookingUi.keyboardReady') }}</span>
     </header>
     <div class="booking-workspace-grid">
-      <BookingWorkspace ref="workspace" :initial-key="initialKey" /><MyBookings @open="open" />
+      <BookingWorkspace ref="workspace" :initial-key="initialKey" /><MyBookings
+        :show-tasks="tasks.rightTab === 'tasks'"
+        @open="open"
+        @select-bookings="tasks.rightTab = 'bookings'"
+        ><template #tabs
+          ><button
+            type="button"
+            class="mine-tab task-tab"
+            :class="{ due: tasks.dueCount > 0 }"
+            :aria-pressed="tasks.rightTab === 'tasks'"
+            @click="tasks.rightTab = 'tasks'"
+          >
+            {{ t('taskUi.tab', { count: tasks.dueCount }) }}
+          </button></template
+        ><template #tasks><TaskList /></template
+      ></MyBookings>
     </div>
   </section>
 </template>

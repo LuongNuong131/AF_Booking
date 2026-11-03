@@ -46,6 +46,7 @@ class Settings(BaseSettings):
     lock_sweep_interval_seconds: float = Field(default=25, gt=0, le=30)
     scheduler_enabled: bool = True
     scheduler_job_timeout_seconds: float = Field(default=120, gt=0, le=300)
+    task_job_interval_seconds: float = Field(default=30, gt=0, le=60)
     stale_job_interval_seconds: float = Field(default=1200, gt=0, le=1800)
     stale_job_batch_size: int = Field(default=100, ge=1, le=500)
     lookup_timeout_seconds: float = Field(default=6, gt=0, le=60)

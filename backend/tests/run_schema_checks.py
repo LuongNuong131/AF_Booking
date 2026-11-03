@@ -117,6 +117,7 @@ def main() -> None:
             "folder",
             "realtime",
             "frontend",
+            "tasks",
             "search-performance",
         ],
         default="schema",
@@ -211,6 +212,7 @@ def main() -> None:
                 "folder": "tests/test_folder_database.py",
                 "realtime": "tests/test_realtime_database.py",
                 "frontend": "tests/test_frontend_database.py",
+                "tasks": "tests/test_tasks_database.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]
             test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]

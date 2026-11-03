@@ -259,6 +259,10 @@ class BookingTask(Timestamps, Base):
     )
     client_request_id: Mapped[str | None] = mapped_column(ascii_char(36))
     completed_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    request_fingerprint: Mapped[str | None] = mapped_column(ascii_char(64))
+    create_result: Mapped[dict[str, JsonValue] | None] = mapped_column(
+        mysql.JSON(none_as_null=True)
+    )
 
 
 class BookingInvoice(CreatedAt, Base):

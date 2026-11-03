@@ -54,7 +54,7 @@ The outer search route keeps the six-second lookup budget, including authenticat
 
 ## Run, call and test
 
-Use the existing [auth startup](auth.md) and [booking setup](bookings.md). The current Alembic head remains `0002`. Supply a token via the protected `ACCESS_TOKEN` shell variable; example data below is fictitious.
+Use the existing [auth startup](auth.md) and [booking setup](bookings.md). Apply the latest Alembic head (`0003` after Prompt 7B). Supply a token via the protected `ACCESS_TOKEN` shell variable; example data below is fictitious.
 
 ```sh
 curl --fail-with-body --max-time 10 -G http://localhost:8000/api/v1/search \

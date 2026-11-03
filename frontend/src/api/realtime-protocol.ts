@@ -58,6 +58,35 @@ export function parseServerFrame(raw: unknown): WebSocketServerFrame | null {
         timestamp(d.updated_at) &&
         typeof d.is_done === 'boolean'
       break
+    case 'task.due':
+      valid =
+        record(d.task) &&
+        key(d.task) &&
+        id(d.task.id) &&
+        string(d.task.message) &&
+        timestamp(d.task.remind_at) &&
+        timestamp(d.task.created_at) &&
+        d.task.status === 'pending' &&
+        d.task.is_due === true &&
+        typeof d.task.is_overdue === 'boolean' &&
+        typeof d.task.booking_changed_since === 'boolean' &&
+        Number.isSafeInteger(d.task.snooze_count) &&
+        Number(d.task.snooze_count) >= 0 &&
+        d.task.completed_at === null &&
+        record(d.task.booking) &&
+        timestamp(d.task.booking.updated_at) &&
+        typeof d.task.booking.is_done === 'boolean' &&
+        (d.task.booking.last_agent === null ||
+          (record(d.task.booking.last_agent) &&
+            id(d.task.booking.last_agent.id) &&
+            string(d.task.booking.last_agent.full_name))) &&
+        (d.task.booking.last_status === null ||
+          (record(d.task.booking.last_status) &&
+            string(d.task.booking.last_status.code) &&
+            string(d.task.booking.last_status.label))) &&
+        id(d.notification_id) &&
+        timestamp(d.created_at)
+      break
     case 'notification.new':
       valid =
         key(d) &&

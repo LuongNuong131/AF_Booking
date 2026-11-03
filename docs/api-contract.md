@@ -2,7 +2,7 @@
 
 This document records the user's shared contract for all implementation prompts. Paths, JSON field names, and error codes must not change silently. Update this file and the wire models together if an approved change is needed.
 
-**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Task mutations and later-prompt endpoints remain reserved.
+**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Prompt 7B adds private task mutations, due jobs/events and profile reminder preferences. Later-prompt endpoints remain reserved.
 
 ## Common conventions
 
@@ -251,7 +251,7 @@ Search limit: `q` at most 100 characters, page size 1–20, default 120 requests
 
 `WS /api/v1/ws?token=` is implemented. Frames use `{event,data}` with the fixed business names; JSON application `ping`/`pong` are explicit transport additions needed for the ASGI/browser heartbeat. The complete field/close-code tables and reconnect rules are in [ws-protocol.md](ws-protocol.md). Executable models are `schemas/realtime.py`; generated `WebSocketClientFrame` / `WebSocketServerFrame` unions have required event discriminators.
 
-Server booking/lock/notification payloads include `display_key` wherever `booking_key` occurs. Client lock commands send only canonical `booking_key`, consistent with the client identity rule. `notification.new` adds `type` for every notification (required for stale) and nullable `by_agent_name` for system reminders. Lock snapshot is `{locks:[{booking_key,display_key,user_id,user_name,expires_at}]}`; denial identifies the holder. Force logout data is `{reason,message}` without SID/token. `task.due` stays reserved and is not assigned an invented payload here.
+Server booking/lock/notification payloads include `display_key` wherever `booking_key` occurs. Client lock commands send only canonical `booking_key`, consistent with the client identity rule. `notification.new` adds `type` for every notification (required for stale) and nullable `by_agent_name` for system reminders. Lock snapshot is `{locks:[{booking_key,display_key,user_id,user_name,expires_at}]}`; denial identifies the holder. Force logout data is `{reason,message}` without SID/token. `task.due` is implemented by Prompt 7B; its explicit payload is documented below and in ws-protocol.md.
 
 Successful notes refresh KeyIndex/invalidate snapshots before manager-owned post-commit publication, which survives cancellation of the committed HTTP request. The saver’s own lease is released; another holder's advisory lease never prohibits note saving. UUID replays return the original response without duplicating booking events/notifications. Existing HTTP fields/errors are unchanged. Stale notifications/markers commit together without changing `updated_at`, version or last agent, and HTTP stale lists remain read-time truth. Default app wiring uses the real revocation manager; one backend process/instance is required.
 
@@ -259,9 +259,8 @@ Successful notes refresh KeyIndex/invalidate snapshots before manager-owned post
 
 No endpoint, JSON field or event name changes. The frontend uses the four existing
 auth endpoints, private notification endpoints and Prompt 5 WebSocket frames.
-`SESSION_REPLACED` displays the exact English UI copy. Task/profile mutations,
-Admin/Reports data screens and Home/Summary business UI remain reserved; shell routes
-and the due-task store do not imply those endpoints are implemented.
+`SESSION_REPLACED` displays the exact English UI copy. At the end of Prompt 6, Task/profile mutations and Home/Summary were reserved;
+Prompts 7 and 7B implement those workflows below. Admin/Reports data screens remain reserved.
 Frontend configuration and refresh/request hooks are documented in [frontend.md](frontend.md).
 
 ## Prompt 7 read API clarifications
@@ -281,3 +280,38 @@ remain reserved. No existing endpoint, field name or event was renamed.
 
 New-CW Supplier metadata and conditional invoice declaration use the existing
 `NoteSaveRequest` fields; no invoice edit endpoint or assignment API was added.
+
+## Task/profile implementation — Prompt 7B (including the Prompt 5B prerequisite)
+
+Existing endpoint names and Task fields are retained. These clarify envelopes/body
+details left open in Prompt 1B:
+
+- `POST /bookings/{key}/tasks` accepts `{remind_date,remind_time?,message?,client_request_id?}`
+  and returns HTTP 200 `Task`. Dates use `YYYY-MM-DD`, time is local `HH:mm` in
+  `users.settings.timezone`; omitted time uses the profile default. The key is canonical.
+- `GET /bookings/{key}/tasks` returns the owner's pending `Task[]` directly. `GET /tasks`
+  accepts `view=pending|due|done`, one-based page and size (default 10, max 100), returning
+  `{items,total,page,size}`. `GET /tasks/due` returns `{items,total}` with the first 100
+  pending due tasks ordered by deadline/id and the exact total. Due means `remind_at <= now`;
+  `is_overdue` is strictly before now.
+- `PATCH /tasks/{id}` accepts optional `remind_date`, `remind_time`, `message`.
+  `POST /tasks/{id}/snooze` accepts the same body and requires a date/time. Complete,
+  snooze, edit and cancellation return the resulting `Task`; DELETE is a soft cancel.
+  Other users' IDs return 404. Limits are five pending tasks per owner/booking.
+- Create/reschedule must be future and within today +90 calendar days. Preserve an
+  overdue deadline when only editing the message. Invalid local/DST times return
+  `VALIDATION_ERROR`; exceeding the pending limit returns `TASK_LIMIT_REACHED`.
+- UUID retry returns the original creation result, even after later changes, using
+  migration `0003`. A different UUID payload/owner returns `VALIDATION_ERROR`.
+  Complete/cancel tolerate repeating the same terminal action; snooze counts only
+  a changed absolute deadline. No mutation is retried automatically by the UI.
+- `PATCH /profile` accepts `{settings:{timezone?,default_remind_time?,task_sound?,web_notifications?,skip_weekends?}}`
+  and returns the same public user as `/auth/me`. Settings merge with existing values;
+  timezone is IANA, default time is `HH:mm`. No account/role fields can be changed here.
+  Login/me now materialize defaults: business timezone, `09:00`, sound false, Web
+  Notification false and skip weekends true. No OS permission is requested by the API.
+- `task.due` data is explicitly `{task:Task,notification_id:number,created_at:UTC}`,
+  sent privately after the task marker/notification commit. The outer frame remains
+  `{event,data}`. Notification type is the existing `task_due`.
+
+Detailed timing, retry, calendar and delivery semantics: [tasks.md](tasks.md).

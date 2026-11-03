@@ -6,6 +6,7 @@ import { parseBookingKey } from '../utils/bookingKey'
 import { formatDateTime } from '../utils/dateTime'
 import type { BookingLookup } from '../types/api.generated'
 import BookingKeyText from './BookingKeyText.vue'
+import TaskButton from './TaskButton.vue'
 import StatusTag from './StatusTag.vue'
 import LockBadge from './LockBadge.vue'
 import DoneWarning from './DoneWarning.vue'
@@ -60,6 +61,11 @@ const identity = computed(() =>
     </p>
     <DoneWarning v-if="booking.snapshot" :snapshot="booking.snapshot" /><LockBadge
       :booking-key="booking.booking_key"
+    />
+    <TaskButton
+      v-if="booking.booking_key && booking.exists"
+      :booking-key="booking.booking_key"
+      :count="booking.my_tasks?.length"
     />
     <slot />
   </section>

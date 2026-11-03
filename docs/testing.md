@@ -153,3 +153,52 @@ The backend fixture chooses the script; no production test endpoint was added.
 For manual two-browser instructions and implementation boundaries, read
 [booking-workspace.md](booking-workspace.md). These local results do not establish a
 hosted Vercel/Render/TiDB Cloud deployment or a public-network latency guarantee.
+
+## Prompt 7B reminder verification
+
+**137 frontend tests passed**, including business-day quick dates, DST gaps/overlaps,
+dialog date validation and overdue-message edits, UUID retry, task.due validation/
+deduplication, stale read suppression, optimistic rollback with concurrent booking
+updates, double-click/late-event guards, explicit Notification permission and sound
+after interaction. Strict Vue/TypeScript, production build, Ruff/format and generated
+contract checks passed. A legacy timeout assertion now checks the positive remaining
+budget instead of assuming no millisecond elapses before Axios dispatch.
+
+**124 backend unit tests passed**; 95 database tests were skipped in that ordinary
+run. Separately, these suites passed on **each** disposable verified-TLS engine:
+
+| Suite | MySQL | TiDB |
+| --- | --- | --- |
+| Schema/migration parity, rollback and re-migration to 0003 | 1 | 1 |
+| Private tasks, concurrent UUID/limit, profile timezone and due WebSocket delivery | 4 | 4 |
+| Auth regression | 16 | 16 |
+| Booking/list/directory regression | 27 | 27 |
+| Realtime/stale regression | 20 | 20 |
+
+Task cases also verify original creation replay after snooze/completion, editing an
+overdue message, owner-only 404, the five-task limit, profile defaults, and once-per-
+deadline durable notifications. Reproduce from the checkout root:
+
+```sh
+backend/.venv/bin/python backend/tests/run_schema_checks.py --engine mysql --suite tasks --report /tmp/tasks-mysql.xml
+backend/.venv/bin/python backend/tests/run_schema_checks.py --engine tidb --suite tasks --report /tmp/tasks-tidb.xml
+```
+
+**All three real Chromium flows passed** against isolated TLS TiDB. The additional
+`frontend/e2e/tasks.mjs` verifies Alt+T/Enter scheduling, local date/time request bodies,
+pending bells, actual private due frames/toasts/title/bell, snooze, login catch-up modal,
+completion-to-note focus, Completed view, saved profile defaults, five-task errors,
+edit/cancel and mobile fit. Screenshots include `tasks-due.png` and `tasks-mobile.png`.
+The isolated stdin test harness advances only its owned test DB clock to avoid waiting
+minutes; no production endpoint or test route exists. CI runs all three browser flows
+and both task database suites.
+
+```sh
+BOOKING_CHROMIUM_PATH=/usr/bin/chromium BOOKING_E2E_ARTIFACTS=/tmp/booking-browser backend/.venv/bin/python backend/tests/run_schema_checks.py --engine tidb --suite frontend --report /tmp/browser.xml
+```
+
+Use `BOOKING_CHROMIUM_PATH` only if that executable exists; otherwise use the pinned
+Playwright install described above. The runner owns port 5173 and its temporary
+processes/container; leave user processes alone. Actual minute-based manual scheduling
+and browser-close/reopen instructions are in [tasks.md](tasks.md). Hosted resources
+and credentials remain separately configured in Vercel, Render and TiDB Cloud.

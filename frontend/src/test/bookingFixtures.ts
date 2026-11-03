@@ -6,6 +6,7 @@ import type {
   NoteSaveResponse,
   PublicUser,
   Status,
+  Task,
 } from '../types/api.generated'
 export const KEY = 'CW2154654-RDU-2609'
 export const user: PublicUser = {
@@ -130,5 +131,28 @@ export function event(version = 2, agentId = 5): BookingUpdatedData {
     position: 'Processing',
     updated_at: `2026-11-03T08:00:0${version}.000Z`,
     is_done: false,
+  }
+}
+
+export function task(id = 1): Task {
+  return {
+    id,
+    booking_key: KEY,
+    display_key: 'CW 2154654-RDU-2609',
+    message: 'Check mail',
+    remind_at: '2026-11-03T07:00:00.000Z',
+    status: 'pending',
+    is_due: true,
+    is_overdue: true,
+    snooze_count: 0,
+    created_at: '2026-11-02T00:00:00.000Z',
+    completed_at: null,
+    booking_changed_since: false,
+    booking: {
+      last_status: { code: 'BUNDLE', label: 'Bundle' },
+      last_agent: { id: 3, full_name: 'Agent' },
+      is_done: false,
+      updated_at: '2026-11-01T00:00:00.000Z',
+    },
   }
 }

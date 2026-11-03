@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import ConfigDict, Field, TypeAdapter
 
-from app.schemas.contracts import ContractModel, NotificationType, UtcTimestamp
+from app.schemas.contracts import ContractModel, NotificationType, Task, UtcTimestamp
 
 
 class Frame(ContractModel):
@@ -69,6 +69,17 @@ class NotificationNewFrame(Frame):
     data: NotificationNewData
 
 
+class TaskDueData(ContractModel):
+    task: Task
+    notification_id: int
+    created_at: UtcTimestamp
+
+
+class TaskDueFrame(Frame):
+    event: Literal["task.due"] = "task.due"
+    data: TaskDueData
+
+
 class ForceLogoutData(ContractModel):
     reason: str
     message: str
@@ -103,6 +114,7 @@ ServerFrame = Annotated[
     | LockChangedFrame
     | LockSnapshotFrame
     | NotificationNewFrame
+    | TaskDueFrame
     | ForceLogoutFrame
     | HeartbeatFrame,
     Field(discriminator="event"),
@@ -113,6 +125,7 @@ REALTIME_MODELS = (
     LockChangedFrame,
     LockSnapshotFrame,
     NotificationNewFrame,
+    TaskDueFrame,
     ForceLogoutFrame,
     HeartbeatFrame,
     LockCommandFrame,

@@ -11,6 +11,7 @@ import UserAvatar from '../components/UserAvatar.vue'
 import NotificationBell from '../components/NotificationBell.vue'
 import ThemeMenu from '../components/ThemeMenu.vue'
 import ShortcutHelp from '../components/ShortcutHelp.vue'
+import TaskOverlays from '../components/TaskOverlays.vue'
 import ErrorBoundary from '../components/ErrorBoundary.vue'
 const { t } = useI18n()
 const auth = useAuthStore(),
@@ -121,5 +122,6 @@ async function logout() {
       </main>
     </div>
     <ShortcutHelp />
+    <TaskOverlays />
   </div>
 </template>

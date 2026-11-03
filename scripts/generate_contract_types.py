@@ -16,6 +16,7 @@ from app.schemas.bookings import BOOKING_MODELS  # noqa: E402
 from app.schemas.contracts import CONTRACT_ENUMS, CONTRACT_MODELS, ErrorCode  # noqa: E402
 from app.schemas.folders import FOLDER_MODELS, SearchResponse  # noqa: E402
 from app.schemas.realtime import REALTIME_MODELS, ClientFrame, ServerFrame  # noqa: E402
+from app.schemas.tasks import TASK_MODELS  # noqa: E402
 
 OUTPUT = ROOT / "frontend/src/types/api.generated.ts"
 
@@ -66,6 +67,7 @@ def generate() -> str:
         *BOOKING_MODELS,
         *FOLDER_MODELS,
         *REALTIME_MODELS,
+        *TASK_MODELS,
     ):
         schema = model.model_json_schema(mode="serialization")
         for name, definition in schema.pop("$defs", {}).items():

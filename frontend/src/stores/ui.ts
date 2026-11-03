@@ -20,6 +20,7 @@ export const useUiStore = defineStore('ui', () => {
   )
   const notices = ref<Notice[]>([])
   const shortcutHelp = ref(false)
+  const taskModalOpen = ref(false)
   const routeLoading = ref(false)
   const routeFailed = ref(false)
   const pendingPath = ref('/')
@@ -93,6 +94,7 @@ export const useUiStore = defineStore('ui', () => {
     resolvedTheme,
     notices,
     shortcutHelp,
+    taskModalOpen,
     routeLoading,
     routeFailed,
     pendingPath,

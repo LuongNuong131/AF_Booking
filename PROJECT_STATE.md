@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Reminder/task UI and mutations, smart folder navigation, full invoice management/reports, reminder task mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
+Smart folder navigation, full invoice management/reports, assignments/watch, service-worker Web Push, exports, and recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -99,11 +99,20 @@ Reminder/task UI and mutations, smart folder navigation, full invoice management
 - Minimal Supplier creation fields and conditional invoice declaration support existing backend save requirements; smart folder search and full invoice management remain later scope.
 - Frontend units and real Chromium/TLS TiDB two-user collaboration flow; backend listing/directory regressions on MySQL/TiDB. No migration or runtime dependency change.
 
+## Implemented: Prompt 7B reminder tasks
+
+- TaskDialog, TaskList, TaskReminderToast and DueTasksModal integrated with Home, booking cards/lists and Alt+T. Quick date chips, nonblocking ten-second save suggestions and English zoned confirmations.
+- Private task APIs and profile settings, brought forward from the missing Prompt 5B prerequisite. Five pending reminders per user/booking, UUID creation replay, atomic limits/audit, local date/time validation and migration 0003.
+- Startup/30-second due scheduler with durable once-per-deadline notifications and private typed task.due frames; HTTP catch-up after login/reopen/reconnect without polling.
+- Optimistic actions/rollback, late-event guards, booking warnings patched in place, pending-task bells, due count/title and completion-to-note navigation.
+- Profile defaults/timezone/skip-weekends/sound/Web Notification settings persisted with explicit permission controls; sound only after interaction. Native browser notifications are implemented; service-worker push remains future scope.
+- Vitest calendar/DST/dialog/event/rollback/permission/audio checks, private API/concurrency/TLS database tests and a third real Chromium flow. Read docs/tasks.md for retry semantics, deployment and manual checks.
+
 ## Next implementation steps
 
 1. Confirm the provisional Position labels when the business mapping is available.
 2. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
-3. Continue Prompt 7B/7C and later prompts for reminder tasks, smart folder navigation and remaining workflows.
+3. Continue Prompt 7C and later prompts for smart folder navigation and remaining workflows.
 
 ## Deployment status
 

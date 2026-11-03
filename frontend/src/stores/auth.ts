@@ -16,12 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
   const ready = ref(!token.value)
   const signingOut = ref(false)
   const isAuthenticated = computed(() => !!token.value && !!user.value && user.value.is_active)
-  const timezone = computed(() =>
-    validTimeZone(
-      user.value?.settings?.timezone,
-      validTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone),
-    ),
-  )
+  const timezone = computed(() => validTimeZone(user.value?.settings?.timezone, 'Asia/Ho_Chi_Minh'))
   let restoring: Promise<boolean> | null = null
   const loginRequest = useRequest(
     async ({ signal, timeoutMs }, credentials: LoginRequest) =>

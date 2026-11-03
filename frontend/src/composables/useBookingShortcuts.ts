@@ -10,6 +10,7 @@ export interface BookingShortcutContext {
   scope?: () => HTMLElement | null
   lookup: () => unknown
   save: () => unknown
+  task?: () => unknown
   clear: () => unknown
   statuses: () => Status[]
   selectStatus: (code: string) => unknown
@@ -55,6 +56,7 @@ export function useWorkspaceShortcuts(): void {
         event.isComposing ||
         event.keyCode === 229 ||
         ui.shortcutHelp ||
+        ui.taskModalOpen ||
         registry?.current.value?.enabled?.() === false
       )
         return
@@ -82,6 +84,17 @@ export function useWorkspaceShortcuts(): void {
       ) {
         event.preventDefault()
         input?.focus()
+        return
+      }
+      if (
+        event.altKey &&
+        event.code === 'KeyT' &&
+        !event.ctrlKey &&
+        !event.metaKey &&
+        context.task
+      ) {
+        event.preventDefault()
+        call(context.task)
         return
       }
       if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.altKey) {

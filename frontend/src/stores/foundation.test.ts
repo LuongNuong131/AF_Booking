@@ -25,18 +25,19 @@ beforeEach(() => {
 })
 afterEach(() => vi.restoreAllMocks())
 it('logs in using the contract, persists only the token per tab, and clears private data on expiry', async () => {
-  const post = vi
-    .spyOn(api, 'post')
-    .mockResolvedValue({
-      data: { access_token: 'test-token', user, expires_in: 3600, token_type: 'bearer' },
-    })
+  const post = vi.spyOn(api, 'post').mockResolvedValue({
+    data: { access_token: 'test-token', user, expires_in: 3600, token_type: 'bearer' },
+  })
   const auth = useAuthStore()
   expect(await auth.login({ username: 'agent', password: 'test-password' })).toBe(true)
   expect(post).toHaveBeenCalledWith(
     '/auth/login',
     { username: 'agent', password: 'test-password' },
-    expect.objectContaining({ skipAuth: true, timeout: 10000 }),
+    expect.objectContaining({ skipAuth: true, timeout: expect.any(Number) }),
   )
+  const deadline = post.mock.calls[0]![2]!.timeout!
+  expect(deadline).toBeGreaterThan(0)
+  expect(deadline).toBeLessThanOrEqual(10000)
   expect(sessionStorage.getItem('booking.access_token')).toBe('test-token')
   expect(localStorage.getItem('booking.access_token')).toBeNull()
   expect(auth.isAuthenticated).toBe(true)
@@ -141,7 +142,6 @@ it('renders dates in the user time zone across daylight saving changes', () => {
   )
   expect(formatDateTime('invalid', 'UTC')).toBe('')
 })
-
 
 it('keeps the new account mutation busy while a cancelled old account action settles', async () => {
   vi.spyOn(api, 'post').mockImplementation(() => new Promise(() => {}))

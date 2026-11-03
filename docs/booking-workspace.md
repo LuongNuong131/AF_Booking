@@ -58,8 +58,8 @@ Separate invoice editing, duplicate-elsewhere warnings, reports and the full Pro
 
 The right list uses `/bookings/mine?page&size=10`. Selecting a row opens it in the
 left workspace. **Stale (N)** switches to `/bookings/stale?scope=mine`; age comes from
-the returned stale state/hours. Slots reserve future Task tabs and the form Task
-button without presenting a fake action.
+the returned stale state/hours. Prompt 7B adds the Task tab and working reminder
+buttons; see [tasks.md](tasks.md).
 
 A foreign update removes a row that moved to another agent, with a short transition.
 A self update on page 1 hydrates the affected booking and moves it to the top; on

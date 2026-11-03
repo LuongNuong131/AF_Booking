@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { formatDateTime } from '../utils/dateTime'
 import type { BookingItem } from '../types/api.generated'
+import TaskButton from './TaskButton.vue'
 import StatusTag from './StatusTag.vue'
 import EmptyState from './EmptyState.vue'
 const { t } = useI18n(),
@@ -54,7 +55,11 @@ const columns = [
               @click.stop="$emit('open', row.booking_key)"
             >
               {{ row.display_key }}</button
-            ><span v-if="row.is_stale" class="row-stale-label">{{ t('bookingUi.stale') }}</span>
+            ><TaskButton
+              :booking-key="row.booking_key"
+              :count="row.my_pending_tasks"
+              compact
+            /><span v-if="row.is_stale" class="row-stale-label">{{ t('bookingUi.stale') }}</span>
           </td>
           <td>{{ row.supplier.name }}</td>
           <td>{{ row.station_code }}</td>

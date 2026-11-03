@@ -2313,3 +2313,454 @@ kbd {
 .detail-work-card .timeline-list {
   max-height: 560px;
 }
+.task-button {
+  gap: 7px;
+  padding: 10px 12px;
+  min-height: 42px;
+}
+.task-button .icon {
+  width: 16px;
+  height: 16px;
+}
+.task-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  min-width: 16px;
+  height: 16px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 0 4px;
+}
+.task-icon {
+  position: relative;
+}
+.task-icon .task-count {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  border: 1px solid var(--surface);
+}
+.mine-booking-entry {
+  position: relative;
+}
+.mine-booking-entry .mine-booking {
+  padding-right: 40px;
+}
+.mine-booking-entry > .task-icon {
+  position: absolute;
+  right: -4px;
+  top: 14px;
+}
+.mine-tab[aria-pressed='false'] {
+  border-bottom-color: transparent;
+  color: var(--muted);
+}
+.mine-tab.task-tab.due {
+  color: var(--primary);
+}
+.mine-tabs {
+  gap: 18px;
+}
+.booking-summary-card > .task-button {
+  margin-top: 14px;
+}
+.booking-table td:first-child {
+  position: relative;
+  padding-right: 55px;
+}
+.booking-table td:first-child > .task-icon {
+  position: absolute;
+  right: 10px;
+  top: 12px;
+}
+.task-suggestion-bar {
+  padding: 14px 0 0;
+  font-size: 12px;
+}
+.task-suggestion-bar > div {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.task-suggestion-bar.strong {
+  background: var(--primary-soft);
+  padding: 14px;
+  border-radius: 8px;
+  margin-top: 14px;
+  border: 1px solid var(--line);
+}
+.task-suggestion-chip {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--primary);
+  border-radius: 14px;
+  padding: 5px 8px;
+  font-size: 11px;
+}
+.task-dialog,
+.due-tasks-dialog {
+  max-width: calc(100vw - 28px);
+  border-radius: 12px;
+}
+.task-dialog .booking-key {
+  padding-top: 0;
+  font-size: 15px;
+}
+.task-form input,
+.reminder-preferences input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 10px 11px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+}
+.task-form label,
+.reminder-preferences > label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+}
+.task-quick-days {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+.task-quick-days .button {
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.task-weekends {
+  display: flex !important;
+  align-items: center;
+  gap: 8px !important;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 12px !important;
+}
+.task-weekends input,
+.preference-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+.task-date-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.task-message-field {
+  margin-top: 16px;
+}
+.task-confirmation {
+  font-size: 13px;
+  line-height: 1.7;
+  padding: 12px;
+  background: var(--primary-soft);
+  border-radius: 8px;
+  color: var(--primary);
+}
+.booking-pending-tasks {
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.booking-pending-tasks h3 {
+  font-size: 14px;
+  margin: 0 0 10px;
+}
+.booking-pending-tasks article {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.booking-pending-tasks article > p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0 0 7px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.booking-pending-tasks time {
+  font-size: 11px;
+  color: var(--muted);
+}
+.booking-pending-tasks article > div {
+  display: flex;
+  gap: 15px;
+  margin-top: 7px;
+}
+.task-list {
+  padding: 18px 20px;
+}
+.task-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.task-list-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.task-list-toolbar select {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.task-group h3 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin: 24px 0 10px;
+}
+.task-row {
+  padding: 17px 0;
+  border-bottom: 1px solid var(--line);
+}
+.task-row header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.task-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 10px 0;
+}
+.task-row > time {
+  font-size: 11px;
+  color: var(--muted);
+}
+.task-warning {
+  color: var(--primary);
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 8px 0;
+}
+.task-actions {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-wrap: wrap;
+  margin-top: 13px;
+}
+.task-actions .text-button {
+  font-size: 11px;
+}
+.task-snooze {
+  position: relative;
+}
+.task-snooze > summary {
+  list-style: none;
+}
+.task-snooze > summary::-webkit-details-marker {
+  display: none;
+}
+.snooze-options {
+  position: absolute;
+  right: 0;
+  top: 26px;
+  z-index: 80;
+  display: grid;
+  min-width: 145px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  border-radius: 8px;
+  padding: 6px;
+}
+.snooze-options > button {
+  border: 0;
+  text-align: left;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 4px;
+  padding: 9px;
+  font-size: 12px;
+}
+.snooze-options > button:hover {
+  background: var(--surface-soft);
+}
+.task-reminder-stack {
+  position: fixed;
+  z-index: 2500;
+  right: 20px;
+  bottom: 20px;
+  width: min(410px, calc(100vw - 32px));
+  display: grid;
+  gap: 12px;
+}
+.task-reminder-toast {
+  padding: 15px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--primary);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.task-reminder-toast header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.task-reminder-toast strong {
+  font-size: 12px;
+  line-height: 1.6;
+}
+.task-reminder-toast header > .icon-button {
+  flex: 0 0 auto;
+}
+.task-reminder-toast > p {
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 7px 0;
+}
+.task-reminder-toast .snooze-options {
+  top: auto;
+  bottom: 28px;
+}
+.due-summary-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid var(--line);
+  padding: 15px 0;
+}
+.due-summary-row strong {
+  font-size: 13px;
+}
+.due-summary-row p {
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 7px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.due-summary-row time {
+  font-size: 11px;
+  color: var(--muted);
+}
+.due-summary-row > div {
+  min-width: 0;
+}
+.due-summary-row > .button {
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+.task-note-suggestion {
+  position: fixed;
+  z-index: 2400;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: var(--shadow);
+  padding: 13px 17px;
+  font-size: 12px;
+  max-width: calc(100vw - 32px);
+}
+.task-note-suggestion .text-button {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.task-sync-error {
+  position: fixed;
+  bottom: 20px;
+  left: 260px;
+  z-index: 2200;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 10px 15px;
+  max-width: 400px;
+}
+.reminder-preferences {
+  margin-top: 25px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 17px;
+}
+.reminder-preferences h2 {
+  font-size: 16px;
+}
+.preference-toggle {
+  display: flex !important;
+  gap: 10px !important;
+  align-items: center;
+  line-height: 1.7;
+}
+.reminder-preferences > .button {
+  justify-self: start;
+}
+.task-preferences-saved {
+  font-size: 12px;
+  color: var(--success);
+  margin: 0;
+}
+@media (max-width: 720px) {
+  .task-list {
+    padding: 16px;
+  }
+  .task-date-fields {
+    grid-template-columns: 1fr;
+  }
+  .task-note-suggestion {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: calc(100vw - 32px);
+  }
+  .task-sync-error {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+  }
+  .mine-tabs {
+    gap: 14px;
+  }
+  .mine-tab {
+    font-size: 12px;
+  }
+  .task-reminder-stack {
+    right: 16px;
+    bottom: 16px;
+  }
+  .task-dialog .dialog-heading h2 {
+    font-size: 18px;
+  }
+  .due-summary-row {
+    align-items: flex-start;
+  }
+  .due-summary-row > .button {
+    padding: 8px;
+  }
+  .task-quick-days .button {
+    font-size: 11px;
+  }
+}

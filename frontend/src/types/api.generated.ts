@@ -25,6 +25,8 @@ export type CursorPage<T> = { "items": Array<T>; "next_cursor": string | null }
 
 export type CursorPage_Note_ = { "items": Array<Note>; "next_cursor": string | null }
 
+export type DueTasks = { "items": Array<Task>; "total": number }
+
 export type EmptyData = {  }
 
 export type ErrorCode = "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
@@ -103,7 +105,11 @@ export type NotificationType = "taken_over" | "stale" | "task_due" | "watch_upda
 
 export type Page<T> = { "items": Array<T>; "total": number; "page": number; "size": number }
 
+export type ProfilePatch = { "settings": ReminderSettingsPatch }
+
 export type PublicUser = { "id": number; "username": string; "full_name": string; "role": "admin" | "qc" | "agent"; "is_active": boolean; "settings": { [key: string]: JsonValue } | null }
+
+export type ReminderSettingsPatch = { "timezone"?: string | null; "default_remind_time"?: string | null; "task_sound"?: boolean | null; "web_notifications"?: boolean | null; "skip_weekends"?: boolean | null }
 
 export type ResolutionStatus = "exact" | "resolved_from_partial" | "needs_station" | "ambiguous" | "invalid"
 
@@ -149,10 +155,18 @@ export type Task = { "booking_key": string; "display_key": string; "id": number;
 
 export type TaskBookingSummary = { "last_status": StatusSummary | null; "last_agent": AgentSummary | null; "is_done": boolean; "updated_at": string }
 
+export type TaskCreate = { "remind_date": string; "remind_time"?: string | null; "message"?: string | null; "client_request_id"?: string | null }
+
+export type TaskDueData = { "task": Task; "notification_id": number; "created_at": string }
+
+export type TaskDueFrame = { "event": "task.due"; "data": TaskDueData }
+
+export type TaskEdit = { "remind_date"?: string | null; "remind_time"?: string | null; "message"?: string | null }
+
 export type TaskStatus = "pending" | "done" | "cancelled"
 
 export type WebSocketClientFrame = LockCommandFrame | HeartbeatFrame
 
-export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | ForceLogoutFrame | HeartbeatFrame
+export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | TaskDueFrame | ForceLogoutFrame | HeartbeatFrame
 
 export const ERROR_CODES = ["UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]

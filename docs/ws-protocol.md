@@ -29,14 +29,15 @@ Uvicorn logs WebSocket handshakes even with `--no-access-log`. Application start
 | `lock.snapshot` | `{locks:[{booking_key,display_key,user_id,user_name,expires_at}]}` | First frame after registration; replaces the client's lock map |
 | `notification.new` | `{id,booking_key,display_key,by_agent_name,created_at,type}` | Notification owner only |
 | `session.force_logout` | `{reason,message}` | Previous/revoked SID only, followed by close 4401 |
+| `task.due` | `{task:Task,notification_id,created_at}` | Task owner only, after notification/marker commit |
 | `ping` | `{}` | Application heartbeat every 25 s |
 | `pong` | `{}` | Reply to a client application `ping` |
 
-`notification.new.type` uses the existing six notification types. This step emits `taken_over` and `stale`. `by_agent_name` is null for a system stale reminder. The notification row already exists before publication. The notification's owner is never selected from an inbound client field.
+`notification.new.type` uses the existing six notification types. Implemented jobs emit `taken_over`, `stale` and `task_due`. `by_agent_name` is null for a system stale reminder. The notification row already exists before publication. The notification's owner is never selected from an inbound client field.
 
 Force-logout reasons include `new_login`, `logout`, `password_changed`, `admin_kick`, `user_disabled`, `session_replaced`, `session_revoked`, and `token_expired`. New-login/replaced-session copy is exactly `Your account was signed in on another device.`; other reasons use `Your session has ended. Please sign in again.` No SID/token is exposed in the event.
 
-`task.due` remains a reserved event for Prompt 5B; no task mutation or task-due job is implemented here.
+`task.due` is implemented by Prompt 7B alongside the missing Prompt 5B API prerequisite. Its `task` field is the complete shared Task DTO (including display_key and booking summary), with `is_due:true` and pending status. `notification_id` links the accompanying private `notification.new`; `created_at` is UTC. Deduplicate by task ID/deadline and notification ID respectively. The startup/30-second job commits `notified_at` and a `task_due` notification before dispatch. On login/reopen/reconnect call GET /tasks/due once for a durable catch-up view; see [tasks.md](tasks.md).
 
 ## Client → server
 
@@ -108,6 +109,7 @@ Notification publication occurs after each batch commits. If the service slept o
 | `WS_QUEUE_SIZE` / `WS_MAX_MESSAGE_BYTES` | 128 / 4096 |
 | `LOCK_TTL_SECONDS` / `LOCK_SWEEP_INTERVAL_SECONDS` | 150 / 25 |
 | `SCHEDULER_ENABLED` | true |
+| `TASK_JOB_INTERVAL_SECONDS` | 30 |
 | `SCHEDULER_JOB_TIMEOUT_SECONDS` | 120 |
 | `STALE_JOB_INTERVAL_SECONDS` / `STALE_JOB_BATCH_SIZE` | 1200 / 100 |
 

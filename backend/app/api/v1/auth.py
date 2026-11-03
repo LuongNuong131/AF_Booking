@@ -14,6 +14,7 @@ from app.schemas.contracts import ApiError
 from app.services.audit import AuditContext
 from app.services.auth import AuthService
 from app.services.session_cache import CurrentUser
+from app.services.tasks import effective_settings
 
 router = APIRouter(
     prefix="/auth",
@@ -27,12 +28,16 @@ Authenticated = Annotated[CurrentUser, Depends(get_current_user)]
 @router.post("/login", response_model=LoginResponse)
 async def login(body: LoginRequest, request: Request, auth: Auth) -> LoginResponse:
     ip = request.client.host if request.client else "unknown"
-    return await auth.login(
+    result = await auth.login(
         body.username,
         body.password.get_secret_value(),
         ip,
         AuditContext.from_request(request),
     )
+    result.user.settings = effective_settings(
+        result.user.settings, request.app.state.settings.business_timezone
+    )
+    return result
 
 
 @router.post("/logout", response_model=MessageResponse)
@@ -42,8 +47,12 @@ async def logout(request: Request, auth: Auth, user: Authenticated) -> MessageRe
 
 
 @router.get("/me", response_model=PublicUser)
-async def me(user: Authenticated) -> PublicUser:
-    return user.public()
+async def me(request: Request, user: Authenticated) -> PublicUser:
+    result = user.public()
+    result.settings = effective_settings(
+        result.settings, request.app.state.settings.business_timezone
+    )
+    return result
 
 
 @router.post("/change-password", response_model=MessageResponse)

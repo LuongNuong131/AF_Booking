@@ -12,6 +12,7 @@ import { useNotificationsStore } from '../stores/notifications'
 import { useBookingsStore } from '../stores/bookings'
 import { useTasksStore } from '../stores/tasks'
 import { i18n } from '../i18n'
+import { installTaskAlerts } from '../composables/useTaskAlerts'
 import { notificationText } from '../utils/notificationText'
 
 export function installApplication(pinia: Pinia, router: Router): () => void {
@@ -24,6 +25,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
     bookings = useBookingsStore(pinia)
   const themeStop = ui.startTheme()
   const routeStop = installRouteResilience(router, pinia)
+  const alerts = installTaskAlerts(pinia, router)
   let transport: ReturnType<typeof useRealtime> | null = null
 
   function endSession(replaced: boolean): void {
@@ -61,6 +63,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
         }
         ui.clearNotices()
         void notifications.refresh()
+        void tasks.refreshDue(true)
         transport = useRealtime({
           url: endpoints.wsUrl,
           token,
@@ -71,7 +74,21 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
           },
           onFrame: (frame) => {
             realtime.apply(frame)
-            if (frame.event === 'booking.updated') bookings.observe(frame.data)
+            if (frame.event === 'booking.updated') {
+              bookings.observe(frame.data)
+              tasks.bookingUpdated(frame.data)
+            }
+            if (frame.event === 'task.due') {
+              notifications.incoming({
+                id: frame.data.notification_id,
+                booking_key: frame.data.task.booking_key,
+                display_key: frame.data.task.display_key,
+                by_agent_name: null,
+                created_at: frame.data.created_at,
+                type: 'task_due',
+              })
+              if (tasks.incoming(frame.data)) alerts.alert(frame.data.task)
+            }
             if (frame.event === 'notification.new') {
               notifications.incoming(frame.data)
               if (frame.data.type === 'task_due') tasks.invalidate()
@@ -79,7 +96,10 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
             }
           },
           onReady: (reconnected) => {
-            if (reconnected) ui.requestRefresh('reconnect')
+            if (reconnected) {
+              ui.requestRefresh('reconnect')
+              void tasks.refreshDue(true)
+            }
           },
           onForceLogout: (reason) => {
             if (reason === 'logout' && auth.signingOut) return
@@ -94,13 +114,17 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
     watch(
       () => ui.refreshVersion,
       () => {
-        if (auth.isAuthenticated) void notifications.refresh()
+        if (auth.isAuthenticated) {
+          void notifications.refresh()
+          if (ui.refreshReason === 'visible') void tasks.refreshDue(true)
+        }
       },
     )
   })
   const online = () => transport?.resume()
   window.addEventListener('online', online)
   return () => {
+    alerts.stop()
     scope.stop()
     transport?.stop()
     realtime.bindSender(null)

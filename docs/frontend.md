@@ -4,9 +4,8 @@ The Vue workspace now supports real sign-in, session restoration, role-based nav
 light/dark themes, private notifications and the Prompt 5 WebSocket protocol. Prompt 7 now implements Home,
 Summary and booking detail, including lookup, history, note entry, drafts, conflict
 review and live tables. See [booking-workspace.md](booking-workspace.md) for the workflow.
-Reminder UI and task mutations remain subsequent work. Profile
-shows the authenticated account and a local theme preference; it does not call the
-reserved profile mutation API. Admin and Reports have guards and shell routes only.
+Prompt 7B implements reminder task UI, due alerts and persisted Profile preferences;
+see [tasks.md](tasks.md). Profile also shows the authenticated account and local theme preference. Admin and Reports have guards and shell routes only.
 
 ## Development and build
 
@@ -50,7 +49,7 @@ SPA fallback; WSS connects directly to Render. See [deploy.md](deploy.md).
 ## Structure and session handling
 
 - `src/router`: guest/role guards, canonical booking URL redirects and lazy workspace pages.
-- `src/stores`: auth, UI/theme, notifications, realtime and the due-task foundation.
+- `src/stores`: auth, UI/theme, notifications, realtime and private task/due/reminder state.
 - `src/runtime/application.ts`: auth-aware API hooks, WebSocket lifecycle and refresh dispatch.
 - `src/api`: Axios bearer injection, sanitized errors and runtime auth/frame validation.
 - `src/composables`: request deadlines, realtime transport, view refresh, route resilience and keyboard bindings.
@@ -109,7 +108,8 @@ Route loading ends after 20 seconds with a nonblocking Retry banner, including o
 initial lazy-load failure. A tab hidden for at least 60 seconds emits a refresh request.
 Future data pages register `useViewRefresh(load)` to reload current data after
 visibility, reconnect or retry; the current notification list already subscribes.
-Home, Summary and detail subscribe to refresh signals, preserving form drafts; no task API is called.
+Home, Summary and detail subscribe to refresh signals, preserving form drafts. Due tasks
+refresh once on login/reopen/reconnect; the active Task list also observes view refresh.
 Error boundaries isolate render failures and offer a section retry.
 
 ## WebSocket and keyboard integration
@@ -123,22 +123,21 @@ blocking note entry. See [ws-protocol.md](ws-protocol.md) for exact frames/close
 
 A 4409 means another tab with the same SID owns the socket: stop reconnecting and
 show “Connected in another tab”, retaining the valid REST session. A new login's
-`session.force_logout` clears the old session and redirects to Login. The due-task
-store provides a list/counter/invalidation hook; it does not call future task APIs.
+`session.force_logout` clears the old session and redirects to Login. The task store loads private due summaries, handles task.due events and updates badges
+and persistent reminders; it clears private state on session changes.
 
 Booking input/note components register `useBookingShortcuts` with input/scope
 references, lookup/save/clear callbacks and the dynamic status catalogue. The shared
 VueUse listener implements `/`, Enter, Ctrl/Command+Enter, Alt+1…5 by `sort_order`,
-Escape and `?`. Unrelated editable fields, IME composition and Ctrl+K are left alone.
+Escape, Alt+T and `?`. Unrelated editable fields, IME composition and Ctrl+K are left alone.
 The shortcut guide is available from the sidebar/header. Booking text/copy uses the
 shared key helpers and `BookingKeyText`; URLs always retain canonical keys. Dates use
-`DD MMM YYYY HH:mm:ss` plus the user's `settings.timezone` offset/label, with a valid
-browser zone (then UTC) as fallback.
+`DD MMM YYYY HH:mm:ss` plus the user's `settings.timezone` offset/label, defaulting to the server-provided business timezone (normally `Asia/Ho_Chi_Minh`).
 
 The backend's current `notification.new`/persisted stale notification has no hours
 value. The dropdown uses a separate generic English stale message instead of inventing
 an elapsed duration; the supplied `notif_stale` template remains unchanged for future
-payloads that can fill it. No endpoint or event contract changed in this prompt.
+payloads that can fill it. Task API envelopes, profile keys and task.due fields are documented explicitly in the API contract.
 
 ## Verification
 

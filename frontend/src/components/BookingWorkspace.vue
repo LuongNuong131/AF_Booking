@@ -4,6 +4,9 @@ import { useDebounceFn } from '@vueuse/core'
 import { ElDialog } from 'element-plus'
 import 'element-plus/es/components/dialog/style/css'
 import { useI18n } from 'vue-i18n'
+import { useTasksStore } from '../stores/tasks'
+import TaskButton from './TaskButton.vue'
+import TaskSuggestionBar from './TaskSuggestionBar.vue'
 import { useBookingsStore } from '../stores/bookings'
 import { useBookingWorkspace } from '../composables/useBookingWorkspace'
 import { useBookingShortcuts } from '../composables/useBookingShortcuts'
@@ -20,11 +23,16 @@ import BaseIcon from './BaseIcon.vue'
 const props = defineProps<{ initialKey?: string; detail?: boolean }>()
 const emit = defineEmits<{ saved: [key: string]; opened: [key: string] }>()
 const { t } = useI18n(),
-  store = useBookingsStore()
+  store = useBookingsStore(),
+  tasks = useTasksStore()
 const w = reactive(useBookingWorkspace())
 const inputRef = ref<HTMLInputElement | null>(null),
   formScope = ref<HTMLElement | null>(null)
 const station = ref('')
+const suggestion = ref<{ key: string; strong: boolean; days: number | null; nonce: number } | null>(
+  null,
+)
+let suggestionNonce = 0
 let disposed = false
 onScopeDispose(() => {
   disposed = true
@@ -46,8 +54,10 @@ const conflictData = computed(() =>
   w.conflictRequest.data?.booking_key === w.key ? w.conflictRequest.data : null,
 )
 async function open(value?: string) {
+  if (w.saveRequest.pending) return false
   await w.open(value)
   if (w.key) emit('opened', w.key)
+  return !!w.key
 }
 async function lookup() {
   if (w.resolution?.resolution.status === 'resolved_from_partial') {
@@ -56,7 +66,14 @@ async function lookup() {
   } else await open()
 }
 async function save() {
+  const status = w.selectedStatus
   if (await w.save()) {
+    suggestion.value = {
+      key: w.key!,
+      strong: status?.suggest_task ?? false,
+      days: status?.default_task_days ?? null,
+      nonce: ++suggestionNonce,
+    }
     emit('saved', w.key!)
     await nextTick()
     inputRef.value?.focus()
@@ -80,6 +97,9 @@ useBookingShortcuts({
   scope: () => formScope.value,
   lookup,
   save,
+  task: () => {
+    if (w.key && w.current?.exists) tasks.openDialog(w.key)
+  },
   clear,
   statuses: () => store.statuses,
   selectStatus: (code) => {
@@ -98,7 +118,11 @@ onMounted(() => {
   void w.statusRequest.run()
   if (!props.detail) inputRef.value?.focus()
 })
-defineExpose({ open, focus: () => inputRef.value?.focus() })
+defineExpose({
+  open,
+  focus: () => inputRef.value?.focus(),
+  focusNote: () => formScope.value?.querySelector<HTMLTextAreaElement>('#booking-note')?.focus(),
+})
 </script>
 <template>
   <section
@@ -302,8 +326,19 @@ defineExpose({ open, focus: () => inputRef.value?.focus() })
                 <option value="transportation">{{ t('supplier_types.transportation') }}</option>
               </select>
             </fieldset></template
-          ><template #task-action><slot name="task-action" /></template
-        ></NoteForm>
+          ><template #task-action
+            ><TaskButton
+              v-if="w.key"
+              :booking-key="w.key"
+              :count="w.current?.my_tasks?.length"
+              :disabled="!w.current?.exists" /><slot name="task-action" /></template></NoteForm
+        ><TaskSuggestionBar
+          v-if="suggestion && suggestion.key === w.key"
+          :booking-key="suggestion.key"
+          :strong="suggestion.strong"
+          :days="suggestion.days"
+          :nonce="suggestion.nonce"
+        />
       </div>
     </template>
     <ElDialog

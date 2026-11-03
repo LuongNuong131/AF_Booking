@@ -5,13 +5,15 @@ import json
 import os
 import socket
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 import test_booking_database as support
 import uvicorn
+from sqlalchemy import update
 
-from app.models import User
+from app.models import BookingTask, User
 
 migrated = support.migrated
 password_pair = support.password_pair
@@ -71,7 +73,7 @@ class BackendListener:
             self.task = None
 
 
-@pytest.mark.parametrize("browser_script", ["smoke.mjs", "workspace.mjs"])
+@pytest.mark.parametrize("browser_script", ["smoke.mjs", "workspace.mjs", "tasks.mjs"])
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
     rig, browser_account, tmp_path, browser_script
 ):
@@ -133,6 +135,17 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
                         await live.stop()
                     elif event.get("action") == "start_backend":
                         await live.start()
+                    elif event.get("action") == "task_due":
+                        async with rig.app.state.engine.begin() as connection:
+                            await connection.execute(
+                                update(BookingTask)
+                                .where(BookingTask.user_id == 3, BookingTask.status == "pending")
+                                .values(
+                                    remind_at=datetime.now(UTC) - timedelta(seconds=1),
+                                    notified_at=None,
+                                )
+                            )
+                        await rig.app.state.tasks.due_job()
                     elif event.get("action") == "takeover":
                         assert (await rig.save(user="other", version=1)).status_code == 200
                     elif event.get("result") == "passed":
