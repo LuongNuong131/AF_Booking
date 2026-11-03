@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: deployment foundation, schema, auth, and booking backend (Prompts 1–4).** FastAPI implements booking lookup, supplier folders, append-only notes, optimistic versions, idempotent saves, lists, stale detection, and private notifications. It includes a RAM key index, snapshot cache, bounded database transactions, and verified TLS. Frontend booking/sign-in screens and WebSocket transport remain for later prompts.
+**Current scope: deployment foundation, schema, auth, and booking backend (Prompts 1–4B).** FastAPI implements booking lookup, supplier folders, append-only notes, optimistic versions, idempotent saves, lists, stale detection, and private notifications. It includes a RAM key index, snapshot cache, bounded database transactions, and verified TLS. Supplier/station search, folder pages and station naming are implemented. Frontend booking/sign-in screens and WebSocket transport remain for later prompts.
 
 ## Stack and hosting
 
@@ -56,7 +56,7 @@ VITE_API_BASE_URL=https://YOUR-API.onrender.com/api/v1 npm run build
 
 The production URL must use HTTPS and end in `/api/v1`. Missing or invalid production configuration fails the build. Database integration tests require `TEST_DATABASE_URL`; see [testing](docs/testing.md). GitHub Actions runs the unit tests, lint, type checking, and production build.
 
-Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.md). Frontend types are generated from Pydantic schemas with `backend/.venv/bin/python scripts/generate_contract_types.py`; run the same command with `--check` to detect drift. Auth and Prompt 4 booking endpoints are implemented; see [booking startup and curl examples](docs/bookings.md).
+Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.md). Frontend types are generated from Pydantic schemas with `backend/.venv/bin/python scripts/generate_contract_types.py`; run the same command with `--check` to detect drift. Auth, booking and Prompt 4B search/folder/station endpoints are implemented; see [booking curl examples](docs/bookings.md) and [search/folder documentation](docs/folder-search.md).
 
 Database migrate/seed/rollback commands, provisional status rules, index rationale, and real EXPLAIN reports: [docs/database-schema.md](docs/database-schema.md).
 

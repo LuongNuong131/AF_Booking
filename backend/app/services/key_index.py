@@ -2,7 +2,9 @@
 
 import asyncio
 import logging
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 
@@ -10,6 +12,7 @@ from app.core.config import Settings
 from app.core.unit_of_work import transaction
 from app.models import Booking, BookingGroup
 from app.schemas.bookings import GroupInfo
+from app.utils.supplier import normalize_supplier_name
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +31,24 @@ class KeyEntry:
 class GroupEntry:
     id: int
     info: GroupInfo
+    last_activity_at: datetime = field(default_factory=lambda: datetime(1970, 1, 1, tzinfo=UTC))
+    normalized_name: str = field(init=False)
+    words: tuple[str, ...] = field(init=False)
+    activity_order: float = field(init=False)
+
+    def __post_init__(self) -> None:
+        normalized = normalize_supplier_name(self.info.supplier_name)
+        object.__setattr__(self, "normalized_name", normalized)
+        object.__setattr__(self, "words", tuple(normalized.split()))
+        object.__setattr__(self, "activity_order", -self.last_activity_at.timestamp())
 
 
 class KeyIndex:
-    def __init__(self, engine, settings: Settings, cache) -> None:
+    def __init__(
+        self, engine, settings: Settings, cache, on_group_created: Callable[[], None] | None = None
+    ) -> None:
         self.engine, self.settings, self.cache = engine, settings, cache
+        self.on_group_created = on_group_created
         self.ready = False
         self.keys: dict[str, KeyEntry] = {}
         self.partial: dict[tuple[str, str], dict[str, KeyEntry]] = {}
@@ -48,6 +64,8 @@ class KeyIndex:
         return self.settings.key_index_enabled and self.ready
 
     def update(self, entry: KeyEntry | None, group: GroupEntry) -> None:
+        if group.info.cw_number not in self.groups and self.on_group_created is not None:
+            self.on_group_created()
         if not self.settings.key_index_enabled:
             return
         if entry:
@@ -58,6 +76,36 @@ class KeyIndex:
             if entry:
                 self._pending_keys[entry.key] = entry
             self._pending_groups[group.info.cw_number] = group
+
+    def matching_groups(
+        self,
+        query: str = "",
+        *,
+        station_code: str | None = None,
+        supplier_type: str | None = None,
+        cw_prefix: str | None = None,
+        rank: bool = True,
+    ) -> list[GroupEntry]:
+        normalized = normalize_supplier_name(query)
+        tokens = tuple(set(normalized.split()))
+        matches = []
+        for group in self.groups.values():
+            if station_code is not None and group.info.station_code != station_code:
+                continue
+            if supplier_type is not None and group.info.supplier_type != supplier_type:
+                continue
+            if cw_prefix is not None and not group.info.cw_number.startswith(cw_prefix):
+                continue
+            if any(not any(word.startswith(token) for word in group.words) for token in tokens):
+                continue
+            score = (
+                0
+                if not rank or not tokens or group.normalized_name == normalized
+                else (1 if group.normalized_name.startswith(normalized) else 2)
+            )
+            matches.append((score, group.activity_order, -group.id, group))
+        matches.sort(key=lambda entry: entry[:3])
+        return [entry[3] for entry in matches]
 
     async def signature(self):
         async with transaction(self.engine, self.settings) as session:
@@ -93,6 +141,7 @@ class KeyIndex:
                                 BookingGroup.station_code,
                                 BookingGroup.supplier_name,
                                 BookingGroup.supplier_type,
+                                BookingGroup.last_activity_at,
                             )
                             .where(BookingGroup.id > last)
                             .order_by(BookingGroup.id)
@@ -115,6 +164,7 @@ class KeyIndex:
                                 )
                             }
                         ),
+                        row.last_activity_at,
                     )
                 last = rows[-1].id
                 await asyncio.sleep(0)

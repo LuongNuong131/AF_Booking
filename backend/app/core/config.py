@@ -41,6 +41,11 @@ class Settings(BaseSettings):
     lookup_timeout_seconds: float = Field(default=6, gt=0, le=60)
     note_save_timeout_seconds: float = Field(default=12, gt=0, le=60)
     export_timeout_seconds: float = Field(default=55, gt=0, le=300)
+    search_db_timeout_seconds: float = Field(default=3, gt=0, le=3)
+    search_max_requests: int = Field(default=120, ge=1, le=10000)
+    search_rate_window_seconds: float = Field(default=60, gt=0, le=3600)
+    search_rate_max_entries: int = Field(default=10000, ge=1, le=100000)
+    station_cache_ttl_seconds: float = Field(default=60, gt=0, le=60)
     key_index_enabled: bool = True
     key_index_batch_size: int = Field(default=1000, ge=1, le=5000)
     key_index_reconcile_seconds: float = Field(default=600, gt=0, le=3600)

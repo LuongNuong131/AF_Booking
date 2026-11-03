@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Frontend sign-in/booking screens, search/folder-list APIs, full invoice management/reports, WebSocket transport, soft locks, reminder mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
+Frontend sign-in/booking screens, full invoice management/reports, WebSocket transport, soft locks, reminder mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -52,11 +52,22 @@ Frontend sign-in/booking screens, search/folder-list APIs, full invoice manageme
 - Admin/QC folder supplier edit and intentional NullStorage 501 attachment interface.
 - Disposable TLS MySQL/TiDB booking tests added to CI; run instructions and explicit envelope clarifications in docs/bookings.md and docs/api-contract.md.
 
+## Implemented: Prompt 4B folder/Supplier/station search
+
+- Ordered query classification: full booking, partial key, exact CW, CW prefix, station/period, existing station, Supplier text. Key-shaped branches never run Supplier LIKE queries.
+- Seven typed `/search` result variants, all-month folder detail, paginated/filtered folder list and immediate Admin/QC supplier edits.
+- The existing KeyIndex GroupEntry now stores normalized Supplier words/activity; prefix-of-every-word matching ranks exact, starts-with, words, then recent activity. There is no separate Supplier index.
+- Page-wide booking-count/open-count/latest-period aggregate uses the group/period index, with no per-folder queries. Station and station/period use existing indexes.
+- Authenticated station autocomplete has a 60-second generation-guarded cache, ETag/304, private caching and Admin naming/audit. New folders and station renames invalidate station metadata.
+- Search has a 100-character limit, per-user 120/minute sliding window and a dedicated three-second database fallback deadline.
+- MySQL/TiDB tests cover classification, word/diacritic matching, rename visibility/ACL/audit, pagination, no-LIKE key branches, one-query aggregates and station caching. A reproducible 2,000-folder/50,000-booking benchmark verifies p95 and EXPLAIN plans; reports and limits are in docs/folder-search.md.
+- Search wire types are generated as a discriminated union. No frontend screens or new database migrations were added.
+
 ## Next implementation steps
 
 1. Confirm the provisional Position labels when the business mapping is available.
 2. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
-3. Continue later prompts for search/folders, task mutations, frontend screens and realtime.
+3. Continue later prompts for task mutations, frontend screens and realtime.
 
 ## Deployment status
 

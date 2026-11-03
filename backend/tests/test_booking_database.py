@@ -578,15 +578,25 @@ async def test_pool_exhaustion_503_retry_after(rig):
 
 async def test_retry_after_postcommit_timeout_never_duplicates(rig, monkeypatch):
     started = asyncio.Event()
+    captured = {}
+
+    async def capture_request(scope, receive, send):
+        captured["scope"] = scope
+        await rig.app(scope, receive, send)
 
     async def slow_broadcast(event_name, payload):
         started.set()
-        await asyncio.sleep(0.2)
+        # Expire the HTTP deadline only after commit, avoiding a flaky 100 ms DB
+        # assumption when TLS/container/CPU startup is contended in CI.
+        captured["scope"]["state"]["request_deadline"].reschedule(asyncio.get_running_loop().time())
+        await asyncio.Event().wait()
 
     monkeypatch.setattr(rig.app.state.ws_manager, "broadcast", slow_broadcast)
-    rig.app.state.settings.note_save_timeout_seconds = 0.1
     request_id = str(uuid4())
-    first = await rig.save(client_request_id=request_id)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=capture_request), base_url="http://testserver"
+    ) as client:
+        first = await Rig(rig.app, client, rig.headers).save(client_request_id=request_id)
     assert first.status_code == 504, first.text
     assert started.is_set()
     retry = await rig.save(client_request_id=request_id)

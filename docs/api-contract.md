@@ -2,7 +2,7 @@
 
 This document records the user's shared contract for all implementation prompts. Paths, JSON field names, and error codes must not change silently. Update this file and the wire models together if an approved change is needed.
 
-**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Search/folder lists, task mutations, realtime, and later-prompt endpoints remain reserved.
+**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Task mutations, realtime and later-prompt endpoints remain reserved.
 
 ## Common conventions
 
@@ -16,7 +16,7 @@ This document records the user's shared contract for all implementation prompts.
 
 ## Wire types
 
-Executable field definitions are in [`backend/app/schemas/contracts.py`](../backend/app/schemas/contracts.py) [`backend/app/schemas/auth.py`](../backend/app/schemas/auth.py), and [`backend/app/schemas/bookings.py`](../backend/app/schemas/bookings.py). Frontend equivalents are generated in [`frontend/src/types/api.generated.ts`](../frontend/src/types/api.generated.ts); do not edit that file manually.
+Executable field definitions are in [`backend/app/schemas/contracts.py`](../backend/app/schemas/contracts.py) [`backend/app/schemas/auth.py`](../backend/app/schemas/auth.py), and [`backend/app/schemas/bookings.py`](../backend/app/schemas/bookings.py), and [`backend/app/schemas/folders.py`](../backend/app/schemas/folders.py). Frontend equivalents are generated in [`frontend/src/types/api.generated.ts`](../frontend/src/types/api.generated.ts); do not edit that file manually.
 
 | Type | Fields |
 | --- | --- |
@@ -224,3 +224,25 @@ These envelopes clarify fields that Prompt 1B left implicit; existing shared DTO
 - Lookup/detail expose `Server-Timing: key_index;dur=..., snapshot;dur=..., notes;dur=...`; browser CORS permits it. Default/lookup/save/export route budgets are 8/6/12/55 seconds. A timeout returns 504, pool/row-lock exhaustion returns 503 with `Retry-After: 5`. Export routes are reserved, but the decorator supports their future override.
 
 Operational limits, configuration and curl examples: [bookings.md](bookings.md).
+
+## Folder search implementation details — Prompt 4B
+
+Executable envelopes: `backend/app/schemas/folders.py`; generated frontend `SearchResponse` is a union discriminated by required `kind`. Existing shared `FolderCard`/`MonthRow` fields are retained, including mandatory display keys.
+
+| `GET /search` kind | Fields in addition to `kind,query` |
+| --- | --- |
+| `booking` | `booking_key,display_key,exists,group` (group fields as lookup, or null); no history fetch |
+| `partial_key` | `resolution:KeyResolution`, using the same resolver as lookup |
+| `folder` | `folder:FolderCard,months:MonthRow[]` (all months) |
+| `folders` | `items:FolderCard[],total,page,size` |
+| `station` | `station:{code,name},sections:[{type:"hotel",items:FolderCard[]},{type:"transportation",items:FolderCard[]}],total,page,size` |
+| `station_period` | `station:{code,name},period,period_label,items:BookingItem[],total,page,size` |
+| `none` | `items:[]` |
+
+`display_key` on the booking result follows the universal identity rule. `page,size` are explicit pagination additions to the shorthand Prompt 4B envelopes. Station sections split **one globally paginated, activity-ordered folder page**; `total` counts all matching folders, not only the page. Both section entries are always present. `BookingItem` is the Prompt 4 list DTO (the previously unspecified `BookingRow`); it includes Supplier and invoice snapshot fields, without private task queries.
+
+Full-key misses return `booking` with `exists:false`. Partial `needs_station`/`ambiguous` remain `partial_key`. Missing exact folders, unknown station/period and unmatched Supplier/prefix searches return `none`. An out-of-range page with known matches retains its kind/total and an empty page. Exact CW means 5–10 digits; fewer digits mean prefix, with at most 20 folders per search page. Station/period keys are validated before Supplier text; malformed key-shaped input never triggers a Supplier LIKE scan.
+
+`GET /folders/{cw}` returns `{folder,months}`. `GET /folders` returns `Page<FolderCard>` (size 1–100), sorted activity descending; filters are `station_code,supplier_type,q`. `PATCH /folders/{cw}` keeps its Prompt 4 body/response and Admin/QC ACL. `GET /stations?q=` returns `StationOption[]` directly: `{code,name:null|string,folder_count}`; response ETag/private max-age 60 and conditional 304 are supported. `PATCH /admin/stations/{code}` accepts required nullable `name` (max 100), returns `{code,name}`, Admin only, and returns 404 for unknown codes. All HTTP errors retain the existing code catalogue.
+
+Search limit: `q` at most 100 characters, page size 1–20, default 120 requests/user/60 seconds. The whole DB fallback has a dedicated 3 s deadline. Supplier normalization, per-word prefix matching, relevance ordering, ETag invalidation, operational boundaries and reproducible benchmark commands: [folder-search.md](folder-search.md).

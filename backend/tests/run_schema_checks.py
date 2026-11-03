@@ -108,7 +108,11 @@ async def create_database(port: int, ca_file: Path, database: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", choices=["mysql", "tidb"], required=True)
-    parser.add_argument("--suite", choices=["schema", "auth", "booking"], default="schema")
+    parser.add_argument(
+        "--suite",
+        choices=["schema", "auth", "booking", "folder", "search-performance"],
+        default="schema",
+    )
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
     docker_env = os.environ.copy()
@@ -196,9 +200,11 @@ def main() -> None:
                 "schema": "tests/test_schema_database.py",
                 "auth": "tests/test_auth_database.py",
                 "booking": "tests/test_booking_database.py",
+                "folder": "tests/test_folder_database.py",
+                "search-performance": "tests/test_search_performance.py",
             }[args.suite]
             test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]
-            if args.suite != "schema":
+            if args.suite not in {"schema", "search-performance"}:
                 test_command.append(f"--junitxml={args.report.resolve()}")
             subprocess.run(
                 test_command,

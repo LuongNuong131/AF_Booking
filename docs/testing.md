@@ -64,3 +64,16 @@ Prompt 4 adds shared Python/TypeScript booking-key fixtures and cache tests. Rea
 These verify row-lock/version races, original-response UUID replay after later writes and post-commit timeout, required notes, supplier/station/partial-key rules, private takeover notifications/tasks, cursor ties/deleted notes, stale thresholds, zero-query indexed misses, folder invalidation, batch list queries, EXPLAIN point lookup, cancelled rollback/connection discard, pool exhaustion and lock-wait 503. CI runs schema, auth and booking suites for both engines and uploads reports. Full startup/curl/configuration: [bookings.md](bookings.md).
 
 Verification for the Prompt 4 implementation: **87 backend unit tests passed**; 44 integration tests were skipped in that ordinary run and executed separately where applicable. On **each** disposable MySQL 8.0 / TiDB 8.5 database, **25 booking tests + 16 auth tests + 1 schema/migration/EXPLAIN test passed**. Frontend: **48 Vitest tests passed**, strict type checking and production build passed. Ruff checks/format and generated-contract drift checks passed. The two optional hosted-TiDB probe tests remain skipped because no hosted test connection was supplied; local Docker results do not prove hosted deployment readiness.
+
+Prompt 4B adds classification/index/limiter unit tests and real folder/search/station suites:
+
+```sh
+.venv/bin/python tests/run_schema_checks.py --engine mysql --suite folder --report /tmp/folder-mysql.xml
+.venv/bin/python tests/run_schema_checks.py --engine tidb --suite folder --report /tmp/folder-tidb.xml
+.venv/bin/python tests/run_schema_checks.py --engine mysql --suite search-performance --report /tmp/search-mysql.json
+.venv/bin/python tests/run_schema_checks.py --engine tidb --suite search-performance --report /tmp/search-tidb.json
+```
+
+Folder tests verify all result variants, exact CW versus prefix, all-month ordering/backfills, counts, station/type pagination, accent/punctuation/multiple-word matching, ranking and immediate rename/audit/ACL, TTL/ETag/304/auth, zero-folder stations, no-LIKE key branches, one-query page aggregates, rate limits, and the separate DB deadline. The benchmark creates 2,000 folders/50,000 bookings and checks index plans and warm sequential ASGI p95 below 100 ms. Committed reports and measurement limits are in [folder-search.md](folder-search.md). The post-commit retry test now expires its HTTP deadline after the broadcast hook is reached, so it tests the intended committed-write race without assuming a contended TLS transaction will finish within 100 ms.
+
+Prompt 4B verification: **114 backend unit tests passed** (66 database tests skipped in that unit run). Separate disposable MySQL and TiDB runs each passed **21 folder/search/station tests, 25 booking tests, 16 auth tests and one 2,000-folder/50,000-booking performance/index-plan test**. Frontend remained at **48 passing tests**, strict TypeScript and production build passed. Ruff and generated-contract checks passed. Hosted provider probes remain unrun without an explicit hosted test connection.

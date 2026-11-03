@@ -39,6 +39,7 @@ def group_entry(group: BookingGroup) -> GroupEntry:
             supplier_name=group.supplier_name,
             supplier_type=group.supplier_type,
         ),
+        group.last_activity_at,
     )
 
 
