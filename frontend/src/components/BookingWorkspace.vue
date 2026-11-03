@@ -1,0 +1,359 @@
+<script setup lang="ts">
+import { computed, nextTick, onMounted, onScopeDispose, reactive, ref, watch } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
+import { ElDialog } from 'element-plus'
+import 'element-plus/es/components/dialog/style/css'
+import { useI18n } from 'vue-i18n'
+import { useBookingsStore } from '../stores/bookings'
+import { useBookingWorkspace } from '../composables/useBookingWorkspace'
+import { useBookingShortcuts } from '../composables/useBookingShortcuts'
+import { useRequest } from '../composables/useRequest'
+import { api } from '../api/client'
+import { parseBookingKey } from '../utils/bookingKey'
+import { timeouts } from '../config/timeouts'
+import type { StationOption } from '../types/api.generated'
+import BookingSummaryCard from './BookingSummaryCard.vue'
+import BookingTimeline from './BookingTimeline.vue'
+import NoteForm from './NoteForm.vue'
+import RequestStatus from './RequestStatus.vue'
+import BaseIcon from './BaseIcon.vue'
+const props = defineProps<{ initialKey?: string; detail?: boolean }>()
+const emit = defineEmits<{ saved: [key: string]; opened: [key: string] }>()
+const { t } = useI18n(),
+  store = useBookingsStore()
+const w = reactive(useBookingWorkspace())
+const inputRef = ref<HTMLInputElement | null>(null),
+  formScope = ref<HTMLElement | null>(null)
+const station = ref('')
+let disposed = false
+onScopeDispose(() => {
+  disposed = true
+})
+const stationRequest = useRequest(
+  async ({ signal, timeoutMs }, q: string) =>
+    (await api.get<StationOption[]>('/stations', { params: { q }, signal, timeout: timeoutMs }))
+      .data,
+  { timeoutMs: timeouts.search, retry: true },
+)
+const fetchStations = useDebounceFn(() => {
+  if (!disposed) return stationRequest.run(station.value)
+}, timeouts.searchDebounce)
+watch(station, () => {
+  stationRequest.cancel()
+  void fetchStations()
+})
+const conflictData = computed(() =>
+  w.conflictRequest.data?.booking_key === w.key ? w.conflictRequest.data : null,
+)
+async function open(value?: string) {
+  await w.open(value)
+  if (w.key) emit('opened', w.key)
+}
+async function lookup() {
+  if (w.resolution?.resolution.status === 'resolved_from_partial') {
+    w.acceptResolved()
+    if (w.key) emit('opened', w.key)
+  } else await open()
+}
+async function save() {
+  if (await w.save()) {
+    emit('saved', w.key!)
+    await nextTick()
+    inputRef.value?.focus()
+  }
+}
+function clear() {
+  if (props.detail) return
+  w.clear()
+  station.value = ''
+  inputRef.value?.focus()
+}
+function stationInput(event: Event) {
+  station.value = (event.target as HTMLInputElement).value
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+    .slice(0, 3)
+}
+useBookingShortcuts({
+  enabled: () => !w.conflict,
+  input: () => inputRef.value,
+  scope: () => formScope.value,
+  lookup,
+  save,
+  clear,
+  statuses: () => store.statuses,
+  selectStatus: (code) => {
+    w.statusCode = code
+    w.engage()
+  },
+})
+watch(
+  () => props.initialKey,
+  (value) => {
+    if (value) void open(value)
+  },
+  { immediate: true },
+)
+onMounted(() => {
+  void w.statusRequest.run()
+  if (!props.detail) inputRef.value?.focus()
+})
+defineExpose({ open, focus: () => inputRef.value?.focus() })
+</script>
+<template>
+  <section
+    ref="formScope"
+    class="work-card"
+    :class="{ 'detail-work-card': detail }"
+    :aria-label="t('bookingUi.work')"
+  >
+    <header v-if="!detail" class="work-card-heading">
+      <div>
+        <p class="page-eyebrow">{{ t('bookingUi.workspaceEyebrow') }}</p>
+        <h2>{{ t('bookingUi.work') }}</h2>
+      </div>
+      <span class="shortcut-hint">{{ t('bookingUi.focusShortcut') }}</span>
+    </header>
+    <div v-if="!detail" class="booking-lookup">
+      <label for="booking-input" class="field-label">{{ t('bookingUi.bookingNumber') }}</label>
+      <div class="lookup-input-row">
+        <input
+          id="booking-input"
+          ref="inputRef"
+          v-model="w.input"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          :placeholder="t('bookingUi.bookingPlaceholder')"
+          :aria-describedby="w.validation ? 'booking-input-error' : 'booking-format'"
+          @blur="w.normalizeInput"
+          @input="w.validation = ''"
+        /><button
+          type="button"
+          class="button primary lookup-button"
+          :aria-label="t('bookingUi.lookUp')"
+          @click="lookup"
+        >
+          <BaseIcon name="arrow" /></button
+        ><button
+          v-if="w.input"
+          type="button"
+          class="icon-button"
+          :aria-label="t('bookingUi.clearBooking')"
+          @click="clear"
+        >
+          <BaseIcon name="close" />
+        </button>
+      </div>
+      <p id="booking-format" class="input-hint">{{ t('bookingUi.formatHint') }}</p>
+      <p v-if="w.validation" id="booking-input-error" class="field-error" role="alert">
+        {{ w.validation }}
+      </p>
+    </div>
+    <RequestStatus
+      :state="w.lookupRequest.state"
+      :error="w.lookupRequest.error"
+      @retry="w.key ? w.refresh() : lookup()"
+    />
+    <div
+      v-if="w.lookupRequest.pending && !w.current"
+      class="booking-skeleton"
+      role="status"
+      :aria-label="t('common.loading')"
+    >
+      <div class="skeleton-line" />
+      <div class="skeleton-line" />
+      <div class="skeleton-line short" />
+    </div>
+    <div
+      v-if="w.resolution?.resolution.status === 'resolved_from_partial'"
+      class="resolution-panel"
+      role="status"
+    >
+      <p>{{ t('key_did_you_mean', { display_key: w.resolution.resolution.display_key }) }}</p>
+      <button type="button" class="button primary" @click="lookup">
+        {{ t('bookingUi.useBooking') }}
+      </button>
+    </div>
+    <div v-else-if="w.resolution?.resolution.status === 'ambiguous'" class="resolution-panel">
+      <p>{{ t('key_ambiguous', { cw: parseBookingKey(w.input)?.cw_number || '' }) }}</p>
+      <button
+        v-for="candidate in w.resolution.resolution.candidates"
+        :key="candidate.key"
+        type="button"
+        class="candidate-button"
+        @click="open(candidate.key)"
+      >
+        <strong>{{ candidate.display_key }}</strong
+        ><span>{{ candidate.supplier_name }}</span>
+      </button>
+    </div>
+    <form
+      v-else-if="w.resolution?.resolution.status === 'needs_station'"
+      class="resolution-panel"
+      @submit.prevent="w.applyStation(station)"
+    >
+      <p>{{ t('station_required') }}</p>
+      <label class="field-label" for="station-input">{{ t('station_input_label') }}</label>
+      <div class="station-input-row">
+        <input
+          id="station-input"
+          :value="station"
+          list="station-options"
+          maxlength="3"
+          autocomplete="off"
+          :placeholder="t('station_input_placeholder')"
+          @input="stationInput"
+        /><button type="submit" class="button primary" :disabled="!/^[A-Z]{3}$/.test(station)">
+          {{ t('bookingUi.continue') }}
+        </button>
+      </div>
+      <datalist id="station-options">
+        <option
+          v-for="option in stationRequest.data.value || []"
+          :key="option.code"
+          :value="option.code"
+        >
+          {{ option.name || option.code }}
+        </option></datalist
+      ><RequestStatus
+        :state="stationRequest.state.value"
+        :error="stationRequest.error.value"
+        @retry="stationRequest.run(station)"
+      />
+    </form>
+    <template v-if="w.current && (w.inputMatches || detail)">
+      <div v-if="w.hasUpdate" class="booking-update-banner" role="status">
+        <span>{{ t('updated_banner') }}</span
+        ><button type="button" class="text-button" @click="w.refresh">
+          {{ t('bookingUi.refresh') }}
+        </button>
+      </div>
+      <BookingSummaryCard :booking="w.current" />
+      <BookingTimeline
+        :notes="w.notes"
+        :cursor="w.cursor"
+        :state="w.historyRequest.state"
+        :error="w.historyRequest.error"
+        @more="w.loadMore"
+      />
+      <div v-if="w.inputMatches || detail" class="note-form-container">
+        <RequestStatus
+          :state="w.statusRequest.state"
+          :error="w.statusRequest.error"
+          @retry="w.statusRequest.run(true)"
+        />
+        <NoteForm
+          v-model:status-code="w.statusCode"
+          v-model:note="w.note"
+          :statuses="store.statuses"
+          :pending="w.saveRequest.pending"
+          :can-save="w.canSave"
+          :online="w.online"
+          :state="w.saveRequest.state"
+          :error="w.saveRequest.error"
+          :has-draft="w.hasDraft"
+          :draft-failed="w.draftFailed"
+          :draft-pending="w.draftPending"
+          :restored="w.draftRestored"
+          @save="save"
+          @discard="w.discardDraft"
+          @engage="w.engage"
+          ><template #fields
+            ><section v-if="w.showInvoice" class="invoice-declaration">
+              <label class="field-label" for="note-invoices">{{ t('invoice_label') }}</label
+              ><textarea
+                :aria-invalid="!!w.invalidInvoice"
+                id="note-invoices"
+                v-model="w.invoiceText"
+                rows="2"
+                maxlength="2000"
+                :placeholder="t('invoice_placeholder')"
+                @input="w.noInvoice = false"
+              /><label class="invoice-none"
+                ><input
+                  v-model="w.noInvoice"
+                  type="checkbox"
+                  :disabled="!!w.invoiceText.trim()"
+                />{{ t('no_invoice_checkbox') }}</label
+              >
+              <p v-if="w.invalidInvoice" class="field-error">
+                {{ t('invoice_invalid', { value: w.invalidInvoice }) }}
+              </p>
+              <p v-else-if="!w.invoiceValid" class="input-hint">{{ t('invoice_required_hint') }}</p>
+              <p v-if="w.invoiceText.trim()" class="input-hint">
+                {{ t('no_invoice_disabled_hint') }}
+              </p>
+            </section>
+            <fieldset v-if="w.needsSupplier" class="supplier-setup">
+              <legend>{{ t('bookingUi.supplier') }}</legend>
+              <p>{{ t('new_folder_prompt') }}</p>
+              <label class="field-label" for="new-supplier-name">{{
+                t('bookingUi.supplierName')
+              }}</label
+              ><input
+                id="new-supplier-name"
+                v-model="w.supplierName"
+                maxlength="255"
+                autocomplete="organization"
+              /><label class="field-label" for="new-supplier-type">{{ t('bookingUi.type') }}</label
+              ><select id="new-supplier-type" v-model="w.supplierType">
+                <option value="hotel">{{ t('supplier_types.hotel') }}</option>
+                <option value="transportation">{{ t('supplier_types.transportation') }}</option>
+              </select>
+            </fieldset></template
+          ><template #task-action><slot name="task-action" /></template
+        ></NoteForm>
+      </div>
+    </template>
+    <ElDialog
+      v-model="w.conflict"
+      :title="
+        t('conflict_title', {
+          user: conflictData?.snapshot?.last_agent?.full_name || t('common.someone'),
+        })
+      "
+      :show-close="false"
+      width="640px"
+      align-center
+      class="conflict-dialog"
+      ><template #header
+        ><div class="dialog-heading">
+          <h2>
+            {{
+              t('conflict_title', {
+                user: conflictData?.snapshot?.last_agent?.full_name || t('common.someone'),
+              })
+            }}
+          </h2>
+          <button
+            type="button"
+            class="icon-button"
+            :aria-label="t('common.close')"
+            @click="w.conflict = false"
+          >
+            <BaseIcon name="close" />
+          </button></div
+      ></template>
+      <p>{{ t('conflict_body') }}</p>
+      <BookingTimeline
+        v-if="conflictData"
+        :notes="conflictData.history.items.slice(0, 1)"
+        compact
+      /><RequestStatus
+        :state="w.conflictRequest.state"
+        :error="w.conflictRequest.error"
+        @retry="w.loadConflict"
+      /><template #footer
+        ><button
+          type="button"
+          class="button primary"
+          :disabled="!conflictData || w.conflictRequest.pending"
+          @click="w.reviewConflict"
+        >
+          {{ t('bookingUi.reviewLatest') }}
+        </button></template
+      ></ElDialog
+    >
+  </section>
+</template>

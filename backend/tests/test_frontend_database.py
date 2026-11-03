@@ -71,8 +71,9 @@ class BackendListener:
             self.task = None
 
 
+@pytest.mark.parametrize("browser_script", ["smoke.mjs", "workspace.mjs"])
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
-    rig, browser_account, tmp_path
+    rig, browser_account, tmp_path, browser_script
 ):
     async with rig.app.state.engine.begin() as connection:
         await connection.execute(
@@ -118,7 +119,7 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
             )
             browser = await asyncio.create_subprocess_exec(
                 "node",
-                "e2e/smoke.mjs",
+                f"e2e/{browser_script}",
                 cwd=ROOT / "frontend",
                 env=browser_env,
                 stdin=asyncio.subprocess.PIPE,

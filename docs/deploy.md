@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the backend and the Prompt 6 frontend foundation. It does not provision provider accounts. Home/Summary/booking business screens remain for later prompts. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
+This guide deploys the backend and the frontend through Prompt 7. It does not provision provider accounts. Home/Summary/booking workflows are implemented through Prompt 7; later Task/folder/invoice features remain. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 
@@ -101,7 +101,7 @@ Import the GitHub repository into Vercel:
 - Check the browser network panel for CORS errors and mixed-content requests.
 - Confirm no database credentials appear in the frontend bundle or repository.
 
-Backend auth and booking APIs are implemented; verify them with [auth.md](auth.md) and [bookings.md](bookings.md). WebSocket updates/locks/session logout and stale reminders are implemented; see [ws-protocol.md](ws-protocol.md). Frontend sign-in, guarded layout, notification dropdown and realtime session/reconnect handling are implemented; see [frontend.md](frontend.md). Home/Summary/booking workflows and reminder task mutations remain for later prompts. Keep a single instance/worker while the key index, snapshot cache and session invalidation are process-local; see the cache limits in bookings.md. Performance targets are goals, not measured guarantees.
+Backend auth and booking APIs are implemented; verify them with [auth.md](auth.md) and [bookings.md](bookings.md). WebSocket updates/locks/session logout and stale reminders are implemented; see [ws-protocol.md](ws-protocol.md). Frontend sign-in, guarded layout, notification dropdown and realtime session/reconnect handling are implemented; see [frontend.md](frontend.md). Home/Summary/booking workflows are implemented; see [booking-workspace.md](booking-workspace.md). Reminder task mutations and later features remain. Keep a single instance/worker while the key index, snapshot cache and session invalidation are process-local; see the cache limits in bookings.md. Performance targets are goals, not measured guarantees.
 
 References: [TiDB SQLAlchemy](https://docs.pingcap.com/tidb/stable/dev-guide-sample-application-python-sqlalchemy/), [TiDB MySQL compatibility](https://docs.pingcap.com/tidb/stable/mysql-compatibility/), [Render Blueprints](https://render.com/docs/blueprint-spec), [Vercel Vite](https://vercel.com/docs/frameworks/frontend/vite).
 

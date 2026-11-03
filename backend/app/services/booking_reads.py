@@ -530,9 +530,27 @@ class BookingReads:
                     value = value.strip().upper()
                 conditions.append(column == value)
         if filters.get("q"):
-            conditions.append(
-                Booking.booking_key.startswith(normalize(filters["q"]), autoescape=True)
-            )
+            query = filters["q"]
+            parsed = parse(query, self.settings.station_code_pattern)
+            if isinstance(parsed, ParsedKey):
+                conditions.append(Booking.booking_key == parsed.key)
+            elif isinstance(parsed, PartialKey):
+                conditions.extend(
+                    [Booking.cw_number == parsed.cw_number, Booking.period == parsed.period]
+                )
+            else:
+                supplier_query = normalize_supplier_name(query)
+                text_conditions = [
+                    Booking.booking_key.startswith(normalize(query), autoescape=True),
+                    Booking.station_code.startswith(normalize(query), autoescape=True),
+                ]
+                if supplier_query:
+                    text_conditions.append(
+                        BookingGroup.supplier_name_normalized.contains(
+                            supplier_query, autoescape=True
+                        )
+                    )
+                conditions.append(or_(*text_conditions))
         if filters.get("supplier"):
             conditions.append(
                 BookingGroup.supplier_name_normalized.startswith(

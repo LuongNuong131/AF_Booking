@@ -263,3 +263,21 @@ auth endpoints, private notification endpoints and Prompt 5 WebSocket frames.
 Admin/Reports data screens and Home/Summary business UI remain reserved; shell routes
 and the due-task store do not imply those endpoints are implemented.
 Frontend configuration and refresh/request hooks are documented in [frontend.md](frontend.md).
+
+## Prompt 7 read API clarifications
+
+Existing `/bookings` filters `cw_number`, `station_code`, `period`, `supplier`, and
+`supplier_type` support the Summary UI. Full-key `q` uses canonical equality; a partial
+key uses CW + period equality. Other text `q` matches booking/station prefixes or a
+substring of the normalized Supplier name. This intentionally expands the earlier
+booking-prefix-only text behavior; it does not add smart folder search to Home.
+
+`GET /users/lookup?q=&limit=20` is now implemented for Summary's Agent filter, brought
+forward from the Prompt 8D directory contract. Authentication is required. It returns
+an array of `{id,full_name}` for active users, sorted by full name/id. Optional q
+matches full name or username with literal wildcard escaping; max q length is 100,
+limit is 1–50. No username, password or session data is returned. Assignment endpoints
+remain reserved. No existing endpoint, field name or event was renamed.
+
+New-CW Supplier metadata and conditional invoice declaration use the existing
+`NoteSaveRequest` fields; no invoice edit endpoint or assignment API was added.

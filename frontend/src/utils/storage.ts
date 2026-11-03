@@ -9,11 +9,13 @@ export function writeStorage(
   kind: 'localStorage' | 'sessionStorage',
   key: string,
   value: string | null,
-): void {
+): boolean {
   try {
     if (value === null) window[kind].removeItem(key)
     else window[kind].setItem(key, value)
+    return true
   } catch {
-    /* In-memory session still works when storage is unavailable. */
+    // Auth can continue in memory; draft/theme callers can report failed persistence.
+    return false
   }
 }

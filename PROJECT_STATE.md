@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Frontend Home/Summary business content, booking entry/history, reminder UI, full invoice management/reports, reminder task mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
+Reminder/task UI and mutations, smart folder navigation, full invoice management/reports, reminder task mutations, assignments/watch, exports, and recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -84,13 +84,26 @@ Frontend Home/Summary business content, booking entry/history, reminder UI, full
 - Scoped VueUse keyboard registration/help, shared key/date/avatar/status/empty components; tasks due-list/counter foundation.
 - Strict TS with `@` alias; public VITE_API_URL/VITE_WS_URL and legacy API alias; build validation and frontend documentation.
 - Vitest coverage and real Chromium/Vue/FastAPI/TLS TiDB flow, including roles, theme reload, notifications, backend restart and second-login logout; browser CI/screenshots.
-- Home/Summary/booking detail, Admin and Reports remain layout shells. Profile displays account/theme only; reserved API mutations are not fabricated. No schema or backend application change.
+- At the end of Prompt 6, Home/Summary/booking detail, Admin and Reports were layout shells; Prompt 7 below implements the booking pages. Profile displays account/theme only; reserved API mutations are not fabricated. No schema or backend application change.
+
+## Implemented: Prompt 7 Home, Summary and booking detail
+
+- Full/partial key lookup, instant resolved suggestions, ambiguity/station selection, shared summary/warnings/soft locks and cursor Activity.
+- Dynamic status/note form, required notes/read-only Position, canonical UUID/versioned save, duplicate-click guard, latest-note conflict review and preservation of new typing.
+- Per-user/key seven-day drafts with 500 ms debounce, restoration/discard, offline retention and real storage-failure feedback.
+- Live 10-row My bookings/stale pages, takeover removal, first-page self promotion, later-page update counters and event-driven authoritative counts.
+- 20-row server Summary with all requested filters, UTC conversion of zoned dates/Today, URL persistence, filtered return from detail and targeted realtime row hydration.
+- Shared extensible BookingTimeline, NoteForm, BookingSummaryCard, LockBadge, DoneWarning and BookingTable, with slots for later Task features.
+- Short bounded read cache, private session cleanup, generation/version guards, replay of events racing page reads and disposed-view debounce guards; no polling.
+- Existing listing filters reused. Text q now searches normalized Supplier names/stations as well as booking prefixes; exact/partial keys use equality. The public active-user summary directory is implemented early for the Agent filter.
+- Minimal Supplier creation fields and conditional invoice declaration support existing backend save requirements; smart folder search and full invoice management remain later scope.
+- Frontend units and real Chromium/TLS TiDB two-user collaboration flow; backend listing/directory regressions on MySQL/TiDB. No migration or runtime dependency change.
 
 ## Next implementation steps
 
 1. Confirm the provisional Position labels when the business mapping is available.
 2. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
-3. Continue later prompts for task mutations and frontend Home/Summary/booking workflows.
+3. Continue Prompt 7B/7C and later prompts for reminder tasks, smart folder navigation and remaining workflows.
 
 ## Deployment status
 

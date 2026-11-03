@@ -128,3 +128,28 @@ The ordinary backend run skipped 87 database tests; separately, the new **one re
 Chromium/TLS TiDB integration test passed** with all flows above. Ruff/format and the
 generated-contract check passed. The previous MySQL/TiDB backend suite results remain
 historical evidence; this prompt changes no backend application logic or migration.
+
+## Prompt 7 workspace verification
+
+The frontend suite now has **114 passing tests**, including canonical/partial lookup,
+manual-retry UUID reuse, version-conflict review, required notes/invoice declaration,
+user-scoped draft persistence/expiry/storage failure, list pagination/takeover races,
+cache/session invalidation, timezone filters and disposed-view debounce cleanup.
+Strict Vue/TypeScript checking and the configured production build passed.
+
+Backend unit verification passed **122 tests**, with **90 database tests skipped** in
+that ordinary run. Separately, **27 booking/list/directory tests passed on each of
+MySQL and TiDB**, including the expanded text q semantics and bounded authenticated
+Agent lookup. Ruff/format and generated-contract checks passed.
+
+The frontend Docker runner now executes **two real Chromium integration flows**.
+Both passed against isolated verified-TLS TiDB: the existing login/roles/theme/
+notification/reconnect/session replacement flow, and a two-user booking workspace
+flow covering advisory locks, takeover movement, retained drafts, conflict review,
+offline/reload/discard behavior, new Supplier/station creation, explicit Done invoice
+declaration, Summary filter/return URL/cache, targeted row updates and mobile fit.
+The backend fixture chooses the script; no production test endpoint was added.
+
+For manual two-browser instructions and implementation boundaries, read
+[booking-workspace.md](booking-workspace.md). These local results do not establish a
+hosted Vercel/Render/TiDB Cloud deployment or a public-network latency guarantee.

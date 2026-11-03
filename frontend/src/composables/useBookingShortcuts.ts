@@ -5,6 +5,7 @@ import { i18n } from '../i18n'
 import type { Status } from '../types/api.generated'
 
 export interface BookingShortcutContext {
+  enabled?: () => boolean
   input: () => HTMLElement | null
   scope?: () => HTMLElement | null
   lookup: () => unknown
@@ -53,7 +54,8 @@ export function useWorkspaceShortcuts(): void {
         event.defaultPrevented ||
         event.isComposing ||
         event.keyCode === 229 ||
-        ui.shortcutHelp
+        ui.shortcutHelp ||
+        registry?.current.value?.enabled?.() === false
       )
         return
       const target = event.target instanceof HTMLElement ? event.target : null

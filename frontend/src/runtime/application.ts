@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
 import { useRealtimeStore } from '../stores/realtime'
 import { useNotificationsStore } from '../stores/notifications'
+import { useBookingsStore } from '../stores/bookings'
 import { useTasksStore } from '../stores/tasks'
 import { i18n } from '../i18n'
 import { notificationText } from '../utils/notificationText'
@@ -19,7 +20,8 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
     ui = useUiStore(pinia),
     realtime = useRealtimeStore(pinia)
   const notifications = useNotificationsStore(pinia),
-    tasks = useTasksStore(pinia)
+    tasks = useTasksStore(pinia),
+    bookings = useBookingsStore(pinia)
   const themeStop = ui.startTheme()
   const routeStop = installRouteResilience(router, pinia)
   let transport: ReturnType<typeof useRealtime> | null = null
@@ -52,6 +54,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
         realtime.reset()
         notifications.reset()
         tasks.reset()
+        bookings.reset()
         if (!token) {
           ui.clearNotices('workspace')
           return
@@ -68,6 +71,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
           },
           onFrame: (frame) => {
             realtime.apply(frame)
+            if (frame.event === 'booking.updated') bookings.observe(frame.data)
             if (frame.event === 'notification.new') {
               notifications.incoming(frame.data)
               if (frame.data.type === 'task_due') tasks.invalidate()
@@ -88,14 +92,6 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
       { immediate: true },
     )
     watch(
-      () => router.currentRoute.value.fullPath,
-      () => {
-        if (realtime.activeBookingKey) realtime.release()
-        if (auth.isAuthenticated && router.currentRoute.value.name === 'booking')
-          realtime.acquire(String(router.currentRoute.value.params.key))
-      },
-    )
-    watch(
       () => ui.refreshVersion,
       () => {
         if (auth.isAuthenticated) void notifications.refresh()
@@ -110,6 +106,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
     realtime.bindSender(null)
     notifications.reset()
     tasks.reset()
+    bookings.reset()
     ui.clearNotices()
     apiStop()
     routeStop()

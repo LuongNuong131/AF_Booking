@@ -1,9 +1,10 @@
 # Frontend foundation (Prompt 6)
 
 The Vue workspace now supports real sign-in, session restoration, role-based navigation,
-light/dark themes, private notifications and the Prompt 5 WebSocket protocol. Home,
-Summary and booking detail are intentionally route/layout shells: booking input,
-history, note entry, tables and the reminder UI belong to subsequent prompts. Profile
+light/dark themes, private notifications and the Prompt 5 WebSocket protocol. Prompt 7 now implements Home,
+Summary and booking detail, including lookup, history, note entry, drafts, conflict
+review and live tables. See [booking-workspace.md](booking-workspace.md) for the workflow.
+Reminder UI and task mutations remain subsequent work. Profile
 shows the authenticated account and a local theme preference; it does not call the
 reserved profile mutation API. Admin and Reports have guards and shell routes only.
 
@@ -108,7 +109,7 @@ Route loading ends after 20 seconds with a nonblocking Retry banner, including o
 initial lazy-load failure. A tab hidden for at least 60 seconds emits a refresh request.
 Future data pages register `useViewRefresh(load)` to reload current data after
 visibility, reconnect or retry; the current notification list already subscribes.
-Empty Home/Summary shells deliberately do not fetch unimplemented business content.
+Home, Summary and detail subscribe to refresh signals, preserving form drafts; no task API is called.
 Error boundaries isolate render failures and offer a section retry.
 
 ## WebSocket and keyboard integration
@@ -117,7 +118,7 @@ Error boundaries isolate render failures and offer a section retry.
 It answers JSON ping with pong, reconnects after 1/2/5/15 seconds, refreshes the current
 view on reconnect and renews the active lease every 30 seconds. Stores accept only
 validated frames, keep a bounded booking-update map, and clear locks when disconnected.
-Route changes release/acquire canonical booking locks. Lock denial warns without
+Booking workspace scopes release/acquire canonical booking locks on selection/clear/navigation. Lock denial warns without
 blocking note entry. See [ws-protocol.md](ws-protocol.md) for exact frames/close codes.
 
 A 4409 means another tab with the same SID owns the socket: stop reconnecting and
@@ -125,7 +126,7 @@ show “Connected in another tab”, retaining the valid REST session. A new log
 `session.force_logout` clears the old session and redirects to Login. The due-task
 store provides a list/counter/invalidation hook; it does not call future task APIs.
 
-Future booking input/note components register `useBookingShortcuts` with input/scope
+Booking input/note components register `useBookingShortcuts` with input/scope
 references, lookup/save/clear callbacks and the dynamic status catalogue. The shared
 VueUse listener implements `/`, Enter, Ctrl/Command+Enter, Alt+1…5 by `sort_order`,
 Escape and `?`. Unrelated editable fields, IME composition and Ctrl+K are left alone.

@@ -32,19 +32,19 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
           {
             path: '',
             name: 'home',
-            component: () => import('../views/WorkspaceView.vue'),
+            component: () => import('../views/HomeView.vue'),
             meta: { titleKey: 'pages.homeTitle', descriptionKey: 'pages.homeDescription' },
           },
           {
             path: 'summary',
             name: 'summary',
-            component: () => import('../views/WorkspaceView.vue'),
+            component: () => import('../views/SummaryView.vue'),
             meta: { titleKey: 'pages.summaryTitle', descriptionKey: 'pages.summaryDescription' },
           },
           {
             path: 'summary/:key',
             name: 'booking',
-            component: () => import('../views/WorkspaceView.vue'),
+            component: () => import('../views/BookingDetailView.vue'),
             meta: { titleKey: 'pages.bookingTitle', descriptionKey: 'pages.bookingDescription' },
           },
           {

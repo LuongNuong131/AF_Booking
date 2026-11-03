@@ -26,4 +26,9 @@ export const timeouts = {
   lockHeartbeat: 30_000,
   notificationDebounce: 200,
   notice: 7_000,
+  bookingCache: 12_000,
+  catalogueCache: 60_000,
+  searchDebounce: 300,
+  draftDebounce: 500,
+  draftLifetime: 7 * 24 * 60 * 60 * 1000,
 } as const

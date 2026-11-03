@@ -2,13 +2,13 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import AwareDatetime
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.core.deps import get_current_user, require_roles
 from app.core.errors import ApiException
 from app.core.timeouts import DeadlineRoute, timeout
 from app.core.unit_of_work import transaction
-from app.models import BookingNote, Status
+from app.models import BookingNote, Status, User
 from app.schemas.bookings import (
     BookingItem,
     BookingLookup,
@@ -16,7 +16,7 @@ from app.schemas.bookings import (
     GroupInfo,
     NoteSaveResponse,
 )
-from app.schemas.contracts import CursorPage, ErrorCode, Note, NoteSaveRequest, Page
+from app.schemas.contracts import AgentSummary, CursorPage, ErrorCode, Note, NoteSaveRequest, Page
 from app.schemas.contracts import Status as StatusDTO
 from app.services.audit import AuditContext
 from app.services.session_cache import CurrentUser
@@ -165,3 +165,24 @@ async def attachments(id: int, request: Request, user: UserDep):
             raise ApiException(ErrorCode.NOT_FOUND)
     # No body is buffered while the storage provider is intentionally unconfigured.
     return await request.app.state.storage.save(file_name="", mime_type="", content=b"")
+
+
+@router.get("/users/lookup", response_model=list[AgentSummary])
+async def user_lookup(
+    request: Request,
+    user: UserDep,
+    q: Annotated[str, Query(max_length=100)] = "",
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+):
+    # Shared small directory for the Agent filter; assignment actions remain reserved.
+    query = select(User.id, User.full_name).where(User.is_active.is_(True))
+    if q.strip():
+        query = query.where(
+            or_(
+                User.full_name.contains(q.strip(), autoescape=True),
+                User.username.contains(q.strip(), autoescape=True),
+            )
+        )
+    async with transaction(request.app.state.engine, request.app.state.settings) as session:
+        rows = (await session.execute(query.order_by(User.full_name, User.id).limit(limit))).all()
+    return [AgentSummary(id=row.id, full_name=row.full_name) for row in rows]

@@ -660,3 +660,37 @@ async def test_list_queries_are_batched_and_never_read_note_table(rig):
     task_queries = [s for s in statements if "from booking_tasks" in s]
     assert len(task_queries) == 1 and "group by booking_tasks.booking_id" in task_queries[0]
     assert len([s for s in statements if s.startswith("select ")]) == 4
+
+
+async def test_summary_text_key_station_partial_and_literal_queries(rig):
+    assert (await rig.save(supplier_name="Hôtel Example & Airport")).status_code == 200
+    assert (await rig.save(key="CW2154654-RDU-2610")).status_code == 200
+    for query in ("hotel example", "Airport", "RDU", "rdu"):
+        result = (await rig.get("/bookings", q=query)).json()
+        assert result["total"] == 2
+    for query in ("CW 2154654-rdu-2609", "cw 2154654-2609"):
+        result = (await rig.get("/bookings", q=query)).json()
+        assert result["total"] == 1 and result["items"][0]["booking_key"] == KEY
+    assert (await rig.get("/bookings", q="%_'")).json()["total"] == 0
+    assert (
+        await rig.get(
+            "/bookings",
+            cw_number="CW2154654",
+            period="2609",
+            station_code="RDU",
+            supplier_type="hotel",
+            supplier="hotel",
+        )
+    ).json()["total"] == 1
+
+
+async def test_agent_lookup_is_authenticated_bounded_and_returns_public_active_summaries(rig):
+    assert (await rig.client.get("/api/v1/users/lookup")).status_code == 401
+    result = await rig.get("/users/lookup", q="other")
+    assert result.status_code == 200 and result.json() == [{"id": 5, "full_name": "Other"}]
+    assert len((await rig.get("/users/lookup", limit=1)).json()) == 1
+    assert (await rig.get("/users/lookup", q="%_")).json() == []
+    assert (await rig.get("/users/lookup", limit=51)).status_code == 422
+    async with rig.app.state.engine.begin() as connection:
+        await connection.execute(update(User).where(User.id == 5).values(is_active=False))
+    assert (await rig.get("/users/lookup", q="other")).json() == []
