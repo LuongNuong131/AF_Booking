@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import ConfigDict, Field, TypeAdapter
 
-from app.schemas.contracts import ContractModel, NotificationType, Task, UtcTimestamp
+from app.schemas.contracts import ContractModel, InvoiceState, NotificationType, Task, UtcTimestamp
 
 
 class Frame(ContractModel):
@@ -17,6 +17,9 @@ class BookingUpdatedData(ContractModel):
     cw_number: str
     station_code: str
     version: int
+    invoice_state: InvoiceState = InvoiceState.UNKNOWN
+    invoice_count: int = 0
+    change_kind: Literal["note", "invoice"] = "note"
     last_agent_id: int | None
     last_agent_name: str | None
     status_code: str | None

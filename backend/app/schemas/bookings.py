@@ -6,6 +6,7 @@ from app.schemas.contracts import (
     BookingSnapshot,
     ContractModel,
     CursorPage,
+    Invoice,
     KeyResolution,
     Note,
     NotificationType,
@@ -44,10 +45,20 @@ class BookingLookup(ContractModel):
     group_exists: bool = False
     suggestions: list[Suggestion] = []
     my_tasks: list[Task] = []
+    invoices: list[Invoice] = []
+    invoice_rules: dict[str, str | int] = {}
     history: CursorPage[Note]
 
 
+class InvoiceWarning(ContractModel):
+    invoice_number: str
+    booking_keys: list[str]
+
+
 class NoteSaveResponse(ContractModel):
+    invoices: list[Invoice] | None = None
+    skipped_duplicates: list[str] = []
+    warnings: list[InvoiceWarning] = []
     my_watching: bool = False
     snapshot: BookingSnapshot
     note: Note

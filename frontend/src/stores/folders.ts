@@ -122,7 +122,14 @@ export const useFoldersStore = defineStore('folders', () => {
       }
   }
   function patchMonth(row: MonthRow, event: BookingUpdatedData) {
-    if (row.booking_key !== event.booking_key || row.updated_at >= event.updated_at) return
+    if (row.booking_key !== event.booking_key) return
+    if (event.change_kind === 'invoice') {
+      row.invoice_state = (event.invoice_state ??
+        row.invoice_state) as MonthRow['invoice_state']
+      row.invoice_count = event.invoice_count ?? row.invoice_count
+      return
+    }
+    if (row.updated_at >= event.updated_at) return
     row.last_status = event.status_code
       ? {
           code: event.status_code,
@@ -153,6 +160,7 @@ export const useFoldersStore = defineStore('folders', () => {
     }
     const parsed = parseBookingKey(event.booking_key)
     eachCard((card) => {
+      if (event.change_kind === 'invoice') return
       if (card.cw_number !== event.cw_number || card.last_activity_at > event.updated_at) return
       if (wasDone !== undefined && wasDone !== event.is_done)
         card.open_count = Math.max(0, card.open_count + (event.is_done ? -1 : 1))
@@ -171,8 +179,8 @@ export const useFoldersStore = defineStore('folders', () => {
             ? {
                 code: event.status_code,
                 label:
-                  useBookingsStore().statuses.find((s) => s.code === event.status_code)?.label ??
-                  event.status_code,
+                  useBookingsStore().statuses.find((s) => s.code === event.status_code)
+                    ?.label ?? event.status_code,
               }
             : null,
           agent:

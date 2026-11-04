@@ -6,6 +6,7 @@ from app.schemas.contracts import (
     AgentSummary,
     BookingIdentity,
     ContractModel,
+    InvoiceState,
     StatusSummary,
     SupplierType,
     UtcTimestamp,
@@ -91,6 +92,9 @@ class DailyStation(ContractModel):
 
 
 class DailyBooking(BookingIdentity):
+    invoice_state: InvoiceState = InvoiceState.UNKNOWN
+    invoice_count: int = 0
+    invoices_preview: list[str] = []
     supplier_name: str
     supplier_type: SupplierType
     station_code: str
@@ -118,6 +122,7 @@ class DailyReportDTO(ContractModel):
     stale: list[DailyBooking]
     open_rejection_parking: list[DailyBooking]
     repeated: list[DailyBooking]
+    done_not_declared: list[DailyBooking] = []
 
 
 class NoteSearchHit(BookingIdentity):

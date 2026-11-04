@@ -290,7 +290,7 @@ async def test_new_migration_refines_existing_column_and_preserves_custom_days(r
             )
         )
         assert column.lower().startswith("smallint")
-        assert await conn.scalar(text("SELECT version_num FROM alembic_version")) == "0006"
+        assert await conn.scalar(text("SELECT version_num FROM alembic_version")) == "0007"
 
 
 async def test_cancelled_check_finishes_as_interrupted_and_source_errors_are_not_autofixed(

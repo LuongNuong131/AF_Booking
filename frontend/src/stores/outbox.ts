@@ -14,9 +14,15 @@ import type {
   Note,
   NoteSaveRequest,
   NoteSaveResponse,
+  InvoiceResult,
+  Invoice,
+  InvoiceChange,
 } from '../types/api.generated'
 
+export type OutgoingResult = NoteSaveResponse | InvoiceResult
 export interface OutgoingNote {
+  operation?: 'note' | 'invoice'
+  invoices?: Invoice[]
   id: string
   key: string
   payload: NoteSaveRequest
@@ -48,22 +54,31 @@ export const useOutboxStore = defineStore('outbox', () => {
     running = false,
     stopped = true
   let timer: ReturnType<typeof setTimeout> | undefined
-  const listeners = new Set<(entry: OutgoingNote, result: NoteSaveResponse | null) => void>()
+  const listeners = new Set<(entry: OutgoingNote, result: OutgoingResult | null) => void>()
   const request = useRequest(
-    async ({ signal, timeoutMs }, entry: OutgoingNote) =>
-      (
-        await api.post<NoteSaveResponse>(`/bookings/${entry.key}/notes`, entry.payload, {
-          signal,
-          timeout: timeoutMs,
-        })
-      ).data,
+    async ({ signal, timeoutMs }, entry: OutgoingNote): Promise<OutgoingResult> =>
+      entry.operation === 'invoice'
+        ? (
+            await api.put<InvoiceResult>(
+              `/bookings/${entry.key}/invoices`,
+              entry.payload.invoices,
+              { signal, timeout: timeoutMs },
+            )
+          ).data
+        : (
+            await api.post<NoteSaveResponse>(`/bookings/${entry.key}/notes`, entry.payload, {
+              signal,
+              timeout: timeoutMs,
+            })
+          ).data,
     { timeoutMs: timeouts.noteSave },
   )
   const storageKey = () => `booking.outbox.v1.${owner}`
   function persist(): boolean {
     if (corrupt) return false
     const ok =
-      owner !== null && writeStorage('localStorage', storageKey(), JSON.stringify(entries.value))
+      owner !== null &&
+      writeStorage('localStorage', storageKey(), JSON.stringify(entries.value))
     storageError.value = !ok
     return ok
   }
@@ -103,6 +118,7 @@ export const useOutboxStore = defineStore('outbox', () => {
             /^[0-9a-f-]{36}$/i.test(value.id) &&
             value.payload?.client_request_id === value.id &&
             typeof value.payload?.status_code === 'string' &&
+            (value.operation === undefined || ['note', 'invoice'].includes(value.operation)) &&
             typeof value.payload.expected_version === 'number' &&
             value.base?.resolution?.key === value.key &&
             value.preview?.booking_key === value.key &&
@@ -122,12 +138,27 @@ export const useOutboxStore = defineStore('outbox', () => {
     }
     void flush()
   }
-  function enqueue(base: BookingLookup, payload: NoteSaveRequest): OutgoingNote | null {
-    if (!auth.user || owner !== auth.user.id || entries.value.length >= 50 || !base.resolution.key)
+  function enqueue(
+    base: BookingLookup,
+    payload: NoteSaveRequest,
+    operation: 'note' | 'invoice' = 'note',
+  ): OutgoingNote | null {
+    if (
+      !auth.user ||
+      owner !== auth.user.id ||
+      entries.value.length >= 50 ||
+      !base.resolution.key
+    )
       return null
     const status = bookings.statuses.find((s) => s.code === payload.status_code)
     const parsed = parseBookingKey(base.resolution.key)
-    if (!status || !parsed || !('key' in parsed)) return null
+    if ((!status && operation !== 'invoice') || !parsed || !('key' in parsed)) return null
+    const selectedStatus = status ?? {
+      code: base.snapshot?.last_status?.code ?? 'BUNDLE',
+      label: base.snapshot?.last_status?.label ?? 'Bundle',
+      position_label: base.snapshot?.last_position ?? '',
+      is_done: base.snapshot?.is_done ?? false,
+    }
     const at = new Date().toISOString(),
       user = { id: auth.user.id, full_name: auth.user.full_name }
     const supplier = {
@@ -147,19 +178,23 @@ export const useOutboxStore = defineStore('outbox', () => {
         timeZone: 'UTC',
       }).format(
         new Date(
-          Date.UTC(2000 + Number(parsed.period.slice(0, 2)), Number(parsed.period.slice(2)) - 1, 1),
+          Date.UTC(
+            2000 + Number(parsed.period.slice(0, 2)),
+            Number(parsed.period.slice(2)) - 1,
+            1,
+          ),
         ),
       ),
       supplier,
       supplier_name: supplier.name,
       supplier_type: supplier.type,
       version: base.version,
-      last_status: { code: status.code, label: status.label },
-      last_position: status.position_label,
+      last_status: { code: selectedStatus.code, label: selectedStatus.label },
+      last_position: selectedStatus.position_label,
       last_agent: user,
       last_note_preview: payload.note?.slice(0, 255) ?? null,
-      is_done: status.is_done,
-      done_at: status.is_done ? at : null,
+      is_done: selectedStatus.is_done,
+      done_at: selectedStatus.is_done ? at : null,
       updated_at: at,
       is_stale: false,
       invoice_state: base.snapshot?.invoice_state ?? 'unknown',
@@ -168,24 +203,56 @@ export const useOutboxStore = defineStore('outbox', () => {
       stale_hours: null,
       my_pending_tasks: (base.my_tasks ?? []).length,
     }
+    if (operation === 'invoice' && base.snapshot) Object.assign(preview, base.snapshot)
+    let invoices = [...(base.invoices ?? [])]
+    if (payload.invoices) {
+      invoices = invoices.filter((i) => !payload.invoices!.remove_ids?.includes(i.id))
+      for (const number of payload.invoices.add ?? [])
+        if (!invoices.some((i) => i.invoice_number === number))
+          invoices.unshift({
+            id: -Date.now() - invoices.length,
+            invoice_number: number,
+            added_by: user,
+            created_at: at,
+          })
+      preview.invoice_count = invoices.length
+      preview.invoice_state = invoices.length
+        ? 'has_invoice'
+        : payload.invoices.no_invoice
+          ? 'no_invoice'
+          : 'unknown'
+      preview.invoices_preview = invoices.slice(0, 3).map((i) => i.invoice_number)
+    }
     const entry: OutgoingNote = {
+      operation,
+      invoices,
       id: payload.client_request_id,
       key: parsed.key,
-      payload: structuredClone(payload),
-      base: structuredClone({
-        ...base,
-        history: { items: [], next_cursor: null },
-      }),
+      payload: JSON.parse(JSON.stringify(payload)),
+      base: JSON.parse(
+        JSON.stringify({
+          ...base,
+          history: { items: [], next_cursor: null },
+        }),
+      ),
       preview,
       note: {
         id: -Date.now() - entries.value.length,
         agent: user,
-        status: { code: status.code, label: status.label },
-        position: status.position_label,
+        status: { code: selectedStatus.code, label: selectedStatus.label },
+        position: selectedStatus.position_label,
         note: payload.note ?? null,
         created_at: at,
         attachments: [],
-        invoice_change: null,
+        invoice_change: payload.invoices
+          ? {
+              added: payload.invoices.add ?? [],
+              removed: (base.invoices ?? [])
+                .filter((i) => payload.invoices?.remove_ids?.includes(i.id))
+                .map((i) => i.invoice_number),
+              no_invoice: payload.invoices.no_invoice ?? null,
+            }
+          : null,
       },
       state: 'queued',
       attempts: 0,
@@ -268,12 +335,24 @@ export const useOutboxStore = defineStore('outbox', () => {
     }
     return entry
   }
-  function subscribe(listener: (entry: OutgoingNote, result: NoteSaveResponse | null) => void) {
+  function subscribe(listener: (entry: OutgoingNote, result: OutgoingResult | null) => void) {
     listeners.add(listener)
     return () => listeners.delete(listener)
   }
   return {
     entries,
+    enqueueInvoices: (base: BookingLookup, invoices: InvoiceChange) =>
+      enqueue(
+        base,
+        {
+          note: null,
+          status_code: base.snapshot?.last_status?.code ?? 'BUNDLE',
+          expected_version: base.version,
+          client_request_id: crypto.randomUUID(),
+          invoices,
+        },
+        'invoice',
+      ),
     reviewId,
     count,
     storageError,

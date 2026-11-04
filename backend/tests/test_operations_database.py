@@ -138,8 +138,10 @@ async def test_daily_totals_excel_formula_and_stable_past_report(rig):
         "Status",
         "Position",
         "Note",
+        "Invoice State",
+        "Invoice Numbers",
     )
-    assert len(rows) == 5 and any(row[-1] == "'=1+1" for row in rows[1:])
+    assert len(rows) == 5 and any(row[8] == "'=1+1" for row in rows[1:])
     assert all(row[2].startswith("CW ") and "Asia/Ho_Chi_Minh" in row[0] for row in rows[1:])
     book.close()
     async with rig.app.state.engine.begin() as conn:

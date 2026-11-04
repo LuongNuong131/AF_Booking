@@ -10,6 +10,7 @@ import { patchBooking, useBookingRows } from '../composables/useBookingRows'
 import { timeouts } from '../config/timeouts'
 import { formatDateTime } from '../utils/dateTime'
 import type { BookingItem } from '../types/api.generated'
+import InvoiceBadge from './InvoiceBadge.vue'
 import StatusTag from './StatusTag.vue'
 import RequestStatus from './RequestStatus.vue'
 import PageControls from './PageControls.vue'
@@ -28,7 +29,9 @@ const { t } = useI18n(),
 const outbox = useOutboxStore()
 const visibleRows = computed(() => {
   const pending = new Map(
-    outbox.entries.filter((e) => e.state !== 'blocked').map((e) => [e.key, e.preview]),
+    outbox.entries
+      .filter((e) => e.state !== 'blocked' && e.preview.last_agent?.id === auth.user?.id)
+      .map((e) => [e.key, e.preview]),
   )
   return [...pending.values()]
     .reverse()
@@ -52,7 +55,10 @@ const nav = useListNavigation(
   {
     open: (i) => emit('open', visibleRows.value[i]!.booking_key),
     watch: (i) =>
-      collaboration.toggle(visibleRows.value[i]!.booking_key, visibleRows.value[i]!.my_watching),
+      collaboration.toggle(
+        visibleRows.value[i]!.booking_key,
+        visibleRows.value[i]!.my_watching,
+      ),
     task: (i) => tasks.openDialog(visibleRows.value[i]!.booking_key),
     page: (delta) => {
       const p = page.value + delta
@@ -141,7 +147,8 @@ const live = useBookingRows(
       return false
     }
     if (staleOnly.value) {
-      if (index >= 0) rows.value[index] = patchBooking(rows.value[index]!, event, store.statuses)
+      if (index >= 0)
+        rows.value[index] = patchBooking(rows.value[index]!, event, store.statuses)
       return index >= 0 || page.value === 1
     }
     if (page.value !== 1) {
@@ -171,14 +178,17 @@ const live = useBookingRows(
     rows.value = [item, ...rows.value.filter((row) => row.booking_key !== item.booking_key)]
       .sort(
         (a, b) =>
-          b.updated_at.localeCompare(a.updated_at) || b.booking_key.localeCompare(a.booking_key),
+          b.updated_at.localeCompare(a.updated_at) ||
+          b.booking_key.localeCompare(a.booking_key),
       )
       .slice(0, 10)
   },
 )
 watch(
   () => [
-    rows.value.map((row) => `${row.booking_key}:${row.version}:${row.last_note_preview}`).join('|'),
+    rows.value
+      .map((row) => `${row.booking_key}:${row.version}:${row.last_note_preview}`)
+      .join('|'),
     total.value,
   ],
   () => {
@@ -233,7 +243,12 @@ function refreshList() {
   <section class="my-bookings-card" :aria-label="t('bookingUi.myBookings')">
     <header class="mine-header">
       <div class="mine-tabs">
-        <button type="button" class="mine-tab" :aria-pressed="!showTasks" @click="selectBookings">
+        <button
+          type="button"
+          class="mine-tab"
+          :aria-pressed="!showTasks"
+          @click="selectBookings"
+        >
           {{ t('bookingUi.myBookings') }}<span>{{ mineTotal }}</span></button
         ><slot name="tabs" />
       </div>
@@ -280,7 +295,11 @@ function refreshList() {
       >
         <div v-for="n in 4" :key="n" class="skeleton-line" />
       </div>
-      <TransitionGroup v-else-if="visibleRows.length" name="booking-row" tag="ul" class="mine-list"
+      <TransitionGroup
+        v-else-if="visibleRows.length"
+        name="booking-row"
+        tag="ul"
+        class="mine-list"
         ><li v-for="row in visibleRows" :key="row.booking_key">
           <div class="mine-booking-entry">
             <button
@@ -293,7 +312,12 @@ function refreshList() {
             >
               <div class="mine-row-heading">
                 <strong>{{ row.display_key }}</strong
-                ><StatusTag :status="row.last_status" />
+                ><StatusTag :status="row.last_status" /><InvoiceBadge
+                  :state="row.invoice_state"
+                  :count="row.invoice_count"
+                  :preview="row.invoices_preview"
+                  :done="row.is_done"
+                />
               </div>
               <p class="mine-supplier">
                 {{ row.supplier.name }}<span>{{ row.station_code }}</span>
@@ -316,7 +340,8 @@ function refreshList() {
                       hours: Math.max(
                         0,
                         Math.floor(
-                          row.stale_hours ?? (Date.now() - Date.parse(row.updated_at)) / 3600000,
+                          row.stale_hours ??
+                            (Date.now() - Date.parse(row.updated_at)) / 3600000,
                         ),
                       ),
                     })

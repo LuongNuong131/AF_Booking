@@ -12,6 +12,7 @@ from app.api.v1.collaboration import router as collaboration_router
 from app.api.v1.folders import router as folders_router
 from app.api.v1.health import HealthResponse, health
 from app.api.v1.health import router as health_router
+from app.api.v1.invoices import router as invoices_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.operations import router as operations_router
 from app.api.v1.realtime import router as realtime_router
@@ -31,6 +32,7 @@ from app.services.daily_reports import DailyReports
 from app.services.exports import ExportService
 from app.services.folders import FolderService
 from app.services.integrity import IntegrityService
+from app.services.invoice_service import InvoiceService
 from app.services.key_index import KeyIndex
 from app.services.note_search import create_note_search
 from app.services.push import PushService
@@ -93,6 +95,10 @@ def create_app(
         application.state.booking_writes = BookingWrites(
             application.state.engine, config, index, cache, application.state.ws_manager
         )
+        application.state.invoices = InvoiceService(
+            application.state.engine, config, index, cache, ws_manager
+        )
+        application.state.booking_writes.invoice_service = application.state.invoices
         application.state.collaboration = CollaborationService(
             application.state.engine, config, application.state.bookings, ws_manager
         )
@@ -232,6 +238,7 @@ def create_app(
     application.include_router(tasks_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
     application.include_router(operations_router, prefix="/api/v1")
+    application.include_router(invoices_router, prefix="/api/v1")
     application.include_router(collaboration_router, prefix="/api/v1")
     return application
 

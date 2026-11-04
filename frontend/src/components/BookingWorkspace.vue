@@ -23,6 +23,7 @@ import type { StationOption } from '../types/api.generated'
 import BookingSummaryCard from './BookingSummaryCard.vue'
 import BookingTimeline from './BookingTimeline.vue'
 import NoteForm from './NoteForm.vue'
+import InvoicePanel from './InvoicePanel.vue'
 import WatchButton from './WatchButton.vue'
 import AssigneePicker from './AssigneePicker.vue'
 import RequestStatus from './RequestStatus.vue'
@@ -120,7 +121,12 @@ useBookingShortcuts({
   lookup,
   save,
   task: () => {
-    if (w.key && w.current?.exists && w.inputMatches && (props.detail || nav.level === 'booking'))
+    if (
+      w.key &&
+      w.current?.exists &&
+      w.inputMatches &&
+      (props.detail || nav.level === 'booking')
+    )
       tasks.openDialog(w.key)
   },
   clear,
@@ -137,7 +143,8 @@ function back() {
   inputRef.value?.focus()
 }
 function resultsKeyboard(event: KeyboardEvent) {
-  if (props.detail || event.ctrlKey || event.metaKey || event.altKey || event.isComposing) return
+  if (props.detail || event.ctrlKey || event.metaKey || event.altKey || event.isComposing)
+    return
   if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
   const target = event.target as HTMLElement
   if (
@@ -172,7 +179,9 @@ const stationMismatch = computed(() => {
     }
   }
   const error =
-    w.lookupRequest.error?.code === 'STATION_MISMATCH' ? w.lookupRequest.error : w.saveRequest.error
+    w.lookupRequest.error?.code === 'STATION_MISMATCH'
+      ? w.lookupRequest.error
+      : w.saveRequest.error
   if (error?.code !== 'STATION_MISMATCH' || !error.details || typeof error.details !== 'object')
     return null
   const d = error.details as Record<string, unknown>
@@ -200,7 +209,8 @@ onMounted(() => {
 defineExpose({
   open,
   focus: () => inputRef.value?.focus(),
-  focusNote: () => formScope.value?.querySelector<HTMLTextAreaElement>('#booking-note')?.focus(),
+  focusNote: () =>
+    formScope.value?.querySelector<HTMLTextAreaElement>('#booking-note')?.focus(),
 })
 </script>
 <template>
@@ -409,7 +419,11 @@ defineExpose({
             autocomplete="off"
             :placeholder="t('station_input_placeholder')"
             @input="stationInput"
-          /><button type="submit" class="button primary" :disabled="!/^[A-Z]{3}$/.test(station)">
+          /><button
+            type="submit"
+            class="button primary"
+            :disabled="!/^[A-Z]{3}$/.test(station)"
+          >
             {{ t('bookingUi.continue') }}
           </button>
         </div>
@@ -447,7 +461,8 @@ defineExpose({
           >
             <strong>{{ suggestion.display_key }}</strong
             ><span
-              >{{ suggestion.last_status?.label }} · {{ suggestion.last_agent?.full_name }}</span
+              >{{ suggestion.last_status?.label }} ·
+              {{ suggestion.last_agent?.full_name }}</span
             >
           </button>
           <button
@@ -496,33 +511,18 @@ defineExpose({
             @engage="w.engage"
             ><template #fields
               ><AssigneePicker v-model="w.assignTo" v-model:message="w.assignMessage" />
-              <section v-if="w.showInvoice" class="invoice-declaration">
-                <label class="field-label" for="note-invoices">{{ t('invoice_label') }}</label
-                ><textarea
-                  :aria-invalid="!!w.invalidInvoice"
-                  id="note-invoices"
-                  v-model="w.invoiceText"
-                  rows="2"
-                  maxlength="2000"
-                  :placeholder="t('invoice_placeholder')"
-                  @input="w.noInvoice = false"
-                /><label class="invoice-none"
-                  ><input
-                    v-model="w.noInvoice"
-                    type="checkbox"
-                    :disabled="!!w.invoiceText.trim()"
-                  />{{ t('no_invoice_checkbox') }}</label
-                >
-                <p v-if="w.invalidInvoice" class="field-error">
-                  {{ t('invoice_invalid', { value: w.invalidInvoice }) }}
-                </p>
-                <p v-else-if="!w.invoiceValid" class="input-hint">
-                  {{ t('invoice_required_hint') }}
-                </p>
-                <p v-if="w.invoiceText.trim()" class="input-hint">
-                  {{ t('no_invoice_disabled_hint') }}
-                </p>
-              </section>
+              <InvoicePanel
+                :items="w.invoiceItems"
+                :state="w.snapshot?.invoice_state ?? 'unknown'"
+                :model-value="w.invoiceChange"
+                :required="!!w.selectedStatus?.invoice_required"
+                :pattern="w.invoicePattern"
+                :max="w.invoiceMax"
+                :can-save="!!w.current?.exists"
+                :warnings="w.invoiceWarnings"
+                @update:model-value="w.setInvoiceChange"
+                @save="w.saveInvoices"
+              />
               <fieldset v-if="w.needsSupplier" class="supplier-setup">
                 <legend>{{ t('bookingUi.supplier') }}</legend>
                 <p>{{ t('new_folder_prompt') }}</p>
@@ -557,7 +557,10 @@ defineExpose({
                     {{ t(`supplier_types.${type}`) }}
                   </button>
                 </div>
-                <p v-if="w.supplierName && w.supplierName.trim().length < 3" class="field-error">
+                <p
+                  v-if="w.supplierName && w.supplierName.trim().length < 3"
+                  class="field-error"
+                >
                   {{ t('folderUi.supplierMinimum') }}
                 </p>
               </fieldset></template
@@ -566,7 +569,8 @@ defineExpose({
                 v-if="w.key"
                 :booking-key="w.key"
                 :count="w.current?.my_tasks?.length"
-                :disabled="!w.current?.exists" /><slot name="task-action" /></template></NoteForm
+                :disabled="!w.current?.exists" /><slot
+                name="task-action" /></template></NoteForm
           ><TaskSuggestionBar
             v-if="suggestion && suggestion.key === w.key"
             :booking-key="suggestion.key"

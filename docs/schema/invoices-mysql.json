@@ -1,0 +1,78 @@
+{
+  "booking invoices": {
+    "sql": "SELECT * FROM booking_invoices WHERE booking_id=1 ORDER BY id",
+    "plan": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_invoices",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "uq_booking_invoices_normalized",
+        "key": "uq_booking_invoices_normalized",
+        "key_len": "8",
+        "ref": "const",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": "Using filesort"
+      }
+    ]
+  },
+  "invoice lookup": {
+    "sql": "SELECT booking_id FROM booking_invoices WHERE invoice_number_normalized='INV501'",
+    "plan": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_invoices",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "uq_booking_invoices_normalized,ix_booking_invoices_normalized",
+        "key": "ix_booking_invoices_normalized",
+        "key_len": "42",
+        "ref": "const",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      }
+    ]
+  },
+  "period state": {
+    "sql": "SELECT invoice_state,COUNT(*) FROM bookings WHERE period='2609' GROUP BY invoice_state",
+    "plan": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_period_invoice_state,ix_bookings_invoice_done_updated",
+        "key": "ix_bookings_period_invoice_state",
+        "key_len": "4",
+        "ref": "const",
+        "rows": 3,
+        "filtered": 100.0,
+        "Extra": "Using index"
+      }
+    ]
+  },
+  "Done undeclared": {
+    "sql": "SELECT id FROM bookings WHERE invoice_state='unknown' AND is_done=1 ORDER BY updated_at",
+    "plan": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_done_updated,ix_bookings_invoice_done_updated",
+        "key": "ix_bookings_done_updated",
+        "key_len": "1",
+        "ref": "const",
+        "rows": 1,
+        "filtered": 33.33,
+        "Extra": "Using where"
+      }
+    ]
+  }
+}

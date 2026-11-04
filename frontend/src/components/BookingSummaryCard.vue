@@ -10,6 +10,7 @@ import TaskButton from './TaskButton.vue'
 import StatusTag from './StatusTag.vue'
 import LockBadge from './LockBadge.vue'
 import DoneWarning from './DoneWarning.vue'
+import InvoicePanel from './InvoicePanel.vue'
 import SupplierEditor from './SupplierEditor.vue'
 defineEmits<{ supplierUpdated: [] }>()
 const { t } = useI18n(),
@@ -79,6 +80,12 @@ const identity = computed(() =>
       v-if="booking.booking_key && booking.exists"
       :booking-key="booking.booking_key"
       :count="booking.my_tasks?.length"
+    />
+    <InvoicePanel
+      v-if="booking.snapshot"
+      readonly
+      :items="booking.invoices ?? []"
+      :state="booking.snapshot.invoice_state"
     />
     <slot />
   </section>

@@ -1,3 +1,4 @@
+import { parseInvoiceInput, validInvoice, INVOICE_PATTERN } from '../utils/invoice'
 import { computed, onScopeDispose, ref, shallowRef, watch } from 'vue'
 import { useOutboxStore } from '../stores/outbox'
 import type { OutgoingNote } from '../stores/outbox'
@@ -27,6 +28,8 @@ import type {
   NoteSaveResponse,
   SupplierType,
   Suggestion,
+  InvoiceChange,
+  InvoiceWarning,
 } from '../types/api.generated'
 
 export function useBookingWorkspace() {
@@ -52,6 +55,8 @@ export function useBookingWorkspace() {
     conflict = ref(false)
   const assignTo = ref<number | null>(null),
     assignMessage = ref('')
+  const invoiceRemoveIds = ref<number[]>([]),
+    invoiceWarnings = shallowRef<InvoiceWarning[]>([])
   const invoiceText = ref(''),
     noInvoice = ref(false)
   const draftFailed = ref(false),
@@ -116,10 +121,13 @@ export function useBookingWorkspace() {
       ).data,
     { timeoutMs: timeouts.noteSave },
   )
-  const conflictRequest = useRequest((ctx, value: string) => bookings.lookup(ctx, value, true), {
-    timeoutMs: timeouts.lookup,
-    retry: true,
-  })
+  const conflictRequest = useRequest(
+    (ctx, value: string) => bookings.lookup(ctx, value, true),
+    {
+      timeoutMs: timeouts.lookup,
+      retry: true,
+    },
+  )
   const pendingEntries = computed(() =>
     outbox.entries.filter((e) => e.key === key.value && e.state !== 'blocked'),
   )
@@ -128,14 +136,23 @@ export function useBookingWorkspace() {
   )
   const visibleCurrent = computed(() =>
     current.value && snapshot.value
-      ? { ...current.value, snapshot: snapshot.value }
+      ? {
+          ...current.value,
+          snapshot: snapshot.value,
+          invoices: invoiceItems.value,
+        }
       : current.value,
   )
   const visibleNotes = computed(() => [
-    ...pendingEntries.value.map((e) => e.note).reverse(),
+    ...pendingEntries.value
+      .filter((e) => e.operation !== 'invoice')
+      .map((e) => e.note)
+      .reverse(),
     ...notes.value,
   ])
-  const selectedStatus = computed(() => bookings.statuses.find((s) => s.code === statusCode.value))
+  const selectedStatus = computed(() =>
+    bookings.statuses.find((s) => s.code === statusCode.value),
+  )
   const inputMatches = computed(() => {
     const parsed = parseBookingKey(input.value)
     return !!parsed && 'key' in parsed && parsed.key === key.value
@@ -148,32 +165,68 @@ export function useBookingWorkspace() {
       (!!parsed && 'key' in parsed && parsed.station_code === current.value.group.station_code)
     )
   })
-  const invoiceNumbers = computed(() => [
-    ...new Set(
-      invoiceText.value
-        .trim()
-        .split(/[\s,]+/)
-        .filter(Boolean)
-        .map((value) => value.toUpperCase()),
-    ),
-  ])
+  const invoiceNumbers = computed(() => parseInvoiceInput(invoiceText.value))
+  const invoiceItems = computed(
+    () => pendingEntries.value.at(-1)?.invoices ?? current.value?.invoices ?? [],
+  )
+  const invoicePattern = computed(() =>
+    String(current.value?.invoice_rules?.number_pattern ?? INVOICE_PATTERN),
+  )
+  const invoiceMax = computed(() => Number(current.value?.invoice_rules?.max_per_booking ?? 20))
+  const invoiceCount = computed(
+    () =>
+      new Set([
+        ...invoiceItems.value
+          .filter((i) => !invoiceRemoveIds.value.includes(i.id))
+          .map((i) => i.invoice_number),
+        ...invoiceNumbers.value,
+      ]).size,
+  )
   const invalidInvoice = computed(
-    () => invoiceNumbers.value.find((value) => !/^[A-Z0-9_./-]{3,40}$/.test(value)) || '',
+    () => invoiceNumbers.value.find((n) => !validInvoice(n, invoicePattern.value)) ?? '',
   )
   const needsInvoice = computed(
+    () => !!selectedStatus.value?.invoice_required && !invoiceCount.value && !noInvoice.value,
+  )
+  const invoiceValid = computed(
     () =>
-      !!selectedStatus.value?.invoice_required &&
-      (!snapshot.value || snapshot.value.invoice_state === 'unknown'),
+      !invalidInvoice.value &&
+      invoiceCount.value <= invoiceMax.value &&
+      !(noInvoice.value && invoiceCount.value) &&
+      !needsInvoice.value,
   )
-  const invoiceValid = computed(() =>
-    noInvoice.value
-      ? !invoiceNumbers.value.length
-      : !!invoiceNumbers.value.length &&
-        invoiceNumbers.value.every((value) => /^[A-Z0-9_./-]{3,40}$/.test(value)),
-  )
-  const showInvoice = computed(
-    () => needsInvoice.value || !!invoiceText.value.trim() || noInvoice.value,
-  )
+  const showInvoice = computed(() => true)
+  const invoiceChange = computed<InvoiceChange>(() => ({
+    add: invoiceNumbers.value,
+    remove_ids: invoiceRemoveIds.value,
+    no_invoice: noInvoice.value,
+  }))
+  function setInvoiceChange(value: InvoiceChange) {
+    invoiceText.value = (value.add ?? []).join(', ')
+    invoiceRemoveIds.value = value.remove_ids ?? []
+    noInvoice.value = value.no_invoice ?? false
+  }
+  function saveInvoices() {
+    if (
+      !key.value ||
+      !current.value?.exists ||
+      invalidInvoice.value ||
+      invoiceCount.value > invoiceMax.value
+    )
+      return
+    const entry = outbox.enqueueInvoices(
+      { ...current.value, invoices: invoiceItems.value },
+      invoiceChange.value,
+    )
+    if (!entry) {
+      validation.value = i18n.global.t('outboxUi.cannotQueue')
+      return
+    }
+    invoiceText.value = ''
+    invoiceRemoveIds.value = []
+    noInvoice.value = entry.preview.invoice_state === 'no_invoice'
+    flushDraft()
+  }
   const canSave = computed(
     () =>
       !!key.value &&
@@ -199,18 +252,20 @@ export function useBookingWorkspace() {
       noInvoice.value,
       assignTo.value,
       assignMessage.value,
+      invoiceRemoveIds.value,
     )
     draftPending.value = false
     hasDraft.value =
       !!statusCode.value ||
       !!note.value ||
       !!invoiceText.value ||
+      !!invoiceRemoveIds.value.length ||
       noInvoice.value ||
       assignTo.value !== null ||
       !!assignMessage.value
   }
   watch(
-    [statusCode, note, invoiceText, noInvoice, assignTo, assignMessage],
+    [statusCode, note, invoiceText, noInvoice, assignTo, assignMessage, invoiceRemoveIds],
     () => {
       if (restoringDraft || !key.value) return
       clearTimeout(draftTimer)
@@ -225,7 +280,9 @@ export function useBookingWorkspace() {
     statusCode.value = saved?.status_code ?? ''
     note.value = saved?.note ?? ''
     invoiceText.value = saved?.invoice_text ?? ''
-    noInvoice.value = saved?.no_invoice ?? false
+    noInvoice.value =
+      saved?.no_invoice ?? current.value?.snapshot?.invoice_state === 'no_invoice'
+    invoiceRemoveIds.value = saved?.invoice_remove_ids ?? []
     assignTo.value = saved?.assign_to ?? null
     assignMessage.value = saved?.assign_message ?? ''
     draftRestored.value = !!saved
@@ -239,8 +296,9 @@ export function useBookingWorkspace() {
     restoringDraft = true
     statusCode.value = ''
     note.value = ''
+    invoiceRemoveIds.value = []
     invoiceText.value = ''
-    noInvoice.value = false
+    noInvoice.value = snapshot.value?.invoice_state === 'no_invoice'
     assignTo.value = null
     assignMessage.value = ''
     restoringDraft = false
@@ -317,8 +375,9 @@ export function useBookingWorkspace() {
     restoringDraft = true
     statusCode.value = ''
     note.value = ''
+    invoiceRemoveIds.value = []
     invoiceText.value = ''
-    noInvoice.value = false
+    noInvoice.value = snapshot.value?.invoice_state === 'no_invoice'
     assignTo.value = null
     assignMessage.value = ''
     restoringDraft = false
@@ -348,7 +407,8 @@ export function useBookingWorkspace() {
     } else resolution.value = result
   }
   function acceptResolved() {
-    if (resolution.value?.resolution.status === 'resolved_from_partial') accept(resolution.value)
+    if (resolution.value?.resolution.status === 'resolved_from_partial')
+      accept(resolution.value)
   }
   async function applyStation(station: string) {
     const parsed = parseBookingKey(input.value)
@@ -412,7 +472,7 @@ export function useBookingWorkspace() {
       expected_version: current.value?.version ?? 0,
       ...(showInvoice.value
         ? {
-            invoices: noInvoice.value ? { no_invoice: true } : { add: invoiceNumbers.value },
+            invoices: invoiceChange.value,
           }
         : {}),
       ...(!current.value?.exists ? { confirm_new: newConfirmed.value } : {}),
@@ -424,10 +484,13 @@ export function useBookingWorkspace() {
           }
         : {}),
     }
-    const entry = outbox.enqueue(current.value!, {
-      ...payloadBase,
-      client_request_id: crypto.randomUUID(),
-    })
+    const entry = outbox.enqueue(
+      { ...current.value!, invoices: invoiceItems.value },
+      {
+        ...payloadBase,
+        client_request_id: crypto.randomUUID(),
+      },
+    )
     if (!entry) {
       validation.value = i18n.global.t('outboxUi.cannotQueue')
       return false
@@ -437,14 +500,18 @@ export function useBookingWorkspace() {
     return true
   }
   function restoreOutgoing(entry: OutgoingNote) {
-    assignTo.value = entry.payload.assign_to ?? null
-    assignMessage.value = entry.payload.assign_message ?? ''
-    statusCode.value = entry.payload.status_code
-    note.value = entry.payload.note ?? ''
+    if (entry.operation !== 'invoice') {
+      assignTo.value = entry.payload.assign_to ?? null
+      assignMessage.value = entry.payload.assign_message ?? ''
+      statusCode.value = entry.payload.status_code
+      note.value = entry.payload.note ?? ''
+    }
     invoiceText.value = entry.payload.invoices?.add?.join(', ') ?? ''
     noInvoice.value = entry.payload.invoices?.no_invoice ?? false
+    invoiceRemoveIds.value = entry.payload.invoices?.remove_ids ?? []
     supplierName.value = entry.payload.supplier_name ?? entry.base.group?.supplier_name ?? ''
-    supplierType.value = entry.payload.supplier_type ?? entry.base.group?.supplier_type ?? 'hotel'
+    supplierType.value =
+      entry.payload.supplier_type ?? entry.base.group?.supplier_type ?? 'hotel'
     saveRequest.error.value = entry.error
     saveRequest.state.value = 'error'
     outbox.take(entry.id)
@@ -477,11 +544,13 @@ export function useBookingWorkspace() {
         void refresh()
         return
       }
-      lastSaved.value = {
-        key: entry.key,
-        status: entry.payload.status_code,
-        at: Date.now(),
-      }
+      invoiceWarnings.value = result.warnings ?? []
+      if ('note' in result)
+        lastSaved.value = {
+          key: entry.key,
+          status: entry.payload.status_code,
+          at: Date.now(),
+        }
       const item = bookings.item(result.snapshot)
       if (current.value && current.value.version <= item.version)
         current.value = {
@@ -497,10 +566,18 @@ export function useBookingWorkspace() {
             supplier_type: item.supplier.type,
           },
           done_warning: null,
+          invoices: result.invoices ?? entry.invoices ?? current.value.invoices,
         }
-      notes.value = [result.note, ...notes.value.filter((n) => n.id !== result.note.id)]
+      if ('note' in result)
+        notes.value = [result.note, ...notes.value.filter((n) => n.id !== result.note.id)]
       ui.notify(i18n.global.t('bookingUi.saved'), 'success')
-    } else if (!statusCode.value && !note.value) restoreOutgoing(entry)
+    } else if (
+      (entry.operation === 'invoice' &&
+        !invoiceText.value.trim() &&
+        !invoiceRemoveIds.value.length) ||
+      (!statusCode.value && !note.value)
+    )
+      restoreOutgoing(entry)
   })
 
   function clear() {
@@ -524,8 +601,9 @@ export function useBookingWorkspace() {
     restoringDraft = true
     statusCode.value = ''
     note.value = ''
+    invoiceRemoveIds.value = []
     invoiceText.value = ''
-    noInvoice.value = false
+    noInvoice.value = snapshot.value?.invoice_state === 'no_invoice'
     assignTo.value = null
     assignMessage.value = ''
     restoringDraft = false
@@ -544,7 +622,13 @@ export function useBookingWorkspace() {
         (e) => e.id === outbox.reviewId && e.key === key.value && e.state === 'blocked',
       )
       if (entry) {
-        if (!note.value && !statusCode.value) restoreOutgoing(entry)
+        if (
+          (entry.operation === 'invoice' &&
+            !invoiceText.value.trim() &&
+            !invoiceRemoveIds.value.length) ||
+          (!note.value && !statusCode.value)
+        )
+          restoreOutgoing(entry)
         else ui.notify(i18n.global.t('outboxUi.finishDraft'))
         outbox.reviewId = null
       }
@@ -552,6 +636,14 @@ export function useBookingWorkspace() {
     { flush: 'post' },
   )
   const unsubscribe = bookings.subscribe((event) => {
+    if (
+      event.change_kind === 'invoice' &&
+      event.booking_key === key.value &&
+      event.version > (current.value?.version ?? 0)
+    ) {
+      void refresh()
+      return
+    }
     if (
       event.booking_key === key.value &&
       event.version > (current.value?.version ?? 0) &&
@@ -577,6 +669,13 @@ export function useBookingWorkspace() {
     stopOutbox()
   })
   return {
+    invoiceChange,
+    setInvoiceChange,
+    saveInvoices,
+    invoiceItems,
+    invoicePattern,
+    invoiceMax,
+    invoiceWarnings,
     assignTo,
     assignMessage,
     input,

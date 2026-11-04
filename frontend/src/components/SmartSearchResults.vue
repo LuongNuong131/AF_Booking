@@ -48,9 +48,29 @@ const pagination = computed(() =>
         </p>
       </section></template
     ><template v-else-if="result.kind === 'station_period'"
-      ><h3 class="station-result-title">{{ result.station.code }} · {{ result.period_label }}</h3>
+      ><h3 class="station-result-title">
+        {{ result.station.code }} · {{ result.period_label }}
+      </h3>
       <BookingMonthList :months="result.items" @open="emit('booking', $event)"
     /></template>
+    <template v-else-if="result.kind === 'invoice'"
+      ><article v-for="row in result.items" :key="row.booking_key" class="invoice-search-hit">
+        <button
+          type="button"
+          class="button"
+          data-search-result
+          @click="emit('booking', row.booking_key)"
+        >
+          {{ row.display_key }}
+        </button>
+        <p>{{ t('invoiceUi.matched', { number: row.matched_invoice }) }}</p>
+        <p>
+          {{ row.supplier.name }} · {{ row.station_code }} ·
+          {{ row.period_label }}
+        </p>
+      </article>
+      <p v-if="!result.total">{{ t('empty_search') }}</p></template
+    >
     <p v-else-if="result.kind === 'none'" class="smart-empty" role="status">
       {{ t('empty_search') }}
     </p>

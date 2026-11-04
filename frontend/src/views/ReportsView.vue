@@ -7,9 +7,12 @@ import { useViewRefresh } from '../composables/useViewRefresh'
 import { timeouts } from '../config/timeouts'
 import { downloadDaily, saveDownload } from '../utils/download'
 import type { AgentSummary, PerformanceReport, Status } from '../types/api.generated'
+import InvoiceReportPanel from '../components/InvoiceReportPanel.vue'
 import RequestStatus from '../components/RequestStatus.vue'
 import { formatDateTime } from '../utils/dateTime'
-const PerformanceCharts = defineAsyncComponent(() => import('../components/PerformanceCharts.vue'))
+const PerformanceCharts = defineAsyncComponent(
+  () => import('../components/PerformanceCharts.vue'),
+)
 const { t } = useI18n(),
   filters = reactive({ period: 'day', date_from: '', date_to: '' }),
   exportDate = ref(''),
@@ -93,6 +96,8 @@ useViewRefresh(load)
       }}</RouterLink>
       <p>{{ t('adminUi.reportIntro') }}</p>
     </header>
+
+    <InvoiceReportPanel />
     <form class="admin-filters" @submit.prevent="load">
       <label
         >{{ t('adminUi.period')
@@ -105,7 +110,8 @@ useViewRefresh(load)
             {{ t(`adminUi.${value}`) }}
           </option>
         </select></label
-      ><label>{{ t('bookingUi.dateFrom') }}<input v-model="filters.date_from" type="date" /></label
+      ><label
+        >{{ t('bookingUi.dateFrom') }}<input v-model="filters.date_from" type="date" /></label
       ><label>{{ t('bookingUi.dateTo') }}<input v-model="filters.date_to" type="date" /></label
       ><button type="submit" class="button">
         {{ t('bookingUi.refresh') }}
@@ -205,6 +211,7 @@ useViewRefresh(load)
     >
     <section class="daily-export">
       <h2>{{ t('adminUi.dailyExport') }}</h2>
+
       <form class="admin-filters" @submit.prevent="exportFile">
         <label>{{ t('adminUi.date') }}<input v-model="exportDate" type="date" required /></label
         ><label

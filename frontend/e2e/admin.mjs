@@ -184,7 +184,7 @@ try {
   await expect(page.locator('.admin-table')).toContainText('Raleigh crew station')
   const qc = await login('qc')
   await go(qc.page, '/reports')
-  await expect(qc.page.locator('.report-metrics')).toContainText('Notes')
+  await expect(qc.page.locator('.reports-view > .report-metrics')).toContainText('Notes')
   await expect(qc.page.locator('.report-charts canvas')).toHaveCount(2)
   await qc.page.getByLabel('Format', { exact: true }).selectOption('csv')
   const download = qc.page.waitForEvent('download')

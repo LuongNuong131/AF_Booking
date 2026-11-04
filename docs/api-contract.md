@@ -2,7 +2,7 @@
 
 This document records the user's shared contract for all implementation prompts. Paths, JSON field names, and error codes must not change silently. Update this file and the wire models together if an approved change is needed.
 
-**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Prompt 7B adds private task mutations, due jobs/events and profile reminder preferences. Prompt 7C adds folder stale counts and the smart folder UI. Prompt 8D implements watch, assignments, the rate-limited active-user directory and collaboration UI. Later-prompt endpoints remain reserved.
+**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Prompt 7B adds private task mutations, due jobs/events and profile reminder preferences. Prompt 7C adds folder stale counts and the smart folder UI. Prompt 8D implements watch, assignments, the rate-limited active-user directory and collaboration UI. Prompt 8E operations/daily reports/note search/PWA push and Prompt 8F invoice management/reconciliation are also implemented. Later-prompt endpoints remain reserved.
 
 ## Common conventions
 
@@ -215,7 +215,7 @@ These envelopes clarify fields that Prompt 1B left implicit; existing shared DTO
 - `POST /bookings/{key}/notes` returns HTTP 200 `{snapshot:BookingSnapshot,note:Note,my_watching:boolean}`, including on first creation and replay. A new booking requires `expected_version:0`. Existing version conflicts return the latest snapshot directly in `details`; if no booking exists yet, details is `{snapshot:null,version:0}`. Only canonical full paths can save; a normalized spelling is returned as `details.suggested_key` for noncanonical full input. Partial paths return `STATION_REQUIRED`, including a suggestion when the folder exists.
 - `client_request_id` is a required UUID. The normalized request (including actor and canonical key) is fingerprinted. An identical retry returns the original committed response, even after newer notes, supplier edits, or a lost HTTP response. Reusing a UUID for another payload/user/key returns 422 `VALIDATION_ERROR`. This is not a mechanism for editing an existing note.
 - Notes are at most 5,000 input characters. Control/format characters are removed; CRLF becomes LF and line breaks/tabs are retained. Whitespace-only notes fail when required. A new folder requires a cleaned 3–255-character supplier name and supplier type. Existing-folder supplier fields are ignored. Station mismatch includes `expected_station`, `suggested_key`, `display_key`.
-- Inline `invoices` accepts the shared `InvoiceChange`, validates/uppercases/deduplicates numbers, enforces the 20-number limit and owner/QC/Admin removal, maintains invoice state/count and records the change in the note. DONE's `invoice_required` guard is active. Cross-booking duplicate warnings and independent invoice APIs/reports remain for Prompt 8F.
+- Inline `invoices` accepts the shared `InvoiceChange`, validates/uppercases/deduplicates numbers, enforces the 20-number limit and owner/QC/Admin removal, maintains invoice state/count and records the change in the note. DONE's `invoice_required` guard is active. Prompt 8F below implements cross-booking warnings and independent invoice APIs/reports.
 - Prompt 8C implements near-key suggestions plus the `confirm_new` / `allow_duplicate` guards; see the explicit implementation contract below. Prompt 8D activates `assign_to` / `assign_message` with atomic assignment creation and recipient checks.
 - Overall list adds `cw_number`, `station_code`, `supplier_type`, `period`, and `supplier` filters from Prompt 4. `q` matches a normalized booking-key prefix; supplier matches a normalized name prefix. `invoice` is an exact normalized invoice match. Dates must include a timezone and filter `updated_at` inclusively. Sort values are `updated_at_desc` (default) and `updated_at_asc`, with matching ID tie breakers. Pages are 1-based, sizes 1–100. Mine defaults to 10 and overall/stale to 20. Stale scope defaults to `mine`; Done is always excluded, thresholds are status-specific or 24 hours, and order is oldest activity first.
 - `GET /notifications` returns `{items,unread_count}`; items include `id,type,booking_key,display_key,by_agent,note_id,task_id,created_at,read_at,merged_count`. Read/read-all return `{ok:true}`. Another owner's notification is 404.
@@ -538,3 +538,73 @@ New configuration: DAILY_REPORT_TIME (18:30), NOTE_SEARCH_STRATEGY (like), VAPID
 VAPID_PRIVATE_KEY, VAPID_SUBJECT; INTEGRITY_AUTOFIX remains false. APP_VERSION and
 SLOW_QUERY_THRESHOLD_MS are optional operational settings. Push is disabled without
 valid matching VAPID configuration; it does not disable REST or the static PWA shell.
+
+## Prompt 8F — Invoice declarations and reconciliation (implemented)
+
+All paths below use `/api/v1`, the existing active-session guard and UTC timestamp
+serializer. Invoice storage/behavior is described in [invoices.md](invoices.md).
+Earlier declarations in this document that invoice warnings/independent APIs were
+reserved describe the pre-8F stage; those features are now implemented.
+
+| Method and path | Access | Response / behavior |
+| --- | --- | --- |
+| `GET /bookings/{key}/invoices` | Authenticated | `{invoice_state,items:Invoice[],number_pattern,max_per_booking}` |
+| `PUT /bookings/{key}/invoices` | Authenticated | Body InvoiceChange; `{snapshot,invoices:Invoice[],skipped_duplicates:string[],warnings:[{invoice_number,booking_keys:string[]}]}` |
+| `GET /reports/invoices?period=YYMM` | QC, Admin | InvoiceReport; omitted period uses the current BUSINESS_TIMEZONE period |
+| `GET /export/invoices?period=YYMM&format=xlsx\|csv` | QC, Admin | Audited download; CSV=Invoices rows, XLSX=Invoices and Bookings sheets |
+
+InvoiceChange supports optional add (up to 50 strings), remove_ids (up to 50 IDs),
+no_invoice (boolean; false explicitly clears a declaration). Operations apply
+remove → add → state under one booking lock/transaction. Missing IDs, IDs belonging
+to another booking and already-present normalized numbers are safe no-ops. Removing
+an existing row requires its adding user or fresh QC/Admin role; otherwise FORBIDDEN.
+Inputs normalize before the configured pattern is checked; invalid numbers return
+INVOICE_INVALID/details.invalid[], limits return INVOICE_LIMIT_REACHED and conflicting
+no-invoice/remaining rows return INVOICE_STATE_CONFLICT. No partial write is committed.
+
+**Decision: standalone PUT has no expected_version.** Its set semantics intentionally
+allow concurrent additions to both succeed. Every successful PUT increments version,
+including an uncertain no-op retry, but preserves last_*, Done and updated_at/stale
+clock, creates no note/notification/takeover and only broadcasts booking.updated.
+Inline invoices remain part of the note's expected_version/UUID transaction, with
+INVOICE_REQUIRED when the selected status requires a declaration that is still
+unknown after applying changes. An omitted invoices object preserves existing state;
+an explicitly changed empty set is unknown unless no_invoice=true. Old Done/unknown
+bookings remain readable/editable without a retroactive save requirement.
+
+Lookup/detail add `invoices:Invoice[]` and
+`invoice_rules:{number_pattern:string,max_per_booking:number}`. Note save adds
+`invoices:Invoice[]|null`, skipped_duplicates and warnings; null is reserved for
+persisted pre-8F UUID outcomes whose original response had no full invoice source.
+A new note result includes real committed invoice IDs/authors/times. Note.invoice_change
+continues `{added,removed,no_invoice:true|false|null}` and never owns invoice rows.
+Lists retain state/count and at most three newest previews using one batch query.
+MonthRow's existing state/count are populated. Soft delete/restore never edits invoices.
+
+Search adds `{kind:"invoice",query,items:InvoiceSearchItem[],total,page,size}`.
+InvoiceSearchItem extends BookingItem with matched_invoice. Explicit INV:/# use
+exact normalized invoice matching. Empty Supplier TEXT results try that match once
+only for a valid invoice number, returning none if still empty. Summary's invoice
+parameter is exact; invoice_state accepts has_invoice/no_invoice/unknown. Existing
+is_done and period filters compose with them.
+
+InvoiceReport is `{period,period_label,bookings,with_invoice,no_invoice,not_declared,
+invoice_total,multi_invoice_bookings,avg_per_booking,max_per_booking,
+distribution:[{invoices:"0"|"1"|"2"|"3+",bookings}]}`. It aggregates bookings only
+and caches 45 seconds; committed invoice changes invalidate it. Excel labels and
+columns follow Prompt 8F exactly, respect EXPORT_BOOKING_KEY_STYLE and apply the
+shared CSV/Excel injection guard. Export timeout/cancellation rules remain in force.
+Daily record/new daily-report Excel append Invoice State, Invoice Numbers after
+Note. DailyReportDTO adds done_not_declared:DailyBooking[]; DailyBooking adds invoice
+state/count/previews. Frozen pre-8F reports keep their original totals/source rows;
+missing new invoice cells export as Not declared/blank, with an empty missing new list.
+
+Integrity scans now reconcile invoice count/state with actual rows; repair preserves
+an empty explicit no_invoice, otherwise uses unknown/has_invoice from actual count.
+The snapshot repair transaction/version/publication rules remain unchanged.
+
+New environment controls: INVOICE_NUMBER_PATTERN (default
+`^[A-Z0-9][A-Z0-9\-_/.]{2,39}$`), INVOICE_MAX_PER_BOOKING (20). Configured rules are
+returned by lookup/invoice reads so frontend validation follows the backend.
+No error-code spelling or endpoint name changed. These response extensions are
+reflected in Pydantic and generated TypeScript schemas.

@@ -130,6 +130,9 @@ async def test_note_commit_broadcast_cache_order_lock_release_and_private_takeov
             "updated_at",
             "is_done",
             "snapshot_rebuilt",
+            "invoice_state",
+            "invoice_count",
+            "change_kind",
         }
         assert data["booking_key"] == KEY and data["version"] == 1 and data["last_agent_id"] == 3
         assert data["updated_at"].endswith("Z") and data["status_code"] == "BUNDLE"

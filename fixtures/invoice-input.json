@@ -1,0 +1,6 @@
+[
+ {"raw":"INV1, inv2\ninv1;  INV3","expected":["INV1","INV2","INV3"]},
+ {"raw":" inv/123.4; A-1_B\tINV/123.4 ","expected":["INV/123.4","A-1_B"]},
+ {"raw":"\n , ; \t","expected":[]},
+ {"raw":"i\u0000nv123","expected":["INV123"]}
+]

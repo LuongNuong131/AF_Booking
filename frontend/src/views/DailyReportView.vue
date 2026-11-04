@@ -83,9 +83,15 @@ onMounted(load)
     /><template v-if="report"
       ><p>
         {{ report.report_date }} · {{ report.timezone }} ·
-        {{ t('opsUi.generated', { at: formatDateTime(report.generated_at, auth.timezone) }) }}
+        {{
+          t('opsUi.generated', {
+            at: formatDateTime(report.generated_at, auth.timezone),
+          })
+        }}
       </p>
-      <p v-if="report.provisional" class="muted">{{ t('opsUi.provisional') }}</p>
+      <p v-if="report.provisional" class="muted">
+        {{ t('opsUi.provisional') }}
+      </p>
       <div class="report-metrics">
         <article>
           <span>{{ t('opsUi.notes') }}</span
@@ -104,6 +110,8 @@ onMounted(load)
           ><strong>{{ report.overdue_task_count }}</strong>
         </article>
       </div>
+      <h2>{{ t('invoiceUi.doneNotDeclared') }}</h2>
+      <DailyBookingList :rows="report.done_not_declared ?? []" />
       <h2>{{ t('opsUi.statusDistribution') }}</h2>
       <ul class="daily-status-list">
         <li v-for="row in report.status_distribution" :key="row.code">
@@ -141,7 +149,10 @@ onMounted(load)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in report.stations" :key="`${row.station_code}:${row.supplier_type}`">
+            <tr
+              v-for="row in report.stations"
+              :key="`${row.station_code}:${row.supplier_type}`"
+            >
               <td>{{ row.station_code }}</td>
               <td>{{ t(`supplier_types.${row.supplier_type}`) }}</td>
               <td>{{ row.note_count }}</td>
@@ -150,7 +161,9 @@ onMounted(load)
           </tbody>
         </table>
       </div>
-      <template v-for="kind in ['stale', 'open_rejection_parking', 'repeated'] as const" :key="kind"
+      <template
+        v-for="kind in ['stale', 'open_rejection_parking', 'repeated'] as const"
+        :key="kind"
         ><h2>{{ t(`opsUi.${kind}`) }} ({{ report[kind].length }})</h2>
         <DailyBookingList :rows="report[kind]" /></template
     ></template>

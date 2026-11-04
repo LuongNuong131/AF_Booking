@@ -75,7 +75,7 @@ class Settings(BaseSettings):
     snapshot_cache_max_entries: int = Field(default=2000, ge=1, le=10000)
     stale_hours_default: int = Field(default=24, ge=1, le=8760)
     station_code_pattern: str = r"[A-Z]{3}"
-    invoice_number_pattern: str = r"[A-Z0-9_./-]{3,40}"
+    invoice_number_pattern: str = r"^[A-Z0-9][A-Z0-9\-_/.]{2,39}$"
     invoice_max_per_booking: int = Field(default=20, ge=1, le=100)
 
     @field_validator("station_code_pattern", "invoice_number_pattern")

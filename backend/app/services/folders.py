@@ -10,13 +10,14 @@ from sqlalchemy.orm import aliased
 from app.core.errors import ApiException
 from app.core.timeouts import request_budget
 from app.core.unit_of_work import transaction
-from app.models import Booking, BookingGroup, Status, User
+from app.models import Booking, BookingGroup, BookingInvoice, Status, User
 from app.schemas.contracts import ErrorCode, FolderCard, MonthRow, Page
 from app.schemas.folders import (
     FolderDetail,
     SearchBooking,
     SearchFolder,
     SearchFolders,
+    SearchInvoice,
     SearchNone,
     SearchPartial,
     SearchStation,
@@ -25,6 +26,8 @@ from app.schemas.folders import (
 )
 from app.services.booking_reads import invoice_previews, snapshot_from_row, snapshot_query
 from app.utils.booking_key import period_label, to_display
+from app.utils.invoice import normalize as normalize_invoice
+from app.utils.invoice import validate as valid_invoice
 from app.utils.search_query import QueryKind, classify_query
 from app.utils.supplier import normalize_supplier_name
 
@@ -335,6 +338,41 @@ class FolderService:
             size=size,
         )
 
+    async def invoice_search(self, raw, page, size):
+        value = normalize_invoice(raw)
+        if not valid_invoice(value, self.settings.invoice_number_pattern):
+            raise ApiException(ErrorCode.INVOICE_INVALID, details={"invalid": [value]})
+        where = Booking.id.in_(
+            select(BookingInvoice.booking_id).where(
+                BookingInvoice.invoice_number_normalized == value
+            )
+        )
+        async with self.tx() as session:
+            total = await session.scalar(select(func.count()).select_from(Booking).where(where))
+            rows = (
+                await session.execute(
+                    snapshot_query()
+                    .where(where)
+                    .order_by(Booking.updated_at.desc(), Booking.id.desc())
+                    .offset((page - 1) * size)
+                    .limit(size)
+                )
+            ).all()
+            previews = await invoice_previews(session, [r.id for r in rows])
+        return SearchInvoice(
+            query=raw,
+            items=[
+                {
+                    **snapshot_from_row(r, self.settings, previews.get(r.id)).model_dump(),
+                    "matched_invoice": value,
+                }
+                for r in rows
+            ],
+            total=total,
+            page=page,
+            size=size,
+        )
+
     async def search(self, raw: str, *, page: int, size: int):
         # A separate 3 s budget bounds the entire DB fallback, not just one statement.
         async with request_budget(self.settings.search_db_timeout_seconds):
@@ -348,6 +386,14 @@ class FolderService:
                     self.settings.station_code_pattern,
                 )
             match classified.kind:
+                case QueryKind.INVOICE:
+                    return await self.invoice_search(
+                        classified.query[4:]
+                        if classified.query.startswith("INV:")
+                        else classified.query[1:],
+                        page,
+                        size,
+                    )
                 case QueryKind.FULL_KEY:
                     resolution, entry, group, _ = await self.bookings.resolve(classified.query)
                     return SearchBooking(
@@ -380,6 +426,14 @@ class FolderService:
                         rank=True,
                     )
                     if not result.total:
+                        if classified.kind == QueryKind.TEXT and valid_invoice(
+                            normalize_invoice(classified.query),
+                            self.settings.invoice_number_pattern,
+                        ):
+                            invoices = await self.invoice_search(classified.query, page, size)
+                            return (
+                                invoices if invoices.total else SearchNone(query=classified.query)
+                            )
                         return SearchNone(query=classified.query)
                     return SearchFolders(query=classified.query, **result.model_dump())
                 case QueryKind.STATION:

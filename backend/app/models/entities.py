@@ -117,6 +117,8 @@ class Booking(Timestamps, Base):
         Index("ix_bookings_station_period", "station_code", "period", "id"),
         Index("ix_bookings_cw_period", "cw_number", "period"),
         Index("ix_bookings_last_note_id", "last_note_id"),
+        Index("ix_bookings_period_invoice_state", "period", "invoice_state"),
+        Index("ix_bookings_invoice_done_updated", "invoice_state", "is_done", "updated_at"),
         TABLE_OPTIONS,
     )
 
@@ -139,7 +141,7 @@ class Booking(Timestamps, Base):
         mysql.ENUM("unknown", "has_invoice", "no_invoice"), server_default="unknown"
     )
     invoice_count: Mapped[int] = mapped_column(
-        mysql.INTEGER(unsigned=True), server_default=text("0")
+        mysql.SMALLINT(unsigned=True), server_default=text("0")
     )
 
     @validates("booking_key")
@@ -312,8 +314,11 @@ class BookingTask(Timestamps, Base):
 class BookingInvoice(CreatedAt, Base):
     __tablename__ = "booking_invoices"
     __table_args__ = (
-        UniqueConstraint("booking_id", "invoice_number", name="uq_booking_invoices_number"),
-        Index("ix_booking_invoices_invoice_number", "invoice_number"),
+        UniqueConstraint(
+            "booking_id", "invoice_number_normalized", name="uq_booking_invoices_normalized"
+        ),
+        Index("ix_booking_invoices_normalized", "invoice_number_normalized"),
+        Index("ix_booking_invoices_created_at", "created_at"),
         Index("ix_booking_invoices_added_by", "added_by"),
         TABLE_OPTIONS,
     )
@@ -321,6 +326,11 @@ class BookingInvoice(CreatedAt, Base):
     id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
     booking_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
     invoice_number: Mapped[str] = mapped_column(ascii_varchar(40), nullable=False)
+    invoice_number_normalized: Mapped[str] = mapped_column(
+        ascii_varchar(40),
+        nullable=False,
+        default=lambda context: context.get_current_parameters()["invoice_number"].strip().upper(),
+    )
     added_by: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
 
 

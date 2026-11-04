@@ -38,7 +38,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
   const collaboration = useCollaborationStore(pinia),
     recent = useRecentBookingsStore(pinia)
   const collaborationStop = outbox.subscribe((entry, result) => {
-    if (result) {
+    if (result && 'note' in result) {
       void collaboration.acceptNote(
         entry.key,
         result.my_watching,

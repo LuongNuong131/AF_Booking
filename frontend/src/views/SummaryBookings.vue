@@ -62,7 +62,9 @@ const agentRequest = useRequest(
   { timeoutMs: timeouts.list, retry: true },
 )
 const agentOptions = computed(() => {
-  const entries = new Map((agentRequest.data.value ?? []).map((agent) => [String(agent.id), agent]))
+  const entries = new Map(
+    (agentRequest.data.value ?? []).map((agent) => [String(agent.id), agent]),
+  )
   for (const row of rows.value)
     if (row.last_agent) entries.set(String(row.last_agent.id), row.last_agent)
   if (auth.user)
@@ -91,7 +93,8 @@ async function load(force: boolean = false) {
     })
 }
 async function commitFilters() {
-  if (validation.value || (filters.station_code && !/^[A-Z]{3}$/.test(filters.station_code))) return
+  if (validation.value || (filters.station_code && !/^[A-Z]{3}$/.test(filters.station_code)))
+    return
   await router.replace({ name: 'summary', query: summaryQuery(filters, 1) })
 }
 const commitDebounced = useDebounceFn((ticket: number) => {
@@ -179,7 +182,9 @@ watch(
 )
 watch(
   () => [
-    rows.value.map((row) => `${row.booking_key}:${row.version}:${row.last_note_preview}`).join('|'),
+    rows.value
+      .map((row) => `${row.booking_key}:${row.version}:${row.last_note_preview}`)
+      .join('|'),
     total.value,
   ],
   () => {
@@ -229,7 +234,9 @@ function refreshPage() {
     </header>
     <section class="summary-controls" :aria-label="t('bookingUi.filters')">
       <label class="summary-search"
-        ><BaseIcon name="search" /><span class="sr-only">{{ t('bookingUi.searchBookings') }}</span
+        ><BaseIcon name="search" /><span class="sr-only">{{
+          t('bookingUi.searchBookings')
+        }}</span
         ><input
           v-model="filters.q"
           maxlength="100"
@@ -239,6 +246,20 @@ function refreshPage() {
       <details class="filter-details" open>
         <summary>{{ t('bookingUi.filters') }}</summary>
         <div class="filter-grid">
+          <label
+            >{{ t('invoiceUi.filter')
+            }}<select v-model="filters.invoice_state" @change="changed">
+              <option value="">{{ t('invoiceUi.all') }}</option>
+              <option value="has_invoice">{{ t('invoiceUi.has') }}</option>
+              <option value="no_invoice">{{ t('invoice_state_none') }}</option>
+              <option value="unknown">{{ t('invoiceUi.notDeclared') }}</option>
+            </select></label
+          >
+          <label
+            >{{ t('invoice_label')
+            }}<input v-model="filters.invoice" maxlength="100" @input="changed"
+          /></label>
+
           <label
             >{{ t('bookingUi.status')
             }}<select
@@ -262,7 +283,8 @@ function refreshPage() {
               <option value="">{{ t('bookingUi.allAgents') }}</option>
               <option
                 v-if="
-                  filters.agent_id && !agentOptions.some((a) => String(a.id) === filters.agent_id)
+                  filters.agent_id &&
+                  !agentOptions.some((a) => String(a.id) === filters.agent_id)
                 "
                 :value="filters.agent_id"
               >
@@ -349,7 +371,11 @@ function refreshPage() {
           /></label>
           <label
             >{{ t('bookingUi.stale')
-            }}<select v-model="filters.stale" :aria-label="t('bookingUi.stale')" @change="changed">
+            }}<select
+              v-model="filters.stale"
+              :aria-label="t('bookingUi.stale')"
+              @change="changed"
+            >
               <option value="">{{ t('bookingUi.allBookings') }}</option>
               <option value="true">{{ t('bookingUi.staleOnly') }}</option>
               <option value="false">{{ t('bookingUi.recentOnly') }}</option>

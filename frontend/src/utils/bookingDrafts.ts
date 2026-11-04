@@ -5,6 +5,7 @@ export interface BookingDraft {
   note: string
   at: number
   invoice_text?: string
+  invoice_remove_ids?: number[]
   no_invoice?: boolean
   assign_to?: number | null
   assign_message?: string
@@ -31,6 +32,10 @@ export function draftStorage(userId: number) {
           (d.invoice_text === undefined ||
             (typeof d.invoice_text === 'string' && d.invoice_text.length <= 2000)) &&
           (d.no_invoice === undefined || typeof d.no_invoice === 'boolean') &&
+          (d.invoice_remove_ids === undefined ||
+            (Array.isArray(d.invoice_remove_ids) &&
+              d.invoice_remove_ids.length <= 50 &&
+              d.invoice_remove_ids.every((id) => Number.isSafeInteger(id) && id > 0))) &&
           (d.assign_to === undefined ||
             d.assign_to === null ||
             (Number.isSafeInteger(d.assign_to) && d.assign_to > 0)) &&
@@ -51,11 +56,21 @@ export function draftStorage(userId: number) {
     no_invoice = false,
     assign_to: number | null = null,
     assign_message = '',
+    invoice_remove_ids: number[] = [],
   ) {
     const values = read()
-    if (status_code || note || invoice_text || no_invoice || assign_to !== null || assign_message)
+    if (
+      status_code ||
+      note ||
+      invoice_text ||
+      no_invoice ||
+      assign_to !== null ||
+      assign_message ||
+      invoice_remove_ids.length
+    )
       values[key] = {
         status_code,
+        invoice_remove_ids,
         note,
         invoice_text,
         no_invoice,

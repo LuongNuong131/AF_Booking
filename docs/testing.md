@@ -366,3 +366,34 @@ These results do not validate hosted TiDB Cloud networking, real push-provider
 delivery, or physical iOS behavior. Live VAPID settings/device permission are needed
 for those checks. Historical 50,000-row performance reports were not remeasured for
 8E. Configuration and manual verification are in [operations-pwa.md](operations-pwa.md).
+
+## Prompt 8F invoice verification
+
+- **158 backend unit tests passed**, with **147 integration/browser cases skipped**
+  during the ordinary run; mutating checks execute separately in owned databases.
+- On **each** verified-TLS disposable MySQL/TiDB, migration 0007 parity/seed/EXPLAIN/
+  downgrade/re-upgrade (1), auth (16), booking (27), tasks (4), realtime (20),
+  folder (22), Admin (6), safeguards (8), collaboration (8), operations (11) and
+  invoices (9) passed: **132 checks per engine**. Old migrations remain unchanged.
+- **234 Vitest tests passed**, plus strict Vue/TypeScript and production build.
+  Coverage includes shared parsing, validation/checkbox/owner controls, +N badges,
+  invoice-required Done, persistent PUT replay, chip drafts and 4xx restoration
+  without replacing an unfinished note. The storage-quota fixture restores its
+  mocked storage getter so later draft checks exercise real persistence.
+- **All eleven Chromium scenarios passed together**. The new multi-user invoice
+  case covers Done with two numbers, no-note/unchanged-clock additions, owner versus
+  QC removal, immediate realtime, adjacent-month duplicate links, INV: search,
+  offline PUT/reload/reopen/retry with retained note draft and unchanged Activity,
+  monthly Excel, unknown-filter navigation and mobile layout. Existing Report
+  assertions explicitly scope performance metrics now that invoice cards coexist.
+- Ruff/format and generated-contract checks passed. The production build is
+  regenerated after the PWA fixture so dist/sw.js contains no test update marker.
+
+From `backend`, use `tests/run_schema_checks.py --engine mysql --suite invoices
+--report /tmp/invoices-mysql.xml`, then repeat with tidb. In addition to JUnit,
+the invoice suite writes a sibling `.plans.json` with four actual EXPLAIN cases.
+Copies and interpretation are in [invoices.md](invoices.md); the tiny fixture does
+not establish hosted performance. The preview budget asserts exactly one invoice
+query for 20 booking rows; the reconciliation budget asserts one bookings-only
+aggregate, without joins. No new 50,000-row benchmark or hosted deployment is
+claimed. Browser commands/artifact paths follow the existing runner above.

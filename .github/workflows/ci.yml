@@ -67,6 +67,7 @@ jobs:
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite tasks --report /tmp/tasks-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite admin --report /tmp/admin-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite operations --report /tmp/operations-report.xml
+      - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite invoices --report /tmp/invoices-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite collaboration --report /tmp/collaboration-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite safeguards --report /tmp/safeguards-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite integrity-performance --report /tmp/integrity-performance.json
@@ -85,6 +86,8 @@ jobs:
             /tmp/safeguards-report.xml
             /tmp/collaboration-report.xml
             /tmp/operations-report.xml
+            /tmp/invoices-report.xml
+            /tmp/invoices-report.plans.json
             /tmp/integrity-performance.json
             /tmp/realtime-report.xml
             /tmp/folder-report.xml

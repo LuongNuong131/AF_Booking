@@ -389,6 +389,8 @@ class AdminService:
                     updated_at=book.updated_at,
                     is_done=book.is_done,
                     snapshot_rebuilt=True,
+                    invoice_state=book.invoice_state,
+                    invoice_count=book.invoice_count,
                 ).model_dump(mode="json")
                 folder = group_entry(group)
                 entry = KeyEntry(

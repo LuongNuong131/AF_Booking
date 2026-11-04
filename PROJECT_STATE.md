@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Full invoice management/reports, invoice exports, and broader recovery tools. Do not describe this as the completed booking application.
+Broader recovery tools and later-prompt features. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -175,3 +175,13 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 - Production manifest/icons/static-only worker, offline shell, no API caching, explicit update banner and draft-safe reload across tabs.
 - VAPID-backed bounded push queue for offline current sessions only; explicit Profile opt-in, endpoint ownership/provider/key validation, TLS/no-redirect transport, dead/stale cleanup and minimal booking-only content.
 - Real MySQL/TiDB operations/optional-FT/schema tests, VAPID encryption with intercepted transport, frontend units and production PWA/operations Chromium flows. Real provider/device delivery needs operator VAPID configuration; physical iOS has not been validated.
+
+
+## Implemented: Prompt 8F invoice management
+
+- Additive migration 0007 for normalized invoice uniqueness/lookups, reconciliation indexes and unsigned SMALLINT count; old migrations and explicit declarations preserved.
+- One locked invoice service for note/standalone edits, full author/time data, duplicates/warnings, owner/QC/Admin removals, grouped audit, stable operational clock and invoice-only realtime.
+- Exact INV:/# search, Supplier fallback, Summary filters, single-batch previews, integrity detection/repair and independent note moderation.
+- Monthly one-query reconciliation/cache, safe streamed two-sheet invoice Excel/CSV, daily invoice columns and unknown Done lists with immutable report compatibility.
+- Reusable InvoicePanel/chips/copy/shortcuts, badges, Reports panel, timeline changes and the shared durable note/invoice outbox with draft retention.
+- Shared parsing fixtures, transaction/permission/concurrency/export/query-budget regressions and the invoice Chromium flow. See docs/invoices.md and docs/testing.md.

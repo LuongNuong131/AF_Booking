@@ -1,0 +1,134 @@
+{
+  "booking invoices": {
+    "sql": "SELECT * FROM booking_invoices WHERE booking_id=1 ORDER BY id",
+    "plan": [
+      {
+        "id": "Sort_5",
+        "estRows": "10.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_9ddb4b8ce1f2_test.booking_invoices.id"
+      },
+      {
+        "id": "\u2514\u2500IndexLookUp_10",
+        "estRows": "10.00",
+        "task": "root",
+        "access object": "",
+        "operator info": ""
+      },
+      {
+        "id": "  \u251c\u2500IndexRangeScan_8(Build)",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_invoices, index:uq_booking_invoices_normalized(booking_id, invoice_number_normalized)",
+        "operator info": "range:[1,1], keep order:false, stats:pseudo"
+      },
+      {
+        "id": "  \u2514\u2500TableRowIDScan_9(Probe)",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_invoices",
+        "operator info": "keep order:false, stats:pseudo"
+      }
+    ]
+  },
+  "invoice lookup": {
+    "sql": "SELECT booking_id FROM booking_invoices WHERE invoice_number_normalized='INV501'",
+    "plan": [
+      {
+        "id": "Projection_4",
+        "estRows": "10.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_9ddb4b8ce1f2_test.booking_invoices.booking_id"
+      },
+      {
+        "id": "\u2514\u2500IndexLookUp_8",
+        "estRows": "10.00",
+        "task": "root",
+        "access object": "",
+        "operator info": ""
+      },
+      {
+        "id": "  \u251c\u2500IndexRangeScan_6(Build)",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_invoices, index:ix_booking_invoices_normalized(invoice_number_normalized)",
+        "operator info": "range:[\"INV501\",\"INV501\"], keep order:false, stats:pseudo"
+      },
+      {
+        "id": "  \u2514\u2500TableRowIDScan_7(Probe)",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_invoices",
+        "operator info": "keep order:false, stats:pseudo"
+      }
+    ]
+  },
+  "period state": {
+    "sql": "SELECT invoice_state,COUNT(*) FROM bookings WHERE period='2609' GROUP BY invoice_state",
+    "plan": [
+      {
+        "id": "Projection_5",
+        "estRows": "8.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_9ddb4b8ce1f2_test.bookings.invoice_state, Column#20"
+      },
+      {
+        "id": "\u2514\u2500StreamAgg_19",
+        "estRows": "8.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "group by:booking_schema_9ddb4b8ce1f2_test.bookings.invoice_state, funcs:count(Column#23)->Column#20, funcs:firstrow(booking_schema_9ddb4b8ce1f2_test.bookings.invoice_state)->booking_schema_9ddb4b8ce1f2_test.bookings.invoice_state"
+      },
+      {
+        "id": "  \u2514\u2500IndexReader_20",
+        "estRows": "8.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "index:StreamAgg_9"
+      },
+      {
+        "id": "    \u2514\u2500StreamAgg_9",
+        "estRows": "8.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "group by:booking_schema_9ddb4b8ce1f2_test.bookings.invoice_state, funcs:count(1)->Column#23"
+      },
+      {
+        "id": "      \u2514\u2500IndexRangeScan_18",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_period_invoice_state(period, invoice_state)",
+        "operator info": "range:[\"2609\",\"2609\"], keep order:true, stats:pseudo"
+      }
+    ]
+  },
+  "Done undeclared": {
+    "sql": "SELECT id FROM bookings WHERE invoice_state='unknown' AND is_done=1 ORDER BY updated_at",
+    "plan": [
+      {
+        "id": "Projection_6",
+        "estRows": "0.10",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_9ddb4b8ce1f2_test.bookings.id"
+      },
+      {
+        "id": "\u2514\u2500IndexReader_12",
+        "estRows": "0.10",
+        "task": "root",
+        "access object": "",
+        "operator info": "index:IndexRangeScan_11"
+      },
+      {
+        "id": "  \u2514\u2500IndexRangeScan_11",
+        "estRows": "0.10",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_invoice_done_updated(invoice_state, is_done, updated_at)",
+        "operator info": "range:[\"unknown\" 1,\"unknown\" 1], keep order:true, stats:pseudo"
+      }
+    ]
+  }
+}

@@ -69,6 +69,17 @@ const pending = (id: number) => outbox.entries.find((e) => e.note.id === id)
               <StatusTag :status="item.status" /><span>{{ item.position }}</span>
             </div>
             <p class="note-content">{{ item.note || t('bookingUi.noNote') }}</p>
+            <p v-if="item.invoice_change" class="timeline-invoice-change">
+              <span v-if="item.invoice_change.added.length"
+                >+ {{ item.invoice_change.added.join(', ') }}</span
+              ><span v-if="item.invoice_change.removed.length">
+                − {{ item.invoice_change.removed.join(', ') }}</span
+              ><span v-if="item.invoice_change.no_invoice === true">
+                · {{ t('no_invoice_checkbox') }}</span
+              ><span v-else-if="item.invoice_change.no_invoice === false">
+                · {{ t('invoiceUi.noInvoiceCleared') }}</span
+              >
+            </p>
             <ul v-if="item.attachments.length" class="attachment-list">
               <li v-for="file in item.attachments" :key="file.id">
                 {{ file.file_name }}

@@ -171,8 +171,8 @@ class Invoice(ContractModel):
 
 
 class InvoiceChange(ContractModel):
-    add: list[str] = Field(default_factory=list)
-    remove_ids: list[int] = Field(default_factory=list)
+    add: list[str] = Field(default_factory=list, max_length=50)
+    remove_ids: list[int] = Field(default_factory=list, max_length=50)
     no_invoice: bool = False
 
 

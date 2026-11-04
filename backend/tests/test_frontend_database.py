@@ -86,6 +86,7 @@ class BackendListener:
         "safeguards.mjs",
         "collaboration.mjs",
         "operations.mjs",
+        "invoices.mjs",
         "pwa.mjs",
     ],
 )

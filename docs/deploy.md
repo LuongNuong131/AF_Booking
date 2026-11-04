@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the backend and frontend through Prompt 8E. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; Admin/QC/Profile and durable note sending are implemented; full invoice features remain. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
+This guide deploys the backend and frontend through Prompt 8F. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; Admin/QC/Profile and durable note sending are implemented; invoice management/reconciliation are implemented. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 
@@ -70,7 +70,7 @@ Expected responses:
 
 A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
-Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. Current head `0006` includes the application tables, durable note/task replay, collaboration, daily reports and push subscriptions; deploy the latest `head` before starting the API. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
+Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. Current head `0007` includes the application tables, durable note/task replay, collaboration, daily reports and push subscriptions; deploy the latest `head` before starting the API. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
 
 ## 3. Vercel frontend
 
@@ -142,3 +142,10 @@ Vercel must preserve the committed worker/manifest/icon rewrite exclusions and
 sw.js no-cache headers. See operations-pwa.md for key generation, sleep/iOS limits,
 rotation, static-only caching and verification. No provider deployment is implied
 by Git push or a saved development-environment draft.
+
+
+Prompt 8F requires migration **0007** before starting the new API. Existing invoice
+declarations remain intact; unset bookings stay unknown. No new secret/dependency
+is needed. Review INVOICE_NUMBER_PATTERN and INVOICE_MAX_PER_BOOKING (default 20);
+lookup sends the same rules to the frontend. See invoices.md for rollback, immutable
+past-report compatibility, exact search and the shared offline PUT queue.

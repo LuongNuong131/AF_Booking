@@ -18,6 +18,8 @@ const rows = [
   'openRow',
   'watch',
   'rowTask',
+  'invoiceFocus',
+  'invoiceNone',
   'page',
   'help',
 ]

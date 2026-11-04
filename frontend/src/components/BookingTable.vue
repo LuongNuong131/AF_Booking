@@ -14,6 +14,7 @@ import { ref } from 'vue'
 import { useListNavigation } from '../composables/useListNavigation'
 import { useCollaborationStore } from '../stores/collaboration'
 import { useTasksStore } from '../stores/tasks'
+import InvoiceBadge from './InvoiceBadge.vue'
 import StatusTag from './StatusTag.vue'
 import EmptyState from './EmptyState.vue'
 const { t } = useI18n(),
@@ -29,28 +30,35 @@ const emit = defineEmits<{ open: [key: string]; page: [number] }>()
 const root = ref<HTMLElement | null>(null),
   collaboration = useCollaborationStore(),
   tasks = useTasksStore()
-const nav = useListNavigation('booking-table', root, () => props.rows.map((r) => r.booking_key), {
-  open: (i) => emit('open', props.rows[i]!.booking_key),
-  watch: (i) => collaboration.toggle(props.rows[i]!.booking_key, props.rows[i]!.my_watching),
-  task: (i) => tasks.openDialog(props.rows[i]!.booking_key),
-  reveal: (i) => {
-    if (props.rows.length > 50) scrollTo(i)
+const nav = useListNavigation(
+  'booking-table',
+  root,
+  () => props.rows.map((r) => r.booking_key),
+  {
+    open: (i) => emit('open', props.rows[i]!.booking_key),
+    watch: (i) => collaboration.toggle(props.rows[i]!.booking_key, props.rows[i]!.my_watching),
+    task: (i) => tasks.openDialog(props.rows[i]!.booking_key),
+    reveal: (i) => {
+      if (props.rows.length > 50) scrollTo(i)
+    },
+    page: (delta) => {
+      const p = (props.page ?? 1) + delta
+      if (
+        props.page !== undefined &&
+        p >= 1 &&
+        p <= Math.max(1, Math.ceil((props.total ?? 0) / (props.size ?? 20)))
+      )
+        emit('page', p)
+    },
   },
-  page: (delta) => {
-    const p = (props.page ?? 1) + delta
-    if (
-      props.page !== undefined &&
-      p >= 1 &&
-      p <= Math.max(1, Math.ceil((props.total ?? 0) / (props.size ?? 20)))
-    )
-      emit('page', p)
-  },
-})
+)
 const { list, containerProps, scrollTo } = useVirtualList(toRef(props, 'rows'), {
   itemHeight: 100,
   overscan: 3,
 })
-const shown = computed(() => (props.rows.length > 50 ? list.value.map((v) => v.data) : props.rows))
+const shown = computed(() =>
+  props.rows.length > 50 ? list.value.map((v) => v.data) : props.rows,
+)
 const store = useBookingsStore()
 const prefetch = useRequest((ctx, key: string) => store.lookup(ctx, key), {
   timeoutMs: timeouts.lookup,
@@ -77,6 +85,7 @@ const columns = [
   'station',
   'type',
   'period',
+  'invoice',
   'status',
   'position',
   'agent',
@@ -153,6 +162,14 @@ const columns = [
           <td>{{ row.station_code }}</td>
           <td>{{ t(`supplier_types.${row.supplier.type}`) }}</td>
           <td>{{ row.period_label }}</td>
+          <td>
+            <InvoiceBadge
+              :state="row.invoice_state"
+              :count="row.invoice_count"
+              :preview="row.invoices_preview"
+              :done="row.is_done"
+            />
+          </td>
           <td><StatusTag :status="row.last_status" /></td>
           <td>{{ row.last_position || t('common.unknown') }}</td>
           <td>{{ row.last_agent?.full_name || t('common.unknown') }}</td>

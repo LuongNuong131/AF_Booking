@@ -10,6 +10,7 @@ from app.utils.booking_key import DASHES, ParsedKey, PartialKey, normalize, pars
 
 
 class QueryKind(StrEnum):
+    INVOICE = "invoice"
     FULL_KEY = "full_key"
     PARTIAL_KEY = "partial_key"
     CW_NUMBER = "cw_number"
@@ -42,6 +43,8 @@ def classify_query(
     query = normalize_search(raw)
     if not query or len(raw) > 100:
         return ClassifiedQuery(QueryKind.NONE, query)
+    if query.startswith(("INV:", "#")):
+        return ClassifiedQuery(QueryKind.INVOICE, query)
     parsed = parse(raw, station_pattern)
     if isinstance(parsed, ParsedKey):
         return ClassifiedQuery(

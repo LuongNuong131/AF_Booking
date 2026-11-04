@@ -5,9 +5,11 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import type { MonthRow, BookingItem } from '../types/api.generated'
 import { formatDateTime } from '../utils/dateTime'
+import InvoiceBadge from './InvoiceBadge.vue'
 import StatusTag from './StatusTag.vue'
 const props = defineProps<{
-    months: (MonthRow & Partial<Pick<BookingItem, 'supplier' | 'station_code'>>)[]
+    months: (MonthRow &
+      Partial<Pick<BookingItem, 'supplier' | 'station_code' | 'invoices_preview'>>)[]
   }>(),
   emit = defineEmits<{ open: [key: string] }>()
 const { t } = useI18n(),
@@ -49,6 +51,12 @@ const displayed = computed(() =>
           ><StatusTag :status="month.last_status" />
         </header>
         <span class="month-key">{{ month.display_key }}</span>
+        <InvoiceBadge
+          :state="month.invoice_state"
+          :count="month.invoice_count"
+          :preview="month.invoices_preview"
+          :done="month.is_done"
+        />
         <span v-if="month.supplier" class="month-supplier"
           >{{ month.supplier.name }} · {{ month.station_code }} ·
           {{ t(`supplier_types.${month.supplier.type}`) }}</span
@@ -70,7 +78,12 @@ const displayed = computed(() =>
         total: months.length,
       })
     }}</span
-    ><button v-if="limit < months.length" type="button" class="text-button" @click="limit += 20">
+    ><button
+      v-if="limit < months.length"
+      type="button"
+      class="text-button"
+      @click="limit += 20"
+    >
       {{ t('folderUi.moreMonths') }}
     </button>
   </div>

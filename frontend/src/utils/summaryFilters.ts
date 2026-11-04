@@ -1,6 +1,8 @@
 import type { LocationQuery } from 'vue-router'
 import { parseBookingKey } from './bookingKey'
 export interface SummaryFilters {
+  invoice_state: string
+  invoice: string
   q: string
   status_code: string
   agent_id: string
@@ -14,6 +16,8 @@ export interface SummaryFilters {
   stale: string
 }
 export const emptyFilters = (): SummaryFilters => ({
+  invoice_state: '',
+  invoice: '',
   q: '',
   status_code: '',
   agent_id: '',
@@ -37,6 +41,9 @@ export function readSummaryQuery(query: LocationQuery): {
   page: number
 } {
   const f = emptyFilters()
+  f.invoice = text(query.invoice, 100).trim().toUpperCase()
+  if (['has_invoice', 'no_invoice', 'unknown'].includes(String(query.invoice_state)))
+    f.invoice_state = String(query.invoice_state)
   f.q = text(query.q)
   f.status_code = text(query.status_code, 40)
   f.supplier = text(query.supplier)
@@ -72,7 +79,8 @@ export function zonedToday(timeZone: string, now = new Date()): string {
     month: '2-digit',
     day: '2-digit',
   }).formatToParts(now)
-  const p = (key: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === key)!.value
+  const p = (key: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === key)!.value
   return `${p('year')}-${p('month')}-${p('day')}`
 }
 export function zonedDayBoundary(day: string, timeZone: string, end = false): string {

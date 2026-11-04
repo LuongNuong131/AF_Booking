@@ -13,7 +13,6 @@ from app.core.unit_of_work import error_number, transaction
 from app.models import (
     Booking,
     BookingGroup,
-    BookingInvoice,
     BookingNote,
     BookingWatcher,
     Station,
@@ -26,6 +25,7 @@ from app.schemas.realtime import BookingUpdatedData
 from app.services.audit import record_audit
 from app.services.auth import AuthService
 from app.services.booking_reads import invoice_previews, snapshot_from_row, snapshot_query
+from app.services.invoice_service import invoice_items
 from app.services.key_index import GroupEntry, KeyEntry
 from app.services.suggestions import Suggestions
 from app.utils.booking_key import ParsedKey, PartialKey, build_key, parse, to_display
@@ -57,62 +57,6 @@ class BookingWrites:
         self.engine, self.settings, self.index, self.cache = engine, settings, index, cache
         self.ws_manager = ws_manager
         self.suggestions = Suggestions(engine, settings, index)
-
-    async def invoices(self, session, booking, change, user, status):
-        rows = (
-            await session.scalars(
-                select(BookingInvoice)
-                .where(BookingInvoice.booking_id == booking.id)
-                .order_by(BookingInvoice.id)
-            )
-        ).all()
-        added, removed = [], []
-        declared = None
-        if change is not None:
-            values = list(dict.fromkeys(value.strip().upper() for value in change.add))
-            invalid = [
-                value
-                for value in values
-                if re.fullmatch(self.settings.invoice_number_pattern, value, re.ASCII) is None
-            ]
-            if invalid:
-                raise ApiException(ErrorCode.INVOICE_INVALID, details={"invalid": invalid})
-            ids = set(change.remove_ids)
-            if ids - {row.id for row in rows}:
-                raise ApiException(ErrorCode.NOT_FOUND)
-            for row in rows:
-                if row.id in ids:
-                    if row.added_by != user.id and user.role not in {"admin", "qc"}:
-                        raise ApiException(ErrorCode.FORBIDDEN)
-                    removed.append(row.invoice_number)
-                    await session.delete(row)
-            rows = [row for row in rows if row.id not in ids]
-            existing = {row.invoice_number for row in rows}
-            added = [value for value in values if value not in existing]
-            if change.no_invoice and (rows or added):
-                raise ApiException(ErrorCode.INVOICE_STATE_CONFLICT)
-            if len(rows) + len(added) > self.settings.invoice_max_per_booking:
-                raise ApiException(ErrorCode.INVOICE_LIMIT_REACHED)
-            for number in added:
-                session.add(
-                    BookingInvoice(booking_id=booking.id, invoice_number=number, added_by=user.id)
-                )
-            booking.invoice_count = len(rows) + len(added)
-            if "no_invoice" in change.model_fields_set:
-                declared = change.no_invoice
-            if booking.invoice_count:
-                booking.invoice_state = "has_invoice"
-            elif change.no_invoice:
-                booking.invoice_state = "no_invoice"
-            elif declared is False or removed:
-                booking.invoice_state = "unknown"
-        if status.invoice_required and booking.invoice_state == "unknown":
-            raise ApiException(ErrorCode.INVOICE_REQUIRED)
-        return (
-            {"added": added, "removed": removed, "no_invoice": declared}
-            if change is not None
-            else None
-        )
 
     async def save(self, raw: str, body: NoteSaveRequest, user, context) -> NoteSaveResponse:
         parsed = parse(raw, self.settings.station_code_pattern)
@@ -167,6 +111,7 @@ class BookingWrites:
                 self.cache.invalidate(identifier)
                 self.index.update(key_entry, changed_group)
                 if new_write:
+                    self.invoice_service.report_cache.clear()
                     self.ws_manager.saved(
                         user.id, user.session_id, booking_event, notification_event
                     )
@@ -374,7 +319,23 @@ class BookingWrites:
                                             ),
                                         },
                                     )
-                        change = await self.invoices(session, booking, body.invoices, live, status)
+                        invoice_result = (
+                            await self.invoice_service.apply_changes(
+                                session, booking, live, body.invoices, context=context
+                            )
+                            if body.invoices is not None
+                            else None
+                        )
+                        if status.invoice_required and booking.invoice_state == "unknown":
+                            raise ApiException(ErrorCode.INVOICE_REQUIRED)
+                        change = (
+                            {
+                                name: invoice_result[name]
+                                for name in ("added", "removed", "no_invoice")
+                            }
+                            if invoice_result
+                            else None
+                        )
                         note = BookingNote(
                             booking_id=booking.id,
                             agent_id=user.id,
@@ -428,6 +389,13 @@ class BookingWrites:
                         previews = await invoice_previews(session, [booking.id])
                         snapshot = snapshot_from_row(row, self.settings, previews.get(booking.id))
                         result = NoteSaveResponse(
+                            invoices=await invoice_items(session, booking.id)
+                            if booking.invoice_count
+                            else [],
+                            skipped_duplicates=invoice_result["skipped_duplicates"]
+                            if invoice_result
+                            else [],
+                            warnings=invoice_result["warnings"] if invoice_result else [],
                             my_watching=await session.get(BookingWatcher, (booking.id, user.id))
                             is not None,
                             snapshot=BookingSnapshot.model_validate(
@@ -459,6 +427,8 @@ class BookingWrites:
                             cw_number=parsed.cw_number,
                             station_code=parsed.station_code,
                             version=snapshot.version,
+                            invoice_state=snapshot.invoice_state,
+                            invoice_count=snapshot.invoice_count,
                             last_agent_id=live.id,
                             last_agent_name=live.full_name,
                             status_code=status.code,

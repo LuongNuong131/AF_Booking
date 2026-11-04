@@ -10,7 +10,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.core.errors import ApiException
 from app.core.unit_of_work import transaction
-from app.models import Booking, BookingGroup, BookingNote, IntegrityRun, Status
+from app.models import Booking, BookingGroup, BookingInvoice, BookingNote, IntegrityRun, Status
 from app.schemas.contracts import ErrorCode
 from app.schemas.integrity import (
     IntegrityDetails,
@@ -51,7 +51,15 @@ def batch_query(after, high_water, size=1000):
         .group_by(BookingNote.booking_id)
         .subquery()
     )
+    invoices = (
+        select(BookingInvoice.booking_id, func.count().label("actual_invoice_count"))
+        .join(batch, batch.c.id == BookingInvoice.booking_id)
+        .group_by(BookingInvoice.booking_id)
+        .subquery()
+    )
     names = (
+        "invoice_state",
+        "invoice_count",
         "last_note_id",
         "last_agent_id",
         "last_status_id",
@@ -65,6 +73,7 @@ def batch_query(after, high_water, size=1000):
             Booking.id,
             Booking.booking_key,
             *[getattr(Booking, field) for field in names],
+            func.coalesce(invoices.c.actual_invoice_count, 0).label("actual_invoice_count"),
             BookingNote.id.label("expected_id"),
             BookingNote.agent_id,
             BookingNote.status_id,
@@ -75,6 +84,7 @@ def batch_query(after, high_water, size=1000):
             Status.is_done.label("expected_done"),
         )
         .join(batch, batch.c.id == Booking.id)
+        .outerjoin(invoices, invoices.c.booking_id == Booking.id)
         .outerjoin(latest, latest.c.booking_id == Booking.id)
         .outerjoin(BookingNote, BookingNote.id == latest.c.note_id)
         .outerjoin(Status, Status.id == BookingNote.status_id)
@@ -83,7 +93,7 @@ def batch_query(after, high_water, size=1000):
 
 
 def derive(row):
-    return note_snapshot(
+    values = note_snapshot(
         row.expected_id,
         row.agent_id,
         row.status_id,
@@ -92,6 +102,16 @@ def derive(row):
         row.note,
         row.expected_done,
     )
+    if hasattr(row, "actual_invoice_count"):
+        values.update(
+            invoice_count=row.actual_invoice_count,
+            invoice_state="has_invoice"
+            if row.actual_invoice_count
+            else "no_invoice"
+            if row.invoice_state == "no_invoice"
+            else "unknown",
+        )
+    return values
 
 
 def difference(actual, expected):
@@ -299,6 +319,7 @@ class IntegrityService:
                 self.admin.writes.cache.invalidate(identifier)
                 self.admin.writes.index.update(entry, folder)
                 self.admin.reports.invalidate()
+                self.admin.writes.invoice_service.report_cache.clear()
                 self.admin.ws.spawn(self.admin.ws.broadcast("booking.updated", event))
 
         async with self.tx(after_commit=committed) as session:
@@ -336,13 +357,27 @@ class IntegrityService:
                 note.note if note else None,
                 latest.is_done if latest else False,
             )
+            count = await session.scalar(
+                select(func.count())
+                .select_from(BookingInvoice)
+                .where(BookingInvoice.booking_id == identifier)
+            )
+            expected.update(
+                invoice_count=count,
+                invoice_state="has_invoice"
+                if count
+                else "no_invoice"
+                if book.invoice_state == "no_invoice"
+                else "unknown",
+            )
             changed = difference(book, expected)
             if not changed:
                 return False
             apply_snapshot(book, expected)
             book.version += 1
             flag_modified(book, "updated_at")  # Explicitly bind unchanged operational time.
-            book.stale_notified_at = None
+            if set(changed) - {"invoice_count", "invoice_state"}:
+                book.stale_notified_at = None
             await session.execute(
                 update(IntegrityRun)
                 .where(IntegrityRun.id == run_id)
@@ -375,6 +410,8 @@ class IntegrityService:
                 updated_at=book.updated_at,
                 is_done=book.is_done,
                 snapshot_rebuilt=True,
+                invoice_state=book.invoice_state,
+                invoice_count=book.invoice_count,
             ).model_dump(mode="json")
             entry = KeyEntry(
                 book.id,

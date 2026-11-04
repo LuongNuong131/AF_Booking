@@ -5,7 +5,8 @@ const record = (value: unknown): value is Record<string, unknown> =>
   !!value && typeof value === 'object' && !Array.isArray(value)
 const string = (value: unknown): value is string => typeof value === 'string'
 const id = (value: unknown): boolean => Number.isSafeInteger(value) && Number(value) > 0
-const timestamp = (value: unknown): boolean => string(value) && Number.isFinite(Date.parse(value))
+const timestamp = (value: unknown): boolean =>
+  string(value) && Number.isFinite(Date.parse(value))
 function key(data: Record<string, unknown>): boolean {
   if (!string(data.booking_key) || !string(data.display_key)) return false
   const parsed = parseBookingKey(data.booking_key)
@@ -56,6 +57,11 @@ export function parseServerFrame(raw: unknown): WebSocketServerFrame | null {
         (d.status_code === null || string(d.status_code)) &&
         (d.position === null || string(d.position)) &&
         (d.snapshot_rebuilt === undefined || typeof d.snapshot_rebuilt === 'boolean') &&
+        (d.invoice_state === undefined ||
+          ['unknown', 'has_invoice', 'no_invoice'].includes(String(d.invoice_state))) &&
+        (d.invoice_count === undefined ||
+          (Number.isSafeInteger(d.invoice_count) && Number(d.invoice_count) >= 0)) &&
+        (d.change_kind === undefined || ['note', 'invoice'].includes(String(d.change_kind))) &&
         timestamp(d.updated_at) &&
         typeof d.is_done === 'boolean'
       break

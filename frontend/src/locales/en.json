@@ -212,7 +212,9 @@
       "openRow": "Enter",
       "watch": "W",
       "rowTask": "T",
-      "page": "[ / ]"
+      "page": "[ / ]",
+      "invoiceFocus": "Alt+I",
+      "invoiceNone": "Alt+N"
     },
     "task": "Set a reminder for this booking",
     "back": "Back one search level",
@@ -221,7 +223,9 @@
     "openRow": "Open selected booking",
     "watch": "Watch / unwatch selected booking",
     "rowTask": "Task for selected booking",
-    "page": "Previous / next page"
+    "page": "Previous / next page",
+    "invoiceFocus": "Focus invoice input",
+    "invoiceNone": "Toggle No invoice Number"
   },
   "boundary": {
     "title": "This section could not be loaded.",
@@ -359,7 +363,8 @@
     "periodConflict": "The selected month does not match the booking number.",
     "filteredUpdate": "An updated booking no longer matches these filters. Refresh to fill the page.",
     "savingDraft": "Saving draft…",
-    "draftFailed": "Your browser could not update this draft. Keep a copy of your note before leaving."
+    "draftFailed": "Your browser could not update this draft. Keep a copy of your note before leaving.",
+    "invoice": "Invoice"
   },
   "taskUi": {
     "task": "Task",
@@ -719,5 +724,35 @@
     "disablePush": "Disable background push",
     "pushRebind": "A previous account used this browser subscription. Enable again to create a fresh subscription.",
     "pushFailure": "Push setup could not finish. Please try again."
+  },
+  "invoiceUi": {
+    "count": "{n} invoice(s)",
+    "noInvoiceCleared": "No invoice Number cleared",
+    "remove": "Remove invoice {number}",
+    "removeConfirm": "Remove invoice {number}?",
+    "copied": "Invoice number copied.",
+    "copyFailed": "Could not copy the invoice number.",
+    "save": "Save invoices",
+    "filter": "Invoice",
+    "all": "All",
+    "has": "Has invoice",
+    "notDeclared": "Not declared",
+    "report": "Invoices",
+    "reportHint": "Reconcile booking and invoice totals by booking period.",
+    "period": "Invoice period",
+    "bookings": "Bookings",
+    "with_invoice": "With invoice",
+    "no_invoice": "No invoice Number",
+    "not_declared": "Not declared",
+    "invoice_total": "Total invoices",
+    "multi_invoice_bookings": "Multiple invoices",
+    "avg_per_booking": "Average per booking",
+    "max_per_booking": "Maximum per booking",
+    "distribution": "Invoices per booking",
+    "exportXlsx": "Export invoices (Excel)",
+    "exportCsv": "Export invoices (CSV)",
+    "load": "Load invoices",
+    "doneNotDeclared": "Done bookings with invoices not declared",
+    "matched": "Matching invoice: {number}"
   }
 }

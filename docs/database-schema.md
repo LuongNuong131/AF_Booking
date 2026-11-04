@@ -157,3 +157,11 @@ final/provisional JSON snapshots (including internal frozen export source), whil
 push_subscriptions uses an ASCII-unique endpoint plus user/current-session binding.
 The optional MySQL ngram FULLTEXT index is separate DDL and explicitly excluded from
 mandatory Alembic drift removal; it is not installed on TiDB. See operations-pwa.md.
+
+
+Prompt 8F head **0007** retains 16 tables. It adds ASCII binary
+booking_invoices.invoice_number_normalized, unique (booking_id, normalized),
+normalized-number/created-time indexes and bookings (period, invoice_state) /
+(invoice_state, is_done, updated_at) indexes; invoice_count becomes unsigned SMALLINT.
+Earlier invoice/status/note columns already exist and are preserved. Upgrade,
+rollback and the four EXPLAIN cases are documented in [invoices.md](invoices.md).

@@ -23,11 +23,11 @@ export type AuditEntry = { "id": number; "user": AgentSummary | null; "action": 
 
 export type BookingItem = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "period": string; "period_label": string; "supplier": SupplierSummary; "version": number; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "last_note_preview": string | null; "is_done": boolean; "done_at": string | null; "updated_at": string; "is_stale": boolean; "invoice_state": InvoiceState; "invoice_count": number; "invoices_preview": Array<string>; "supplier_name": string; "supplier_type": SupplierType; "my_pending_tasks"?: number; "my_watching"?: boolean; "stale_hours"?: number | null }
 
-export type BookingLookup = { "booking_key": string | null; "display_key": string | null; "exists": boolean; "version": number; "resolution": KeyResolution; "format_warning"?: string | null; "done_warning"?: string | null; "snapshot"?: BookingItem | null; "group"?: GroupInfo | null; "group_exists"?: boolean; "suggestions"?: Array<Suggestion>; "my_tasks"?: Array<Task>; "history": CursorPage_Note_ }
+export type BookingLookup = { "booking_key": string | null; "display_key": string | null; "exists": boolean; "version": number; "resolution": KeyResolution; "format_warning"?: string | null; "done_warning"?: string | null; "snapshot"?: BookingItem | null; "group"?: GroupInfo | null; "group_exists"?: boolean; "suggestions"?: Array<Suggestion>; "my_tasks"?: Array<Task>; "invoices"?: Array<Invoice>; "invoice_rules"?: { [key: string]: string | number }; "history": CursorPage_Note_ }
 
 export type BookingSnapshot = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "period": string; "period_label": string; "supplier": SupplierSummary; "version": number; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "last_note_preview": string | null; "is_done": boolean; "done_at": string | null; "updated_at": string; "is_stale": boolean; "invoice_state": InvoiceState; "invoice_count": number; "invoices_preview": Array<string> }
 
-export type BookingUpdatedData = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "version": number; "last_agent_id": number | null; "last_agent_name": string | null; "status_code": string | null; "position": string | null; "snapshot_rebuilt"?: boolean; "updated_at": string; "is_done": boolean }
+export type BookingUpdatedData = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "version": number; "invoice_state"?: InvoiceState; "invoice_count"?: number; "change_kind"?: "note" | "invoice"; "last_agent_id": number | null; "last_agent_name": string | null; "status_code": string | null; "position": string | null; "snapshot_rebuilt"?: boolean; "updated_at": string; "is_done": boolean }
 
 export type BookingUpdatedFrame = { "event": "booking.updated"; "data": BookingUpdatedData }
 
@@ -45,9 +45,9 @@ export type CursorPage_Note_ = { "items": Array<Note>; "next_cursor": string | n
 
 export type DailyAgent = { "id": number; "full_name": string; "note_count": number; "done_count": number }
 
-export type DailyBooking = { "booking_key": string; "display_key": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string; "status": StatusSummary | null; "agent": AgentSummary | null; "updated_at": string; "note_count"?: number }
+export type DailyBooking = { "booking_key": string; "display_key": string; "invoice_state"?: InvoiceState; "invoice_count"?: number; "invoices_preview"?: Array<string>; "supplier_name": string; "supplier_type": SupplierType; "station_code": string; "status": StatusSummary | null; "agent": AgentSummary | null; "updated_at": string; "note_count"?: number }
 
-export type DailyReportDTO = { "report_date": string; "provisional"?: boolean; "timezone": string; "generated_at": string; "cutoff_at": string; "note_count": number; "new_booking_count": number; "done_count": number; "overdue_task_count": number; "status_distribution": Array<DailyStatusCount>; "agents": Array<DailyAgent>; "stations": Array<DailyStation>; "stale": Array<DailyBooking>; "open_rejection_parking": Array<DailyBooking>; "repeated": Array<DailyBooking> }
+export type DailyReportDTO = { "report_date": string; "provisional"?: boolean; "timezone": string; "generated_at": string; "cutoff_at": string; "note_count": number; "new_booking_count": number; "done_count": number; "overdue_task_count": number; "status_distribution": Array<DailyStatusCount>; "agents": Array<DailyAgent>; "stations": Array<DailyStation>; "stale": Array<DailyBooking>; "open_rejection_parking": Array<DailyBooking>; "repeated": Array<DailyBooking>; "done_not_declared"?: Array<DailyBooking> }
 
 export type DailyStation = { "station_code": string; "supplier_type": SupplierType; "note_count": number; "done_count": number }
 
@@ -97,7 +97,19 @@ export type Invoice = { "id": number; "invoice_number": string; "added_by": Agen
 
 export type InvoiceChange = { "add"?: Array<string>; "remove_ids"?: Array<number>; "no_invoice"?: boolean }
 
+export type InvoiceDistribution = { "invoices": string; "bookings": number }
+
+export type InvoiceList = { "invoice_state": InvoiceState; "items": Array<Invoice>; "number_pattern": string; "max_per_booking": number }
+
+export type InvoiceReport = { "period": string; "period_label": string; "bookings": number; "with_invoice": number; "no_invoice": number; "not_declared": number; "invoice_total": number; "multi_invoice_bookings": number; "avg_per_booking": number; "max_per_booking": number; "distribution": Array<InvoiceDistribution> }
+
+export type InvoiceResult = { "snapshot": BookingSnapshot; "invoices": Array<Invoice>; "skipped_duplicates": Array<string>; "warnings": Array<InvoiceWarning> }
+
+export type InvoiceSearchItem = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "period": string; "period_label": string; "supplier": SupplierSummary; "version": number; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "last_note_preview": string | null; "is_done": boolean; "done_at": string | null; "updated_at": string; "is_stale": boolean; "invoice_state": InvoiceState; "invoice_count": number; "invoices_preview": Array<string>; "supplier_name": string; "supplier_type": SupplierType; "my_pending_tasks"?: number; "my_watching"?: boolean; "stale_hours"?: number | null; "matched_invoice": string }
+
 export type InvoiceState = "unknown" | "has_invoice" | "no_invoice"
+
+export type InvoiceWarning = { "invoice_number": string; "booking_keys": Array<string> }
 
 export type JobMetrics = { "name": string; "running": boolean; "last_started_at": string | null; "last_finished_at": string | null; "duration_ms": number | null; "last_error": string | null }
 
@@ -141,7 +153,7 @@ export type NoteInvoiceChange = { "added": Array<string>; "removed": Array<strin
 
 export type NoteSaveRequest = { "status_code": string; "note": string | null; "expected_version": number; "client_request_id": string; "confirm_new"?: boolean; "allow_duplicate"?: boolean; "assign_to"?: number | null; "assign_message"?: string | null; "invoices"?: InvoiceChange | null; "supplier_name"?: string | null; "supplier_type"?: SupplierType | null }
 
-export type NoteSaveResponse = { "my_watching"?: boolean; "snapshot": BookingSnapshot; "note": Note }
+export type NoteSaveResponse = { "invoices"?: Array<Invoice> | null; "skipped_duplicates"?: Array<string>; "warnings"?: Array<InvoiceWarning>; "my_watching"?: boolean; "snapshot": BookingSnapshot; "note": Note }
 
 export type NoteSearchHit = { "booking_key": string; "display_key": string; "note_id": number; "note": string | null; "agent": AgentSummary; "status": StatusSummary; "position": string; "created_at": string; "match_count": number; "supplier_name": string; "station_code": string; "supplier_type": SupplierType }
 
@@ -193,13 +205,15 @@ export type SearchFolder = { "folder": FolderCard; "months": Array<MonthRow>; "q
 
 export type SearchFolders = { "query": string; "kind": "folders"; "items": Array<FolderCard>; "total": number; "page": number; "size": number }
 
+export type SearchInvoice = { "query": string; "kind": "invoice"; "items": Array<InvoiceSearchItem>; "total": number; "page": number; "size": number }
+
 export type SearchKind = "booking" | "partial_key" | "folder" | "folders" | "station" | "station_period" | "invoice" | "none"
 
 export type SearchNone = { "query": string; "kind": "none"; "items": Array<FolderCard> }
 
 export type SearchPartial = { "query": string; "kind": "partial_key"; "resolution": KeyResolution }
 
-export type SearchResponse = SearchBooking | SearchPartial | SearchFolder | SearchFolders | SearchStation | SearchStationPeriod | SearchNone
+export type SearchResponse = SearchBooking | SearchPartial | SearchFolder | SearchFolders | SearchStation | SearchStationPeriod | SearchNone | SearchInvoice
 
 export type SearchStation = { "query": string; "kind": "station"; "station": StationInfo; "sections": Array<StationSection>; "total": number; "page": number; "size": number }
 

@@ -200,3 +200,20 @@ notifications of type task_due, assigned or watch_update may additionally enqueu
 minimal Web Push after commit. A connected WebSocket suppresses push, with a second
 check by the worker. This adds no client WebSocket command or note-content payload.
 See operations-pwa.md for VAPID, session ownership, failure and sleeping-server limits.
+
+## Prompt 8F invoice-only updates
+
+Every new booking.updated data object adds invoice_state
+(unknown/has_invoice/no_invoice), invoice_count and change_kind (note/invoice).
+Note saves use note; standalone PUT /bookings/{key}/invoices uses invoice. The event
+retains the actual last agent/status/position/Done and operational updated_at.
+No notification, task event, assignment completion or takeover accompanies an
+invoice-only PUT. Clients must not infer note creation from a version increase.
+Snapshot rebuild events also carry current invoice state/count. Numeric values,
+authors and duplicate warnings remain in authorized HTTP responses, not the frame.
+
+The existing 100 ms coalescer still keeps the highest version per key. Hydrate only
+the affected row/workspace to obtain updated invoice previews/full objects; patch
+open MonthRow state/count without changing folder activity or stale/open counts.
+No new client command is added. Frontend parsing accepts omitted extension fields
+for rolling upgrades and validates their values when supplied.

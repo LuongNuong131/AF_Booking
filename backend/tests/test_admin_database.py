@@ -185,13 +185,13 @@ async def test_daily_export_timezone_columns_injection_formats_and_acl(rig):
     assert (
         rows[1][0].startswith("03 Nov 2026 00:15:00 +0700")
         and rows[1][2] == "CW 2154654-RDU-2609"
-        and rows[1][-1] == "'=1+1"
+        and rows[1][8] == "'=1+1"
     )
     xlsx = await rig.get("/export/daily", user="admin", date="2026-11-03", format="xlsx")
     workbook = load_workbook(io.BytesIO(xlsx.content), read_only=True)
     excel = list(workbook.active.values)
     workbook.close()
-    assert tuple(excel[0]) == COLUMNS and excel[1][-1] == "'=1+1"
+    assert tuple(excel[0]) == COLUMNS and excel[1][8] == "'=1+1"
     assert (await rig.get("/export/daily", date="2026-11-03", format="csv")).status_code == 403
     assert (
         len(

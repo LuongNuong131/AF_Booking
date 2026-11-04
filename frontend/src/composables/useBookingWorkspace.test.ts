@@ -377,7 +377,10 @@ it('does not resurrect a moderated note from an older committed UUID replay', as
 
 it('restores a duplicate note for confirmation and sends only an explicit override', async () => {
   vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })
-  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const config = {
+    method: 'post',
+    headers: new AxiosHeaders(),
+  } as InternalAxiosRequestConfig
   const post = vi
     .spyOn(api, 'post')
     .mockRejectedValueOnce(
@@ -406,7 +409,10 @@ it('restores a duplicate note for confirmation and sends only an explicit overri
   w.duplicate.value = false
   expect(await w.save(true)).toBe(true)
   await vi.waitFor(() => expect(post).toHaveBeenCalledTimes(2))
-  expect(post.mock.calls[1]?.[1]).toMatchObject({ allow_duplicate: true, note: 'Repeated message' })
+  expect(post.mock.calls[1]?.[1]).toMatchObject({
+    allow_duplicate: true,
+    note: 'Repeated message',
+  })
   expect((post.mock.calls[1]?.[1] as { client_request_id: string }).client_request_id).not.toBe(
     (post.mock.calls[0]?.[1] as { client_request_id: string }).client_request_id,
   )
@@ -430,7 +436,10 @@ it('persists assignment fields with the draft and durable note payload', async (
   await w.save()
   expect(enqueue).toHaveBeenCalledWith(
     expect.anything(),
-    expect.objectContaining({ assign_to: 5, assign_message: 'Please check tomorrow' }),
+    expect.objectContaining({
+      assign_to: 5,
+      assign_message: 'Please check tomorrow',
+    }),
   )
 })
 
@@ -451,10 +460,47 @@ it('refuses a PWA reload when the current draft cannot be stored', async () => {
   await workspace.open(KEY)
   workspace.statusCode.value = 'BUNDLE'
   workspace.note.value = 'Must not be lost'
-  vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+  vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
     throw new DOMException('Full', 'QuotaExceededError')
   })
   const event = new Event('booking:prepare-reload', { cancelable: true })
   expect(window.dispatchEvent(event)).toBe(false)
   expect(workspace.note.value).toBe('Must not be lost')
+})
+
+it('requires invoice declaration for Done and preserves the invoice chip draft', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })
+  const w = setup()
+  await w.open(KEY)
+  w.statusCode.value = 'DONE'
+  w.note.value = 'Completed'
+  expect(w.canSave.value).toBe(false)
+  w.setInvoiceChange({ add: ['INV100'], no_invoice: false })
+  expect(w.canSave.value).toBe(true)
+  window.dispatchEvent(new Event('booking:prepare-reload', { cancelable: true }))
+  expect(draftStorage(user.id).get(KEY)?.invoice_text).toBe('INV100')
+  w.setInvoiceChange({ add: ['BAD@INVOICE'] })
+  expect(w.canSave.value).toBe(false)
+  w.setInvoiceChange({ add: [], no_invoice: true })
+  expect(w.canSave.value).toBe(true)
+})
+
+it('returns rejected standalone invoice changes without replacing the unfinished note draft', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })
+  const put = vi.spyOn(api, 'put').mockRejectedValue(apiFailure('INVOICE_INVALID', 422))
+  const w = setup()
+  await w.open(KEY)
+  w.statusCode.value = 'BUNDLE'
+  w.note.value = 'Keep this unfinished note'
+  w.setInvoiceChange({ add: ['INV100'], no_invoice: false })
+  w.saveInvoices()
+  await vi.waitFor(() => {
+    expect(w.invoiceText.value).toBe('INV100')
+    expect(w.saveRequest.error.value?.code).toBe('INVOICE_INVALID')
+  })
+  expect(w.note.value).toBe('Keep this unfinished note')
+  expect(w.statusCode.value).toBe('BUNDLE')
+  expect(useOutboxStore().count).toBe(0)
+  expect(w.snapshot.value?.invoice_count).toBe(0)
+  expect(put).toHaveBeenCalledTimes(1)
 })

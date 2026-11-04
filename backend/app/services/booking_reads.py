@@ -39,6 +39,7 @@ from app.utils.booking_key import (
     period_label,
     to_display,
 )
+from app.utils.invoice import normalize as normalize_invoice
 from app.utils.supplier import normalize_supplier_name
 
 SNAPSHOT_COLUMNS = [
@@ -447,6 +448,10 @@ class BookingReads:
             booking_key=resolution.key,
             display_key=resolution.display_key,
             exists=bool(entry),
+            invoice_rules={
+                "number_pattern": self.settings.invoice_number_pattern,
+                "max_per_booking": self.settings.invoice_max_per_booking,
+            },
             version=0,
             resolution=resolution,
             format_warning=warning,
@@ -468,6 +473,9 @@ class BookingReads:
                         is not None
                     }
                 )
+                from app.services.invoice_service import invoice_items
+
+                result.invoices = await invoice_items(session, entry.id)
                 result.history = await note_history(session, entry.id)
                 tasks = (
                     await session.scalars(
@@ -599,7 +607,8 @@ class BookingReads:
             conditions.append(
                 Booking.id.in_(
                     select(BookingInvoice.booking_id).where(
-                        BookingInvoice.invoice_number == filters["invoice"].strip().upper()
+                        BookingInvoice.invoice_number_normalized
+                        == normalize_invoice(filters["invoice"])
                     )
                 )
             )

@@ -1,21 +1,51 @@
 import asyncio
 import csv
 import io
+import json
 import re
 import tempfile
 from zoneinfo import ZoneInfo
 
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.core.unit_of_work import transaction
-from app.models import Booking, BookingGroup, BookingNote, Status, User
+from app.models import Booking, BookingGroup, BookingInvoice, BookingNote, Status, User
 from app.services.audit import record_audit
 from app.services.reports import day_bounds
 from app.utils.booking_key import to_display
+from app.utils.invoice import state_label
 
-COLUMNS = ("Date", "Agent", "Booking", "Supplier", "Station", "Type", "Status", "Position", "Note")
+COLUMNS = (
+    "Date",
+    "Agent",
+    "Booking",
+    "Supplier",
+    "Station",
+    "Type",
+    "Status",
+    "Position",
+    "Note",
+    "Invoice State",
+    "Invoice Numbers",
+)
+
+
+def invoice_numbers_query():
+    return (
+        select(func.json_arrayagg(BookingInvoice.invoice_number))
+        .where(BookingInvoice.booking_id == Booking.id)
+        .correlate(Booking)
+        .scalar_subquery()
+        .label("invoice_numbers")
+    )
+
+
+def invoice_numbers(value):
+    if isinstance(value, str):
+        value = json.loads(value)
+    return sorted(value or [])
 
 
 def safe_cell(value):
@@ -60,6 +90,8 @@ class ExportService:
                 Status.label,
                 BookingNote.position_label,
                 BookingNote.note,
+                Booking.invoice_state,
+                invoice_numbers_query(),
             )
             .join(Booking, Booking.id == BookingNote.booking_id)
             .join(BookingGroup, BookingGroup.id == Booking.group_id)
@@ -92,6 +124,8 @@ class ExportService:
                                 r.label,
                                 r.position_label,
                                 r.note,
+                                state_label(r.invoice_state),
+                                "; ".join(invoice_numbers(r.invoice_numbers)),
                             )
                         ]
                         for r in batch

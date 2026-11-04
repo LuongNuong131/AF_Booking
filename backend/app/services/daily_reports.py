@@ -21,9 +21,16 @@ from app.models import Booking, BookingGroup, BookingNote, BookingTask, DailyRep
 from app.schemas.contracts import ErrorCode
 from app.schemas.operations import DailyBooking, DailyReportDTO
 from app.services.audit import record_audit
-from app.services.exports import COLUMNS, date_text, safe_cell
+from app.services.exports import (
+    COLUMNS,
+    date_text,
+    invoice_numbers,
+    invoice_numbers_query,
+    safe_cell,
+)
 from app.services.reports import day_bounds
 from app.utils.booking_key import to_display
+from app.utils.invoice import state_label
 
 
 def pack_report(payload):
@@ -139,6 +146,9 @@ class DailyReports:
             select(
                 Booking.booking_key,
                 Booking.station_code,
+                Booking.invoice_state,
+                Booking.invoice_count,
+                invoice_numbers_query(),
                 Booking.created_at,
                 BookingGroup.supplier_name,
                 BookingGroup.supplier_type,
@@ -233,6 +243,9 @@ class DailyReports:
                     Booking.booking_key,
                     BookingGroup.supplier_name,
                     Booking.station_code,
+                    Booking.invoice_state,
+                    Booking.invoice_count,
+                    invoice_numbers_query(),
                     BookingGroup.supplier_type,
                     Status.label,
                     BookingNote.position_label,
@@ -261,6 +274,8 @@ class DailyReports:
                                 r.label,
                                 r.position_label,
                                 r.note or "",
+                                state_label(r.invoice_state),
+                                "; ".join(invoice_numbers(r.invoice_numbers)),
                             ]
                         )
                     await asyncio.sleep(0)
@@ -270,7 +285,7 @@ class DailyReports:
                 raise
             finally:
                 await result.close()
-        stale, open_rows, repeated = [], [], []
+        stale, open_rows, repeated, done_not_declared = [], [], [], []
         done_agents, done_stations = {}, {}
         done_count = 0
         for r in rows:
@@ -281,6 +296,9 @@ class DailyReports:
                 pair = (r.station_code, r.supplier_type)
                 done_stations[pair] = done_stations.get(pair, 0) + 1
             dto = DailyBooking(
+                invoice_state=r.invoice_state,
+                invoice_count=r.invoice_count,
+                invoices_preview=invoice_numbers(r.invoice_numbers)[:3],
                 booking_key=r.booking_key,
                 display_key=to_display(r.booking_key),
                 supplier_name=r.supplier_name,
@@ -299,6 +317,8 @@ class DailyReports:
                 stale.append(dto)
             if not r.is_done and r.code in {"REJECTION", "PARKING"}:
                 open_rows.append(dto)
+            if r.is_done and lo <= updated < cutoff and r.invoice_state == "unknown":
+                done_not_declared.append(dto)
             if (r.note_count or 0) >= 3:
                 repeated.append(dto)
         return DailyReportDTO(
@@ -324,6 +344,7 @@ class DailyReports:
             stale=stale,
             open_rejection_parking=open_rows,
             repeated=repeated,
+            done_not_declared=done_not_declared,
         )
 
     async def tick(self):
@@ -435,6 +456,8 @@ class DailyReports:
             async with asyncio.timeout(self.settings.export_timeout_seconds):
                 for index, row in enumerate(report.record_rows):
                     values = list(row)
+                    if len(values) == 9:
+                        values += ["Not declared", ""]  # Immutable pre-8F report source.
                     if self.settings.export_booking_key_style == "display":
                         values[2] = to_display(values[2])
                     records.append([safe_cell(value) for value in values])

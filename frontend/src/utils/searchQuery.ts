@@ -1,6 +1,7 @@
 import { normalizeBookingKey, parseBookingKey } from './bookingKey'
 
 export type QueryKind =
+  | 'invoice'
   | 'full_key'
   | 'partial_key'
   | 'cw_number'
@@ -31,6 +32,7 @@ export function classifyQuery(
 ): ClassifiedQuery {
   const query = normalizeSearch(raw)
   if (!query || raw.length > 100) return { kind: 'none', query }
+  if (query.startsWith('INV:') || query.startsWith('#')) return { kind: 'invoice', query }
   const parsed = parseBookingKey(raw, stationPattern)
   if (parsed)
     return {

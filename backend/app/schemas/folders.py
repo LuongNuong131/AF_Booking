@@ -79,6 +79,18 @@ class SearchStationPeriod(SearchBase):
     size: int
 
 
+class InvoiceSearchItem(BookingItem):
+    matched_invoice: str
+
+
+class SearchInvoice(SearchBase):
+    kind: Literal["invoice"] = "invoice"
+    items: list[InvoiceSearchItem]
+    total: int
+    page: int
+    size: int
+
+
 class SearchNone(SearchBase):
     kind: Literal["none"] = "none"
     items: list[FolderCard] = Field(default_factory=list, max_length=0)
@@ -91,10 +103,12 @@ SearchResponse = Annotated[
     | SearchFolders
     | SearchStation
     | SearchStationPeriod
-    | SearchNone,
+    | SearchNone
+    | SearchInvoice,
     Field(discriminator="kind"),
 ]
 FOLDER_MODELS = (
+    SearchInvoice,
     FolderDetail,
     StationInfo,
     StationOption,

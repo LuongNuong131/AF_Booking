@@ -12,6 +12,7 @@ import type {
   Page,
   Status,
   NoteSaveResponse,
+  InvoiceResult,
 } from '../types/api.generated'
 import { timeouts } from '../config/timeouts'
 
@@ -84,7 +85,10 @@ export const useBookingsStore = defineStore('bookings', () => {
   // Visible lists write back their reconciled rows after realtime hydration.
   // A return navigation can reuse that page without another page query.
   function rememberList(path: string, params: Params, page: Page<BookingItem>) {
-    cache.set(cacheKey(path, params), { at: Date.now(), value: JSON.parse(JSON.stringify(page)) })
+    cache.set(cacheKey(path, params), {
+      at: Date.now(),
+      value: JSON.parse(JSON.stringify(page)),
+    })
     while (cache.size > 50) cache.delete(cache.keys().next().value!)
   }
   async function catalogue(ctx: RequestContext, force = false) {
@@ -179,7 +183,7 @@ export const useBookingsStore = defineStore('bookings', () => {
       supplier_type: snapshot.supplier.type,
     }
   }
-  function committed(result: NoteSaveResponse) {
+  function committed(result: NoteSaveResponse | InvoiceResult) {
     const row = item(result.snapshot)
     observe({
       booking_key: row.booking_key,
@@ -187,6 +191,9 @@ export const useBookingsStore = defineStore('bookings', () => {
       cw_number: row.cw_number,
       station_code: row.station_code,
       version: row.version,
+      invoice_state: row.invoice_state,
+      invoice_count: row.invoice_count,
+      change_kind: 'note' in result ? 'note' : 'invoice',
       last_agent_id: row.last_agent?.id ?? null,
       last_agent_name: row.last_agent?.full_name ?? null,
       status_code: row.last_status?.code ?? null,
@@ -211,10 +218,17 @@ export const useBookingsStore = defineStore('bookings', () => {
             supplier_name: row.supplier.name,
             supplier_type: row.supplier.type,
           },
-          history: {
-            ...saved.history,
-            items: [result.note, ...saved.history.items.filter((n) => n.id !== result.note.id)],
-          },
+          invoices: result.invoices ?? saved.invoices,
+          history:
+            'note' in result
+              ? {
+                  ...saved.history,
+                  items: [
+                    result.note,
+                    ...saved.history.items.filter((n) => n.id !== result.note.id),
+                  ],
+                }
+              : saved.history,
         },
       })
   }
