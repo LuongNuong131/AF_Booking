@@ -25,6 +25,7 @@ def effective_settings(settings, business_timezone):
     values = {
         "timezone": business_timezone,
         "default_remind_time": "09:00",
+        "auto_watch_on_note": False,
         "task_sound": False,
         "web_notifications": False,
         "skip_weekends": True,

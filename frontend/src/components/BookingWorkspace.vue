@@ -23,6 +23,8 @@ import type { StationOption } from '../types/api.generated'
 import BookingSummaryCard from './BookingSummaryCard.vue'
 import BookingTimeline from './BookingTimeline.vue'
 import NoteForm from './NoteForm.vue'
+import WatchButton from './WatchButton.vue'
+import AssigneePicker from './AssigneePicker.vue'
 import RequestStatus from './RequestStatus.vue'
 import BaseIcon from './BaseIcon.vue'
 const props = defineProps<{ initialKey?: string; detail?: boolean }>()
@@ -458,7 +460,11 @@ defineExpose({
             {{ t('confirm_new') }}
           </button>
         </aside>
-        <BookingSummaryCard :booking="w.current" @supplier-updated="w.refresh" />
+        <BookingSummaryCard :booking="w.current" @supplier-updated="w.refresh" /><WatchButton
+          v-if="w.current?.exists && w.key"
+          :booking-key="w.key"
+          :watching="w.snapshot?.my_watching"
+        />
         <BookingTimeline
           :notes="w.notes"
           :cursor="w.cursor"
@@ -489,7 +495,8 @@ defineExpose({
             @discard="w.discardDraft"
             @engage="w.engage"
             ><template #fields
-              ><section v-if="w.showInvoice" class="invoice-declaration">
+              ><AssigneePicker v-model="w.assignTo" v-model:message="w.assignMessage" />
+              <section v-if="w.showInvoice" class="invoice-declaration">
                 <label class="field-label" for="note-invoices">{{ t('invoice_label') }}</label
                 ><textarea
                   :aria-invalid="!!w.invalidInvoice"

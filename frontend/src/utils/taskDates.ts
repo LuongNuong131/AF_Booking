@@ -6,6 +6,7 @@ export interface ReminderPreferences {
   task_sound: boolean
   web_notifications: boolean
   skip_weekends: boolean
+  auto_watch_on_note?: boolean
 }
 export function reminderPreferences(value: unknown): ReminderPreferences {
   const settings = value && typeof value === 'object' ? (value as Record<string, unknown>) : {}
@@ -16,6 +17,7 @@ export function reminderPreferences(value: unknown): ReminderPreferences {
       /^([01]\d|2[0-3]):[0-5]\d$/.test(settings.default_remind_time)
         ? settings.default_remind_time
         : '09:00',
+    auto_watch_on_note: settings.auto_watch_on_note === true,
     task_sound: settings.task_sound === true,
     web_notifications: settings.web_notifications === true,
     skip_weekends: settings.skip_weekends !== false,

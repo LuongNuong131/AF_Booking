@@ -8,6 +8,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from app.api.v1.admin import router as admin_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.bookings import router as bookings_router
+from app.api.v1.collaboration import router as collaboration_router
 from app.api.v1.folders import router as folders_router
 from app.api.v1.health import HealthResponse, health
 from app.api.v1.health import router as health_router
@@ -24,6 +25,7 @@ from app.services.admin import AdminService
 from app.services.auth import AuthService
 from app.services.booking_reads import BookingReads
 from app.services.booking_writes import BookingWrites
+from app.services.collaboration import CollaborationService
 from app.services.exports import ExportService
 from app.services.folders import FolderService
 from app.services.integrity import IntegrityService
@@ -80,6 +82,10 @@ def create_app(
         application.state.booking_writes = BookingWrites(
             application.state.engine, config, index, cache, application.state.ws_manager
         )
+        application.state.collaboration = CollaborationService(
+            application.state.engine, config, application.state.bookings, ws_manager
+        )
+        application.state.booking_writes.collaboration = application.state.collaboration
         application.state.folders = FolderService(
             application.state.engine, config, index, application.state.bookings, stations
         )
@@ -175,6 +181,7 @@ def create_app(
     application.include_router(realtime_router, prefix="/api/v1")
     application.include_router(tasks_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
+    application.include_router(collaboration_router, prefix="/api/v1")
     return application
 
 

@@ -84,6 +84,7 @@ class BackendListener:
         "admin.mjs",
         "outbox.mjs",
         "safeguards.mjs",
+        "collaboration.mjs",
     ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(

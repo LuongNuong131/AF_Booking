@@ -2,7 +2,7 @@
 
 This document records the user's shared contract for all implementation prompts. Paths, JSON field names, and error codes must not change silently. Update this file and the wire models together if an approved change is needed.
 
-**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Prompt 7B adds private task mutations, due jobs/events and profile reminder preferences. Prompt 7C adds folder stale counts and the smart folder UI. Later-prompt endpoints remain reserved.
+**Implementation status:** probes/auth and Prompt 4 booking lookup, notes, lists, status catalogue, notifications, and Admin/QC supplier-folder edits are implemented. Attachments intentionally return 501 through NullStorage. Prompt 4B additionally implements search, folder lists/detail, station autocomplete and Admin station naming. Prompt 5 implements WebSocket updates/soft locks/private notifications/session logout and stale reminder jobs. Prompt 7B adds private task mutations, due jobs/events and profile reminder preferences. Prompt 7C adds folder stale counts and the smart folder UI. Prompt 8D implements watch, assignments, the rate-limited active-user directory and collaboration UI. Later-prompt endpoints remain reserved.
 
 ## Common conventions
 
@@ -211,14 +211,14 @@ Supplier labels are `Hotel` and `Transportation`. Standard status labels are `Do
 These envelopes clarify fields that Prompt 1B left implicit; existing shared DTO fields and error codes retain their names.
 
 - `GET /bookings/lookup` returns `{booking_key,display_key,exists,version,resolution,format_warning,done_warning,snapshot,group,group_exists,suggestions,my_tasks,history}`. `history` is `{items:Note[],next_cursor}`. A missing/unresolved booking has `snapshot:null`, `version:0` and empty history/tasks; unresolved keys are null. `group` is null or `{cw_number,supplier_name,supplier_type,station_code}`. Partial input never writes. Missing full keys return `resolution.status:"exact"` but `exists:false`. Invalid input returns HTTP 200 with `resolution.status:"invalid"` and a warning; an existing malformed legacy key can be read but never written through note creation.
-- `snapshot` in lookup/detail and list items use `BookingItem`: all `BookingSnapshot` fields plus flat `supplier_name`, `supplier_type`, `my_pending_tasks` (default 0), and `stale_hours` (null unless stale). The task count is populated for list pages; lookup uses its private `my_tasks` array. Done warnings appear only when the last agent is another user. `GET /bookings/{key}` returns the same envelope, or 404 when absent.
-- `POST /bookings/{key}/notes` returns HTTP 200 `{snapshot:BookingSnapshot,note:Note}`, including on first creation and replay. A new booking requires `expected_version:0`. Existing version conflicts return the latest snapshot directly in `details`; if no booking exists yet, details is `{snapshot:null,version:0}`. Only canonical full paths can save; a normalized spelling is returned as `details.suggested_key` for noncanonical full input. Partial paths return `STATION_REQUIRED`, including a suggestion when the folder exists.
+- `snapshot` in lookup/detail and list items use `BookingItem`: all `BookingSnapshot` fields plus flat `supplier_name`, `supplier_type`, `my_pending_tasks` (default 0), private `my_watching` (default false), and `stale_hours` (null unless stale). The task count is populated for list pages; lookup uses its private `my_tasks` array. Done warnings appear only when the last agent is another user. `GET /bookings/{key}` returns the same envelope, or 404 when absent.
+- `POST /bookings/{key}/notes` returns HTTP 200 `{snapshot:BookingSnapshot,note:Note,my_watching:boolean}`, including on first creation and replay. A new booking requires `expected_version:0`. Existing version conflicts return the latest snapshot directly in `details`; if no booking exists yet, details is `{snapshot:null,version:0}`. Only canonical full paths can save; a normalized spelling is returned as `details.suggested_key` for noncanonical full input. Partial paths return `STATION_REQUIRED`, including a suggestion when the folder exists.
 - `client_request_id` is a required UUID. The normalized request (including actor and canonical key) is fingerprinted. An identical retry returns the original committed response, even after newer notes, supplier edits, or a lost HTTP response. Reusing a UUID for another payload/user/key returns 422 `VALIDATION_ERROR`. This is not a mechanism for editing an existing note.
 - Notes are at most 5,000 input characters. Control/format characters are removed; CRLF becomes LF and line breaks/tabs are retained. Whitespace-only notes fail when required. A new folder requires a cleaned 3–255-character supplier name and supplier type. Existing-folder supplier fields are ignored. Station mismatch includes `expected_station`, `suggested_key`, `display_key`.
 - Inline `invoices` accepts the shared `InvoiceChange`, validates/uppercases/deduplicates numbers, enforces the 20-number limit and owner/QC/Admin removal, maintains invoice state/count and records the change in the note. DONE's `invoice_required` guard is active. Cross-booking duplicate warnings and independent invoice APIs/reports remain for Prompt 8F.
-- Prompt 8C implements near-key suggestions plus the `confirm_new` / `allow_duplicate` guards; see the explicit implementation contract below. `assign_to` / `assign_message` return `ASSIGNMENT_INVALID` until Prompt 8D; requests are never silently treated as assigned.
+- Prompt 8C implements near-key suggestions plus the `confirm_new` / `allow_duplicate` guards; see the explicit implementation contract below. Prompt 8D activates `assign_to` / `assign_message` with atomic assignment creation and recipient checks.
 - Overall list adds `cw_number`, `station_code`, `supplier_type`, `period`, and `supplier` filters from Prompt 4. `q` matches a normalized booking-key prefix; supplier matches a normalized name prefix. `invoice` is an exact normalized invoice match. Dates must include a timezone and filter `updated_at` inclusively. Sort values are `updated_at_desc` (default) and `updated_at_asc`, with matching ID tie breakers. Pages are 1-based, sizes 1–100. Mine defaults to 10 and overall/stale to 20. Stale scope defaults to `mine`; Done is always excluded, thresholds are status-specific or 24 hours, and order is oldest activity first.
-- `GET /notifications` returns `{items,unread_count}`; items include `id,type,booking_key,display_key,by_agent,note_id,task_id,created_at,read_at`. Read/read-all return `{ok:true}`. Another owner's notification is 404.
+- `GET /notifications` returns `{items,unread_count}`; items include `id,type,booking_key,display_key,by_agent,note_id,task_id,created_at,read_at,merged_count`. Read/read-all return `{ok:true}`. Another owner's notification is 404.
 - `GET /statuses` returns active `Status[]` ordered by `sort_order,id`. `PATCH /folders/{cw}` accepts supplier name/type and returns `group` fields directly; Admin/QC only. This single folder operation is implemented early to keep index/cache edits correct.
 - `POST /notes/{id}/attachments` authenticates and checks note ownership (QC/Admin also allowed), then uses `NullStorage`. It intentionally returns **501 with code `INTERNAL`**, preserving the supplied error-code catalogue; a real provider/upload parser and download endpoint remain unimplemented. Another user's note is 404. Future upload limits: image/PDF, 5 MB each, 5 per note.
 - Lookup/detail expose `Server-Timing: key_index;dur=..., snapshot;dur=..., notes;dur=...`; browser CORS permits it. Default/lookup/save/export route budgets are 8/6/12/55 seconds. A timeout returns 504, pool/row-lock exhaustion returns 503 with `Retry-After: 5`. Daily export uses the 55-second override in Prompt 8.
@@ -454,3 +454,38 @@ integrity_runs; prior migrations are unchanged. Rejection/Parking receive assume
 3/2-day defaults when null, preserving other configured values. See
 [safeguards-integrity.md](safeguards-integrity.md) for scheduling, MAX-ID semantics,
 cancellation, UI confirmations and measured scan/API latency.
+
+
+## Collaboration — Prompt 8D
+
+The reserved Watch/Assignment endpoints above are now implemented. Migration **0005**
+adds watchers/assignments, merged_count and generated unique guards without modifying
+old migrations. Full behavior, limits, ownership, defaults and wire extensions:
+[collaboration.md](collaboration.md).
+
+- PUT/DELETE `/bookings/{key}/watch` → `{watching:boolean}`; GET `/watching` →
+  Page<BookingItem>. Default page/size 1/10; explicit additions above 200 return
+  WATCH_LIMIT_REACHED. Missing/malformed bookings retain NOT_FOUND/INVALID_BOOKING_KEY.
+- NoteSaveRequest accepts positive assign_to and optional assign_message<=255;
+  self/inactive/missing/open-duplicate recipients return ASSIGNMENT_INVALID.
+  Creation and recipient-note automatic completion are atomic with the note.
+- GET `/assignments?view=to_me|from_me&status=open|done|declined&page&size=10`
+  defaults to to_me/open. Returns Page<AssignmentItem>: id,note_id,booking_key,
+  display_key,from_user,to_user,message,status,created_at,resolved_at,decline_reason.
+  Each user object contains only id/full_name. POST `/assignments/{id}/complete`
+  and `/decline {reason:string(1..255)}` return AssignmentItem, recipient only,
+  404 for other callers. Repeated same outcome is idempotent; incompatible outcome
+  after resolution is ASSIGNMENT_INVALID. Decline reason is persisted.
+- GET `/users/lookup?q=&limit=20` remains id/full_name only, active users,
+  q<=100, limit<=50, 120/minute/user, 10-second bounded cache with edit invalidation.
+- `settings.auto_watch_on_note` defaults false and is PATCHable in Profile;
+  automatic subscription is best effort at the 200 cap so the note can still save.
+- BookingItem.my_watching and NoteSaveResponse.my_watching are explicit private
+  additions; shared cached BookingSnapshot does not acquire user state.
+  Original UUID replay retains its original watch flag along with the saved result.
+- NotificationItem/notification.new add merged_count (default 1). Unread watch_update
+  for a user/booking keeps its ID, replaces author/note/time and increments count
+  up to 65,535. Reading frees the merge slot; next note creates a new ID. Previous
+  agent/watch overlap receives taken_over only for that note. Assigned/completed
+  workflow notices remain distinct. No type or existing path was renamed.
+- Note-search command is disabled until Prompt 8E implements its endpoint/view.

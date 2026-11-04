@@ -27,6 +27,7 @@ class BookingItem(BookingSnapshot):
     supplier_name: str
     supplier_type: SupplierType
     my_pending_tasks: int = 0
+    my_watching: bool = False
     stale_hours: float | None = None
 
 
@@ -47,6 +48,7 @@ class BookingLookup(ContractModel):
 
 
 class NoteSaveResponse(ContractModel):
+    my_watching: bool = False
     snapshot: BookingSnapshot
     note: Note
 
@@ -59,6 +61,7 @@ class FolderPatch(ContractModel):
 class NotificationItem(BookingIdentity):
     id: int
     type: NotificationType
+    merged_count: int = 1
     by_agent: AgentSummary | None
     note_id: int | None
     task_id: int | None

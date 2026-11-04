@@ -9,13 +9,44 @@ import { useAuthStore } from '../stores/auth'
 import { formatDateTime } from '../utils/dateTime'
 import type { BookingItem } from '../types/api.generated'
 import TaskButton from './TaskButton.vue'
+import WatchButton from './WatchButton.vue'
+import { ref } from 'vue'
+import { useListNavigation } from '../composables/useListNavigation'
+import { useCollaborationStore } from '../stores/collaboration'
+import { useTasksStore } from '../stores/tasks'
 import StatusTag from './StatusTag.vue'
 import EmptyState from './EmptyState.vue'
 const { t } = useI18n(),
   auth = useAuthStore()
-const props = defineProps<{ rows: BookingItem[]; loading?: boolean }>()
-defineEmits<{ open: [key: string] }>()
-const { list, containerProps } = useVirtualList(toRef(props, 'rows'), {
+const props = defineProps<{
+  rows: BookingItem[]
+  loading?: boolean
+  page?: number
+  total?: number
+  size?: number
+}>()
+const emit = defineEmits<{ open: [key: string]; page: [number] }>()
+const root = ref<HTMLElement | null>(null),
+  collaboration = useCollaborationStore(),
+  tasks = useTasksStore()
+const nav = useListNavigation('booking-table', root, () => props.rows.map((r) => r.booking_key), {
+  open: (i) => emit('open', props.rows[i]!.booking_key),
+  watch: (i) => collaboration.toggle(props.rows[i]!.booking_key, props.rows[i]!.my_watching),
+  task: (i) => tasks.openDialog(props.rows[i]!.booking_key),
+  reveal: (i) => {
+    if (props.rows.length > 50) scrollTo(i)
+  },
+  page: (delta) => {
+    const p = (props.page ?? 1) + delta
+    if (
+      props.page !== undefined &&
+      p >= 1 &&
+      p <= Math.max(1, Math.ceil((props.total ?? 0) / (props.size ?? 20)))
+    )
+      emit('page', p)
+  },
+})
+const { list, containerProps, scrollTo } = useVirtualList(toRef(props, 'rows'), {
   itemHeight: 100,
   overscan: 3,
 })
@@ -31,6 +62,10 @@ function hover(key: string) {
     void import('../views/BookingDetailView.vue')
     void prefetch.run(key)
   }, 150)
+}
+function focused(row: BookingItem) {
+  nav.selected(props.rows.indexOf(row))
+  hover(row.booking_key)
 }
 function leave() {
   clearTimeout(hoverTimer)
@@ -51,6 +86,7 @@ const columns = [
 </script>
 <template>
   <div
+    ref="root"
     class="booking-table-wrap"
     :class="{ 'table-virtual': rows.length > 50 }"
     v-bind="rows.length > 50 ? containerProps : {}"
@@ -88,10 +124,11 @@ const columns = [
         <tr
           v-for="row in shown"
           :key="row.booking_key"
-          v-memo="[row, auth.timezone]"
+          :data-nav-key="row.booking_key"
+          :tabindex="nav.tabindex(rows.indexOf(row))"
           @mouseenter="hover(row.booking_key)"
           @mouseleave="leave"
-          @focusin="hover(row.booking_key)"
+          @focusin="focused(row)"
           @focusout="leave"
           @click="$emit('open', row.booking_key)"
         >
@@ -106,7 +143,11 @@ const columns = [
               :booking-key="row.booking_key"
               :count="row.my_pending_tasks"
               compact
-            /><span v-if="row.is_stale" class="row-stale-label">{{ t('bookingUi.stale') }}</span>
+            /><WatchButton :booking-key="row.booking_key" :watching="row.my_watching" /><span
+              v-if="row.is_stale"
+              class="row-stale-label"
+              >{{ t('bookingUi.stale') }}</span
+            >
           </td>
           <td>{{ row.supplier.name }}</td>
           <td>{{ row.station_code }}</td>

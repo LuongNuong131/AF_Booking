@@ -15,14 +15,14 @@ from app.models import (
     BookingGroup,
     BookingInvoice,
     BookingNote,
-    Notification,
+    BookingWatcher,
     Station,
     Status,
     User,
 )
 from app.schemas.bookings import GroupInfo, NoteSaveResponse
 from app.schemas.contracts import BookingSnapshot, ErrorCode, Note, NoteSaveRequest
-from app.schemas.realtime import BookingUpdatedData, NotificationNewData
+from app.schemas.realtime import BookingUpdatedData
 from app.services.audit import record_audit
 from app.services.auth import AuthService
 from app.services.booking_reads import invoice_previews, snapshot_from_row, snapshot_query
@@ -177,7 +177,6 @@ class BookingWrites:
         async with request_budget(self.settings.note_save_timeout_seconds):
             for attempt in range(2):
                 new_write = False
-                notification_row = None
                 notification_event = None
                 try:
                     async with transaction(
@@ -187,9 +186,19 @@ class BookingWrites:
                         retryable=True,
                         after_commit=committed,
                     ) as session:
-                        live = await session.scalar(
-                            select(User).where(User.id == user.id).with_for_update()
-                        )
+                        ids = sorted({user.id, body.assign_to or user.id})
+                        users = {
+                            r.id: r
+                            for r in (
+                                await session.scalars(
+                                    select(User)
+                                    .where(User.id.in_(ids))
+                                    .order_by(User.id)
+                                    .with_for_update()
+                                )
+                            ).all()
+                        }
+                        live = users.get(user.id)
                         AuthService.require_live_row(live, user)
                         prior = await session.scalar(
                             select(BookingNote).where(
@@ -219,10 +228,17 @@ class BookingWrites:
                                 existing.station_code,
                             )
                             return NoteSaveResponse.model_validate(prior.save_result)
-                        if body.assign_to is not None or body.assign_message is not None:
+                        if body.assign_to is not None:
+                            target = users.get(body.assign_to)
+                            if body.assign_to == user.id or target is None or not target.is_active:
+                                raise ApiException(
+                                    ErrorCode.ASSIGNMENT_INVALID,
+                                    message="Choose another active user.",
+                                )
+                        elif body.assign_message is not None:
                             raise ApiException(
                                 ErrorCode.ASSIGNMENT_INVALID,
-                                message="Assignments are not enabled yet.",
+                                message="Choose an assignee for this message.",
                             )
                         status = await session.scalar(
                             select(Status).where(Status.code == body.status_code).with_for_update()
@@ -389,16 +405,9 @@ class BookingWrites:
                         booking.updated_at, booking.stale_notified_at = now, None
                         booking.version += 1
                         group.last_activity_at, group.updated_at = now, now
-                        if previous_agent and previous_agent != user.id:
-                            notification_row = Notification(
-                                user_id=previous_agent,
-                                booking_id=booking.id,
-                                type="taken_over",
-                                note_id=note.id,
-                                by_agent_id=user.id,
-                                created_at=now,
-                            )
-                            session.add(notification_row)
+                        notification_event = await self.collaboration.note_effects(
+                            session, booking, note, live, body, previous_agent, now
+                        )
                         record_audit(
                             session,
                             "booking_note_created",
@@ -419,12 +428,15 @@ class BookingWrites:
                         previews = await invoice_previews(session, [booking.id])
                         snapshot = snapshot_from_row(row, self.settings, previews.get(booking.id))
                         result = NoteSaveResponse(
+                            my_watching=await session.get(BookingWatcher, (booking.id, user.id))
+                            is not None,
                             snapshot=BookingSnapshot.model_validate(
                                 snapshot.model_dump(
                                     exclude={
                                         "supplier_name",
                                         "supplier_type",
                                         "my_pending_tasks",
+                                        "my_watching",
                                         "stale_hours",
                                     }
                                 )
@@ -454,18 +466,6 @@ class BookingWrites:
                             updated_at=snapshot.updated_at,
                             is_done=snapshot.is_done,
                         ).model_dump(mode="json")
-                        if notification_row is not None:
-                            notification_event = (
-                                previous_agent,
-                                NotificationNewData(
-                                    id=notification_row.id,
-                                    booking_key=parsed.key,
-                                    display_key=parsed.display_key,
-                                    by_agent_name=live.full_name,
-                                    created_at=now,
-                                    type="taken_over",
-                                ).model_dump(mode="json"),
-                            )
                         new_write = True
                         changed_group = group_entry(group)
                         key_entry = KeyEntry(

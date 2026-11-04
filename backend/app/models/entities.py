@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal
 
 from pydantic import JsonValue
-from sqlalchemy import CheckConstraint, Index, UniqueConstraint, text
+from sqlalchemy import CheckConstraint, Computed, Index, UniqueConstraint, text
 from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import Mapped, mapped_column, validates
 
@@ -192,6 +192,7 @@ class Attachment(CreatedAt, Base):
 class Notification(CreatedAt, Base):
     __tablename__ = "notifications"
     __table_args__ = (
+        UniqueConstraint("user_id", "unread_watch_booking", name="uq_notifications_unread_watch"),
         Index("ix_notifications_user_read_created", "user_id", "read_at", "created_at"),
         Index("ix_notifications_booking_id", "booking_id"),
         Index("ix_notifications_task_id", "task_id"),
@@ -213,6 +214,49 @@ class Notification(CreatedAt, Base):
     note_id: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
     by_agent_id: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
     read_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    merged_count: Mapped[int] = mapped_column(mysql.SMALLINT(unsigned=True), server_default="1")
+    unread_watch_booking: Mapped[int | None] = mapped_column(
+        mysql.BIGINT(unsigned=True),
+        Computed(
+            "IF(type = 'watch_update' AND read_at IS NULL, booking_id, NULL)", persisted=False
+        ),
+    )
+
+
+class BookingWatcher(CreatedAt, Base):
+    __tablename__ = "booking_watchers"
+    __table_args__ = (
+        Index("ix_booking_watchers_user_created", "user_id", "created_at"),
+        TABLE_OPTIONS,
+    )
+    booking_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    user_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+
+
+class BookingAssignment(CreatedAt, Base):
+    __tablename__ = "booking_assignments"
+    __table_args__ = (
+        UniqueConstraint("booking_id", "open_to_user_id", name="uq_assignments_open_recipient"),
+        Index("ix_assignments_to_status_created", "to_user_id", "status", "created_at"),
+        Index("ix_assignments_from_status_created", "from_user_id", "status", "created_at"),
+        Index("ix_assignments_booking", "booking_id"),
+        TABLE_OPTIONS,
+    )
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    booking_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    note_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    from_user_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    to_user_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    message: Mapped[str | None] = mapped_column(mysql.VARCHAR(255))
+    status: Mapped[str] = mapped_column(
+        mysql.ENUM("open", "done", "declined"), server_default="open"
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    decline_reason: Mapped[str | None] = mapped_column(mysql.VARCHAR(255))
+    open_to_user_id: Mapped[int | None] = mapped_column(
+        mysql.BIGINT(unsigned=True),
+        Computed("IF(status = 'open', to_user_id, NULL)", persisted=False),
+    )
 
 
 class AuditLog(CreatedAt, Base):

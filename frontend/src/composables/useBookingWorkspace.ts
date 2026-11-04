@@ -16,6 +16,7 @@ import {
   formatBookingKey,
   normalizeBookingKey,
 } from '../utils/bookingKey'
+import { useRecentBookingsStore } from '../stores/recentBookings'
 import { draftStorage } from '../utils/bookingDrafts'
 import { i18n } from '../i18n'
 import type {
@@ -49,6 +50,8 @@ export function useBookingWorkspace() {
     hasDraft = ref(false),
     hasUpdate = ref(false),
     conflict = ref(false)
+  const assignTo = ref<number | null>(null),
+    assignMessage = ref('')
   const invoiceText = ref(''),
     noInvoice = ref(false)
   const draftFailed = ref(false),
@@ -73,7 +76,11 @@ export function useBookingWorkspace() {
       : (current.value?.suggestions ?? []),
   )
   const online = useOnline()
-  const lastSaved = shallowRef<{ key: string; status: string; at: number } | null>(null)
+  const lastSaved = shallowRef<{
+    key: string
+    status: string
+    at: number
+  } | null>(null)
   let lookupInput = '',
     disposed = false
   let generation = 0,
@@ -190,12 +197,20 @@ export function useBookingWorkspace() {
       note.value,
       invoiceText.value,
       noInvoice.value,
+      assignTo.value,
+      assignMessage.value,
     )
     draftPending.value = false
-    hasDraft.value = !!statusCode.value || !!note.value || !!invoiceText.value || noInvoice.value
+    hasDraft.value =
+      !!statusCode.value ||
+      !!note.value ||
+      !!invoiceText.value ||
+      noInvoice.value ||
+      assignTo.value !== null ||
+      !!assignMessage.value
   }
   watch(
-    [statusCode, note, invoiceText, noInvoice],
+    [statusCode, note, invoiceText, noInvoice, assignTo, assignMessage],
     () => {
       if (restoringDraft || !key.value) return
       clearTimeout(draftTimer)
@@ -211,6 +226,8 @@ export function useBookingWorkspace() {
     note.value = saved?.note ?? ''
     invoiceText.value = saved?.invoice_text ?? ''
     noInvoice.value = saved?.no_invoice ?? false
+    assignTo.value = saved?.assign_to ?? null
+    assignMessage.value = saved?.assign_message ?? ''
     draftRestored.value = !!saved
     hasDraft.value = !!saved
     restoringDraft = false
@@ -224,6 +241,8 @@ export function useBookingWorkspace() {
     note.value = ''
     invoiceText.value = ''
     noInvoice.value = false
+    assignTo.value = null
+    assignMessage.value = ''
     restoringDraft = false
     hasDraft.value = false
     draftRestored.value = false
@@ -245,6 +264,7 @@ export function useBookingWorkspace() {
     key.value = value
     input.value = formatBookingKey(value)
     bookings.homeKey = value
+    useRecentBookingsStore().remember(value)
     current.value = result
     resolution.value = null
     notes.value = result.history.items
@@ -299,6 +319,8 @@ export function useBookingWorkspace() {
     note.value = ''
     invoiceText.value = ''
     noInvoice.value = false
+    assignTo.value = null
+    assignMessage.value = ''
     restoringDraft = false
     hasDraft.value = false
     draftRestored.value = false
@@ -379,6 +401,12 @@ export function useBookingWorkspace() {
     const submittedStatus = statusCode.value,
       submittedNote = note.value
     const payloadBase = {
+      ...(assignTo.value !== null
+        ? {
+            assign_to: assignTo.value,
+            assign_message: assignMessage.value.trim() || null,
+          }
+        : {}),
       status_code: submittedStatus,
       note: submittedNote.trim() || null,
       expected_version: current.value?.version ?? 0,
@@ -409,6 +437,8 @@ export function useBookingWorkspace() {
     return true
   }
   function restoreOutgoing(entry: OutgoingNote) {
+    assignTo.value = entry.payload.assign_to ?? null
+    assignMessage.value = entry.payload.assign_message ?? ''
     statusCode.value = entry.payload.status_code
     note.value = entry.payload.note ?? ''
     invoiceText.value = entry.payload.invoices?.add?.join(', ') ?? ''
@@ -447,7 +477,11 @@ export function useBookingWorkspace() {
         void refresh()
         return
       }
-      lastSaved.value = { key: entry.key, status: entry.payload.status_code, at: Date.now() }
+      lastSaved.value = {
+        key: entry.key,
+        status: entry.payload.status_code,
+        at: Date.now(),
+      }
       const item = bookings.item(result.snapshot)
       if (current.value && current.value.version <= item.version)
         current.value = {
@@ -492,6 +526,8 @@ export function useBookingWorkspace() {
     note.value = ''
     invoiceText.value = ''
     noInvoice.value = false
+    assignTo.value = null
+    assignMessage.value = ''
     restoringDraft = false
     validation.value = ''
     hasDraft.value = false
@@ -533,6 +569,8 @@ export function useBookingWorkspace() {
     stopOutbox()
   })
   return {
+    assignTo,
+    assignMessage,
     input,
     newConfirmed,
     suggestions,

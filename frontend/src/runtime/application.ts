@@ -14,6 +14,8 @@ import { useNotificationsStore } from '../stores/notifications'
 import { useBookingsStore } from '../stores/bookings'
 import { useTasksStore } from '../stores/tasks'
 import { useFoldersStore } from '../stores/folders'
+import { useCollaborationStore } from '../stores/collaboration'
+import { useRecentBookingsStore } from '../stores/recentBookings'
 import { i18n } from '../i18n'
 import { installTaskAlerts } from '../composables/useTaskAlerts'
 import { notificationText } from '../utils/notificationText'
@@ -32,6 +34,19 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
     bookings = useBookingsStore(pinia)
   const folders = useFoldersStore(pinia)
   const outbox = useOutboxStore(pinia)
+  const collaboration = useCollaborationStore(pinia),
+    recent = useRecentBookingsStore(pinia)
+  const collaborationStop = outbox.subscribe((entry, result) => {
+    if (result) {
+      void collaboration.acceptNote(
+        entry.key,
+        result.my_watching,
+        entry.note.created_at,
+        entry.attempts > 1,
+      )
+      collaboration.changed()
+    }
+  })
   const bootstrap = useRequest(
     async (ctx) =>
       Promise.all([
@@ -40,6 +55,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
         bookings.list(ctx, '/bookings/mine', { page: 1, size: 10 }),
         tasks.refreshDue(true),
         notifications.refresh(),
+        collaboration.refreshCount(),
       ]),
     { timeoutMs: timeouts.list },
   )
@@ -96,6 +112,9 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
         realtime.bindSender(null)
         realtime.reset()
         notifications.reset()
+        collaboration.reset()
+        recent.reset(token ? auth.user!.id : null)
+        ui.paletteOpen = false
         tasks.reset()
         outbox.stop()
         bootstrap.cancel()
@@ -159,6 +178,8 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
             }
             if (frame.event === 'notification.new') {
               notifications.incoming(frame.data)
+              if (frame.data.type === 'assigned' || frame.data.type === 'assignment_done')
+                collaboration.changed()
               if (frame.data.type === 'task_due') tasks.invalidate()
               ui.notify(notificationText(frame.data))
             }
@@ -185,6 +206,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
       () => {
         if (auth.isAuthenticated) {
           void notifications.refresh()
+          void collaboration.refreshCount()
           if (ui.refreshReason === 'visible') void tasks.refreshDue(true)
         }
       },
@@ -196,6 +218,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
   }
   window.addEventListener('online', online)
   return () => {
+    collaborationStop()
     alerts.stop()
     outbox.stop()
     bootstrap.cancel()
@@ -204,6 +227,9 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
     transport?.stop()
     realtime.bindSender(null)
     notifications.reset()
+    collaboration.reset()
+    recent.reset()
+    ui.paletteOpen = false
     tasks.reset()
     bookings.reset()
     folders.reset()

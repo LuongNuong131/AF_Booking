@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Full invoice management/reports, assignments/watch, service-worker Web Push, invoice exports, and broader recovery tools. Do not describe this as the completed booking application.
+Full invoice management/reports, service-worker Web Push, invoice exports, and broader recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -152,3 +152,15 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 - Durable integrity_runs, high-water/keyset 1000-row MAX-live-note-ID scans, 50 ms yields, 200 findings limit, nightly business-time scheduling/catch-up, report-only default and opt-in autofix.
 - Admin history/progress/details/confirmed repair, per-booking locks/fresh ACL/audit/cache/index/realtime and preserved operational clock/invoices. Interrupted runs recover explicitly.
 - docs/safeguards-integrity.md records API/migration/manual checks and 50k-booking/50k-note measurements on both engines; raw reports include EXPLAIN and concurrent lookup latency.
+
+
+## Implemented: Prompt 8D collaboration
+
+- Migration 0005 adds watchers/assignments and unread merge/open-assignment generated unique guards; old migrations remain unchanged.
+- Personal watch endpoints/200 cap, opt-in automatic following, private watch flags, single-query watcher fanout and one multi-row notification insert/upsert.
+- Same-ID unread watch merging, counter/badge reconciliation and takeover deduplication; no offline notification loss.
+- Atomic note assignments with fresh sorted recipient locks, active/self/open guards, automatic note completion, recipient-only complete/decline with reason and idempotent retry.
+- Minimal cached/rate-limited active-user directory; assignment/watch Home tabs, incoming/outgoing filters, profile preference and persisted assignment drafts/outbox.
+- Lazy role-aware Ctrl+K palette, canonical/partial booking opening, ten per-user recent bookings, recent folders, theme/task/watch/export/sign-out commands.
+- Central scoped useShortcuts, typing/IME guards, roving J/K/arrows/Enter/W/T/paging and extended ? help; note search is explicitly disabled until Prompt 8E.
+- MySQL/TiDB migration/API/private-WebSocket tests, frontend units and a three-user Chromium flow; details in docs/collaboration.md.

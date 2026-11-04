@@ -301,3 +301,21 @@ reproduction commands are in [safeguards-integrity.md](safeguards-integrity.md).
 The browser runner now has seven scripts, adding genuine suggestion-keyboard,
 new/duplicate confirmation, status reminder and Admin integrity repair/mobile/ACL
 flows. Its corruption command exists only in the disposable test harness.
+
+
+## Prompt 8D collaboration verification
+
+- **143 backend unit tests passed**, with **124 integration/browser tests skipped**
+  by the ordinary run; those skipped counts are not a substitute for database tests.
+- On **each** disposable verified-TLS MySQL/TiDB, schema 1, auth 16, booking 27,
+  tasks 4, realtime 20, folder 22, Admin 6, safeguards 8 and collaboration 8 passed
+  (**112 checks per engine**). The new migration 0005 has model parity and successful
+  downgrade/upgrade, including nullable generated unique guards.
+- **211 frontend Vitest tests passed**, plus strict TypeScript and production build.
+- **All eight real Chromium scripts passed together** against TLS TiDB, including
+  three-user watch/merge/assignment completion, palette role/canonical-key behavior,
+  typing exclusions, row Task/Watch/Open shortcuts and mobile overflow checks.
+- Booking list privacy flags and task counts use one aggregate; the existing four-
+  SELECT page budget and no-note-table-read regression stay enforced. No new
+  dependencies or old migration edits. Reproducible commands/limits are in
+  [collaboration.md](collaboration.md).

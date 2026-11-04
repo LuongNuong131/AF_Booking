@@ -58,6 +58,7 @@ class LockSnapshotFrame(Frame):
 
 class NotificationNewData(ContractModel):
     id: int
+    merged_count: int = 1
     booking_key: str
     display_key: str
     by_agent_name: str | None

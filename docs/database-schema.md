@@ -144,3 +144,9 @@ The eight queries are (a) my bookings by updated time, (b) undeleted note histor
 TiDB exact lookup must be `Point_Get`; lists/partial lookup use their intended secondary indexes. All eight queries reject full table scans and `Sort`/`TopN`. The additional JOIN may use `IndexJoin`/`IndexHashJoin` and bounded TopN to restore order: this is a documented TiDB join exception, not a sort-free claim. MySQL rejects filesort/temporary for all nine queries.
 
 These plan checks are not latency measurements or a guarantee for every future filter/sort combination. Recheck on the actual TiDB Cloud version/region with representative data. CI repeats both engines and uploads fresh reports.
+
+
+Prompt 8D advances head to **0005**, adding booking_watchers and booking_assignments
+(14 application tables total), notification merged_count and nullable generated unique
+guards. Earlier migrations are unchanged; model/migration parity and downgrade/upgrade
+are checked on both engines. See [collaboration.md](collaboration.md).

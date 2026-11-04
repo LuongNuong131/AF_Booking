@@ -120,6 +120,7 @@ def main() -> None:
             "tasks",
             "admin",
             "safeguards",
+            "collaboration",
             "integrity-performance",
             "search-performance",
         ],
@@ -218,6 +219,7 @@ def main() -> None:
                 "tasks": "tests/test_tasks_database.py",
                 "admin": "tests/test_admin_database.py",
                 "safeguards": "tests/test_safeguards_database.py",
+                "collaboration": "tests/test_collaboration_database.py",
                 "integrity-performance": "tests/test_integrity_performance.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]

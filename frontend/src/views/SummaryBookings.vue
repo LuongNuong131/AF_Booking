@@ -395,7 +395,14 @@ function refreshPage() {
       :error="live.error.value || live.request.error.value"
       @retry="live.retry"
     />
-    <BookingTable :rows="rows" :loading="request.pending.value" @open="open"
+    <BookingTable
+      :rows="rows"
+      :loading="request.pending.value"
+      :page="page"
+      :total="total"
+      :size="20"
+      @page="changePage"
+      @open="open"
       ><template #footer
         ><PageControls :page="page" :size="20" :total="total" @change="changePage" /></template
     ></BookingTable>

@@ -74,7 +74,9 @@ it('scopes shortcuts to the booking input, ignores IME/unrelated fields, and res
   press(input, 'Enter', { isComposing: true })
   expect(save).toHaveBeenCalledTimes(1)
   expect(lookup).toHaveBeenCalledTimes(1)
-  expect(press(document.body, 'k', { ctrlKey: true }).defaultPrevented).toBe(false)
+  expect(press(document.body, 'k', { ctrlKey: true }).defaultPrevented).toBe(true)
+  expect(useUiStore(pinia).paletteOpen).toBe(true)
+  useUiStore(pinia).paletteOpen = false
   press(document.body, '?')
   expect(useUiStore(pinia).shortcutHelp).toBe(true)
   wrapper.unmount()

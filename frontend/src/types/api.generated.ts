@@ -13,11 +13,15 @@ export type AgentSummary = { "id": number; "full_name": string }
 
 export type ApiError = { "code": ErrorCode; "message": string; "details"?: JsonValue }
 
+export type AssignmentDecline = { "reason": string }
+
+export type AssignmentItem = { "booking_key": string; "display_key": string; "id": number; "note_id": number; "from_user": AgentSummary; "to_user": AgentSummary; "message": string | null; "status": "open" | "done" | "declined"; "created_at": string; "resolved_at": string | null; "decline_reason": string | null }
+
 export type Attachment = { "id": number; "file_name": string; "mime_type": string; "size_bytes": number }
 
 export type AuditEntry = { "id": number; "user": AgentSummary | null; "action": string; "entity_type": string | null; "entity_id": string | null; "meta": { [key: string]: JsonValue } | null; "ip": string | null; "created_at": string }
 
-export type BookingItem = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "period": string; "period_label": string; "supplier": SupplierSummary; "version": number; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "last_note_preview": string | null; "is_done": boolean; "done_at": string | null; "updated_at": string; "is_stale": boolean; "invoice_state": InvoiceState; "invoice_count": number; "invoices_preview": Array<string>; "supplier_name": string; "supplier_type": SupplierType; "my_pending_tasks"?: number; "stale_hours"?: number | null }
+export type BookingItem = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "period": string; "period_label": string; "supplier": SupplierSummary; "version": number; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "last_note_preview": string | null; "is_done": boolean; "done_at": string | null; "updated_at": string; "is_stale": boolean; "invoice_state": InvoiceState; "invoice_count": number; "invoices_preview": Array<string>; "supplier_name": string; "supplier_type": SupplierType; "my_pending_tasks"?: number; "my_watching"?: boolean; "stale_hours"?: number | null }
 
 export type BookingLookup = { "booking_key": string | null; "display_key": string | null; "exists": boolean; "version": number; "resolution": KeyResolution; "format_warning"?: string | null; "done_warning"?: string | null; "snapshot"?: BookingItem | null; "group"?: GroupInfo | null; "group_exists"?: boolean; "suggestions"?: Array<Suggestion>; "my_tasks"?: Array<Task>; "history": CursorPage_Note_ }
 
@@ -121,13 +125,13 @@ export type NoteInvoiceChange = { "added": Array<string>; "removed": Array<strin
 
 export type NoteSaveRequest = { "status_code": string; "note": string | null; "expected_version": number; "client_request_id": string; "confirm_new"?: boolean; "allow_duplicate"?: boolean; "assign_to"?: number | null; "assign_message"?: string | null; "invoices"?: InvoiceChange | null; "supplier_name"?: string | null; "supplier_type"?: SupplierType | null }
 
-export type NoteSaveResponse = { "snapshot": BookingSnapshot; "note": Note }
+export type NoteSaveResponse = { "my_watching"?: boolean; "snapshot": BookingSnapshot; "note": Note }
 
-export type NotificationItem = { "booking_key": string; "display_key": string; "id": number; "type": NotificationType; "by_agent": AgentSummary | null; "note_id": number | null; "task_id": number | null; "created_at": string; "read_at": string | null }
+export type NotificationItem = { "booking_key": string; "display_key": string; "id": number; "type": NotificationType; "merged_count"?: number; "by_agent": AgentSummary | null; "note_id": number | null; "task_id": number | null; "created_at": string; "read_at": string | null }
 
 export type NotificationList = { "items": Array<NotificationItem>; "unread_count": number }
 
-export type NotificationNewData = { "id": number; "booking_key": string; "display_key": string; "by_agent_name": string | null; "created_at": string; "type": NotificationType }
+export type NotificationNewData = { "id": number; "merged_count"?: number; "booking_key": string; "display_key": string; "by_agent_name": string | null; "created_at": string; "type": NotificationType }
 
 export type NotificationNewFrame = { "event": "notification.new"; "data": NotificationNewData }
 
@@ -145,7 +149,7 @@ export type ProfileStats = { "notes_today": number; "notes_week": number; "timez
 
 export type PublicUser = { "id": number; "username": string; "full_name": string; "role": "admin" | "qc" | "agent"; "is_active": boolean; "settings": { [key: string]: JsonValue } | null }
 
-export type ReminderSettingsPatch = { "timezone"?: string | null; "default_remind_time"?: string | null; "task_sound"?: boolean | null; "web_notifications"?: boolean | null; "skip_weekends"?: boolean | null }
+export type ReminderSettingsPatch = { "timezone"?: string | null; "default_remind_time"?: string | null; "auto_watch_on_note"?: boolean | null; "task_sound"?: boolean | null; "web_notifications"?: boolean | null; "skip_weekends"?: boolean | null }
 
 export type ResetPassword = { "temporary_password": string }
 
@@ -214,6 +218,8 @@ export type TrendPoint = { "date": string; "count": number }
 export type UserCreate = { "username": string; "full_name": string; "role"?: "admin" | "qc" | "agent"; "temporary_password": string }
 
 export type UserUpdate = { "full_name"?: string | null; "role"?: "admin" | "qc" | "agent" | null; "is_active"?: boolean | null }
+
+export type WatchState = { "watching": boolean }
 
 export type WebSocketClientFrame = LockCommandFrame | HeartbeatFrame
 

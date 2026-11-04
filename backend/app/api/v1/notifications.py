@@ -27,6 +27,7 @@ async def notifications(
                 select(
                     Notification.id,
                     Notification.type,
+                    Notification.merged_count,
                     Notification.note_id,
                     Notification.task_id,
                     Notification.created_at,
@@ -53,6 +54,7 @@ async def notifications(
             NotificationItem(
                 id=row.id,
                 type=row.type,
+                merged_count=row.merged_count,
                 booking_key=row.booking_key,
                 display_key=to_display(row.booking_key),
                 note_id=row.note_id,

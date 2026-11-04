@@ -195,6 +195,12 @@ async function save() {
       >
         <h2>{{ t('taskUi.preferences') }}</h2>
         <label
+          ><input v-model="prefs.auto_watch_on_note" type="checkbox" />{{
+            t('collabUi.autoWatch')
+          }}</label
+        >
+        <small class="muted">{{ t('collabUi.autoWatchHint') }}</small>
+        <label
           >{{ t('profile.timezone')
           }}<input v-model="prefs.timezone" list="timezones" required maxlength="100" /></label
         ><datalist id="timezones">

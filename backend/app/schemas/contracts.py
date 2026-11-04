@@ -308,8 +308,8 @@ class NoteSaveRequest(ContractModel):
     client_request_id: UUID
     confirm_new: bool = False
     allow_duplicate: bool = False
-    assign_to: int | None = None
-    assign_message: str | None = None
+    assign_to: int | None = Field(default=None, gt=0)
+    assign_message: str | None = Field(default=None, max_length=255)
     invoices: InvoiceChange | None = None
     supplier_name: str | None = None
     supplier_type: SupplierType | None = None

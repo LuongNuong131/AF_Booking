@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useNotificationsStore } from '../stores/notifications'
@@ -10,14 +10,44 @@ import { formatDateTime } from '../utils/dateTime'
 import { errorMessage } from '../api/request-error'
 import type { NotificationItem } from '../types/api.generated'
 import BaseIcon from './BaseIcon.vue'
+import PageControls from './PageControls.vue'
 import EmptyState from './EmptyState.vue'
 import RequestStatus from './RequestStatus.vue'
+import { useListNavigation } from '../composables/useListNavigation'
+import { useCollaborationStore } from '../stores/collaboration'
+import { useTasksStore } from '../stores/tasks'
 const { t } = useI18n()
 const notifications = useNotificationsStore(),
   auth = useAuthStore(),
   ui = useUiStore()
 const router = useRouter()
 const dropdown = ref<HTMLDetailsElement | null>(null)
+const page = ref(1),
+  visibleItems = computed(() => notifications.items.slice((page.value - 1) * 10, page.value * 10))
+watch(
+  () => notifications.items.length,
+  (n) => {
+    page.value = Math.max(1, Math.min(page.value, Math.ceil(n / 10)))
+  },
+)
+const listRoot = ref<HTMLElement | null>(null),
+  collaboration = useCollaborationStore(),
+  tasks = useTasksStore()
+const nav = useListNavigation(
+  'notifications',
+  listRoot,
+  () => visibleItems.value.map((n) => n.id),
+  {
+    open: (i) => open(visibleItems.value[i]!),
+    watch: (i) => collaboration.toggle(visibleItems.value[i]!.booking_key),
+    task: (i) => tasks.openDialog(visibleItems.value[i]!.booking_key),
+    page: (delta) => {
+      const next = page.value + delta
+      if (next >= 1 && next <= Math.max(1, Math.ceil(notifications.items.length / 10)))
+        page.value = next
+    },
+  },
+)
 async function open(item: NotificationItem) {
   if (dropdown.value) dropdown.value.open = false
   void notifications.markRead(item.id).then((ok) => {
@@ -73,15 +103,25 @@ function onKey(event: KeyboardEvent) {
         :error="notifications.listRequest.error"
         @retry="notifications.refresh"
       />
-      <ul v-if="notifications.items.length" class="notification-list">
-        <li v-for="item in notifications.items" :key="item.id">
-          <button type="button" :class="{ unread: !item.read_at }" @click="open(item)">
+      <ul v-if="notifications.items.length" ref="listRoot" class="notification-list">
+        <li v-for="item in visibleItems" :key="item.id">
+          <button
+            type="button"
+            :data-nav-key="item.id"
+            :tabindex="nav.tabindex(visibleItems.indexOf(item))"
+            @focus="nav.selected(visibleItems.indexOf(item))"
+            :class="{ unread: !item.read_at }"
+            @click="open(item)"
+          >
             <span
               v-if="!item.read_at"
               class="unread-dot"
               :aria-label="t('notifications.unread')"
             /><span class="notification-content"
               ><span>{{ notificationText(item) }}</span
+              ><small v-if="item.merged_count && item.merged_count > 1">{{
+                t('collabUi.merged', { count: item.merged_count })
+              }}</small
               ><time :datetime="item.created_at">{{
                 formatDateTime(item.created_at, auth.timezone)
               }}</time></span
@@ -89,8 +129,17 @@ function onKey(event: KeyboardEvent) {
           </button>
         </li>
       </ul>
+      <PageControls
+        v-if="notifications.items.length > 10"
+        :page="page"
+        :total="notifications.items.length"
+        :size="10"
+        summary-key="collabUi.notificationPage"
+        @change="page = $event"
+      />
       <EmptyState
-        v-else-if="
+        v-if="
+          !notifications.items.length &&
           !notifications.loading &&
           notifications.listRequest.state !== 'error' &&
           notifications.listRequest.state !== 'timeout'

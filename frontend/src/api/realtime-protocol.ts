@@ -100,7 +100,11 @@ export function parseServerFrame(raw: unknown): WebSocketServerFrame | null {
         (d.by_agent_name === null || string(d.by_agent_name)) &&
         timestamp(d.created_at) &&
         string(d.type) &&
-        notificationTypes.has(d.type)
+        notificationTypes.has(d.type) &&
+        (d.merged_count === undefined ||
+          (Number.isInteger(d.merged_count) &&
+            Number(d.merged_count) >= 1 &&
+            Number(d.merged_count) <= 65535))
       break
   }
   return valid ? (raw as unknown as WebSocketServerFrame) : null

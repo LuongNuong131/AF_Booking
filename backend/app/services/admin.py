@@ -68,6 +68,8 @@ class AdminService:
         return transaction(self.engine, self.settings, **kwargs)
 
     def catalog(self, resource, snapshots=False):
+        if resource == "users":
+            self.writes.collaboration.directory.clear()
         self.writes.cache.clear()
         self.reports.invalidate()
         self.ws.spawn(

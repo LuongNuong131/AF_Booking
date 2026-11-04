@@ -14,6 +14,7 @@ sys.path.insert(0, str(ROOT / "backend"))
 from app.schemas.admin import ADMIN_MODELS  # noqa: E402
 from app.schemas.auth import AUTH_MODELS  # noqa: E402
 from app.schemas.bookings import BOOKING_MODELS  # noqa: E402
+from app.schemas.collaboration import COLLABORATION_MODELS  # noqa: E402
 from app.schemas.contracts import CONTRACT_ENUMS, CONTRACT_MODELS, ErrorCode  # noqa: E402
 from app.schemas.folders import FOLDER_MODELS, SearchResponse  # noqa: E402
 from app.schemas.integrity import INTEGRITY_MODELS  # noqa: E402
@@ -66,6 +67,7 @@ def generate() -> str:
     for model in (
         *CONTRACT_MODELS,
         *AUTH_MODELS,
+        *COLLABORATION_MODELS,
         *ADMIN_MODELS,
         *INTEGRITY_MODELS,
         *BOOKING_MODELS,

@@ -411,3 +411,25 @@ it('restores a duplicate note for confirmation and sends only an explicit overri
     (post.mock.calls[0]?.[1] as { client_request_id: string }).client_request_id,
   )
 })
+
+it('persists assignment fields with the draft and durable note payload', async () => {
+  vi.useFakeTimers()
+  vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })
+  const w = setup()
+  await w.open(KEY)
+  w.statusCode.value = 'BUNDLE'
+  w.note.value = 'Ask for supplier follow-up'
+  w.assignTo.value = 5
+  w.assignMessage.value = 'Please check tomorrow'
+  await vi.advanceTimersByTimeAsync(600)
+  expect(draftStorage(3).get(KEY)).toMatchObject({
+    assign_to: 5,
+    assign_message: 'Please check tomorrow',
+  })
+  const enqueue = vi.spyOn(useOutboxStore(), 'enqueue').mockReturnValue(null)
+  await w.save()
+  expect(enqueue).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.objectContaining({ assign_to: 5, assign_message: 'Please check tomorrow' }),
+  )
+})

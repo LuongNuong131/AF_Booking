@@ -67,7 +67,18 @@ try {
   await search.press('ArrowDown')
   await expect(page.locator('.station-section').first().locator('.folder-card')).toBeFocused()
   await page.keyboard.press('Enter')
-  await expect(page.locator('.supplier-folder .month-row')).toHaveCount(3)
+  try {
+    await expect(page.locator('.supplier-folder .month-row')).toHaveCount(3)
+  } catch (error) {
+    await page.screenshot({
+      path: path.join(artifacts, 'folder-keyboard-failure.png'),
+      fullPage: true,
+    })
+    process.stderr.write(
+      JSON.stringify({ url: page.url(), errors, requests: requests.slice(-8) }) + '\n',
+    )
+    throw error
+  }
   await expect(page.locator('.folder-breadcrumbs')).toContainText('Search')
   await expect(page.locator('.folder-breadcrumbs')).toContainText(CW)
   await expect(page.locator('.supplier-folder')).toContainText('1 stale month(s)')

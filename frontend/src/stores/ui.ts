@@ -19,6 +19,7 @@ export const useUiStore = defineStore('ui', () => {
     theme.value === 'system' ? (systemDark.value ? 'dark' : 'light') : theme.value,
   )
   const notices = ref<Notice[]>([])
+  const paletteOpen = ref(false)
   const shortcutHelp = ref(false)
   const taskModalOpen = ref(false)
   const routeLoading = ref(false)
@@ -94,6 +95,7 @@ export const useUiStore = defineStore('ui', () => {
     resolvedTheme,
     notices,
     shortcutHelp,
+    paletteOpen,
     taskModalOpen,
     routeLoading,
     routeFailed,

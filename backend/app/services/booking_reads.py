@@ -14,6 +14,7 @@ from app.models import (
     BookingInvoice,
     BookingNote,
     BookingTask,
+    BookingWatcher,
     Status,
     User,
 )
@@ -461,6 +462,12 @@ class BookingReads:
         snapped = time.perf_counter()
         if entry:
             async with self.tx() as session:
+                result.snapshot = result.snapshot.model_copy(
+                    update={
+                        "my_watching": await session.get(BookingWatcher, (entry.id, user_id))
+                        is not None
+                    }
+                )
                 result.history = await note_history(session, entry.id)
                 tasks = (
                     await session.scalars(
@@ -525,9 +532,23 @@ class BookingReads:
             return await note_history(session, entry.id, cursor, limit)
 
     async def listing(
-        self, user_id: int, *, page: int, size: int, mine=False, stale_only=False, **filters
+        self,
+        user_id: int,
+        *,
+        page: int,
+        size: int,
+        mine=False,
+        stale_only=False,
+        watching=False,
+        **filters,
     ):
         conditions = []
+        if watching:
+            conditions.append(
+                Booking.id.in_(
+                    select(BookingWatcher.booking_id).where(BookingWatcher.user_id == user_id)
+                )
+            )
         if mine:
             conditions.append(Booking.last_agent_id == user_id)
         mapping = {
@@ -605,7 +626,8 @@ class BookingReads:
         query = snapshot_query().where(*conditions)
         count_key = (
             self.cache.generation,
-            user_id if mine else None,
+            user_id if mine or watching else None,
+            watching,
             mine,
             stale_only,
             repr(sorted(filters.items())),
@@ -628,26 +650,42 @@ class BookingReads:
             ).all()
             ids = [row.id for row in rows]
             previews = await invoice_previews(session, ids)
-            counts = (
-                dict(
-                    (
-                        await session.execute(
-                            select(BookingTask.booking_id, func.count())
-                            .where(
-                                BookingTask.booking_id.in_(ids),
+            private_rows = (
+                (
+                    await session.execute(
+                        select(
+                            Booking.id,
+                            func.count(BookingTask.id).label("pending"),
+                            func.max(BookingWatcher.user_id).label("watcher"),
+                        )
+                        .outerjoin(
+                            BookingTask,
+                            and_(
+                                BookingTask.booking_id == Booking.id,
                                 BookingTask.user_id == user_id,
                                 BookingTask.status == "pending",
-                            )
-                            .group_by(BookingTask.booking_id)
+                            ),
                         )
-                    ).all()
-                )
+                        .outerjoin(
+                            BookingWatcher,
+                            and_(
+                                BookingWatcher.booking_id == Booking.id,
+                                BookingWatcher.user_id == user_id,
+                            ),
+                        )
+                        .where(Booking.id.in_(ids))
+                        .group_by(Booking.id)
+                    )
+                ).all()
                 if ids
-                else {}
+                else []
             )
+            counts = {r.id: r.pending for r in private_rows}
+            watched = {r.id for r in private_rows if r.watcher is not None}
         items = []
         for row in rows:
             item = snapshot_from_row(row, self.settings, previews.get(row.id))
             item.my_pending_tasks = counts.get(row.id, 0)
+            item.my_watching = row.id in watched
             items.append(item)
         return Page(items=items, total=total, page=page, size=size)

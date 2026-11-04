@@ -41,7 +41,19 @@ export const useNotificationsStore = defineStore('notifications', () => {
     while (hints.size > 1000) hints.delete(hints.values().next().value!)
   }
   function incoming(data: NotificationNewData): void {
-    if (hints.has(data.id)) return
+    if (hints.has(data.id)) {
+      // A merged watch notification keeps its ID; refresh content without adding
+      // another unread badge. A newer revision invalidates in-flight reads.
+      if (data.type === 'watch_update') {
+        revision++
+        listRequest.cancel()
+        clearTimeout(timer)
+        timer = setTimeout(() => {
+          void refresh()
+        }, timeouts.notificationDebounce)
+      }
+      return
+    }
     hints.add(data.id)
     while (hints.size > 1000) hints.delete(hints.values().next().value!)
     unread.value++

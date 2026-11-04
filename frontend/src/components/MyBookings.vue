@@ -16,6 +16,10 @@ import PageControls from './PageControls.vue'
 import EmptyState from './EmptyState.vue'
 import TaskButton from './TaskButton.vue'
 import BaseIcon from './BaseIcon.vue'
+import { useListNavigation } from '../composables/useListNavigation'
+import { useCollaborationStore } from '../stores/collaboration'
+import { useTasksStore } from '../stores/tasks'
+import WatchButton from './WatchButton.vue'
 const props = defineProps<{ showTasks?: boolean }>()
 const emit = defineEmits<{ open: [key: string]; selectBookings: [] }>()
 const { t } = useI18n(),
@@ -38,6 +42,24 @@ const rows = shallowRef<BookingItem[]>([]),
   staleTotal = ref(0),
   movement = ref('')
 const newKeys = ref(new Set<string>())
+const root = ref<HTMLElement | null>(null),
+  collaboration = useCollaborationStore(),
+  tasks = useTasksStore()
+const nav = useListNavigation(
+  'my-bookings',
+  root,
+  () => visibleRows.value.map((r) => r.booking_key),
+  {
+    open: (i) => emit('open', visibleRows.value[i]!.booking_key),
+    watch: (i) =>
+      collaboration.toggle(visibleRows.value[i]!.booking_key, visibleRows.value[i]!.my_watching),
+    task: (i) => tasks.openDialog(visibleRows.value[i]!.booking_key),
+    page: (delta) => {
+      const p = page.value + delta
+      if (p >= 1 && p <= Math.max(1, Math.ceil(total.value / 10))) void changePage(p)
+    },
+  },
+)
 let disposed = false,
   needsRefresh = false
 const total = computed(() => (staleOnly.value ? staleTotal.value : mineTotal.value))
@@ -226,7 +248,7 @@ function refreshList() {
         <BaseIcon name="clock" />{{ t('bookingUi.staleCount', { count: staleTotal }) }}
       </button>
     </header>
-    <div v-if="!showTasks" class="mine-list-body">
+    <div v-if="!showTasks" ref="root" class="mine-list-body">
       <p class="mine-description">{{ t('bookingUi.mineDescription') }}</p>
       <button v-if="newKeys.size" type="button" class="new-items-banner" @click="showNew">
         {{ t('bookingUi.newItems', { count: newKeys.size }) }}
@@ -261,7 +283,14 @@ function refreshList() {
       <TransitionGroup v-else-if="visibleRows.length" name="booking-row" tag="ul" class="mine-list"
         ><li v-for="row in visibleRows" :key="row.booking_key">
           <div class="mine-booking-entry">
-            <button type="button" class="mine-booking" @click="emit('open', row.booking_key)">
+            <button
+              type="button"
+              class="mine-booking"
+              :data-nav-key="row.booking_key"
+              :tabindex="nav.tabindex(visibleRows.indexOf(row))"
+              @focus="nav.selected(visibleRows.indexOf(row))"
+              @click="emit('open', row.booking_key)"
+            >
               <div class="mine-row-heading">
                 <strong>{{ row.display_key }}</strong
                 ><StatusTag :status="row.last_status" />
@@ -294,7 +323,11 @@ function refreshList() {
                   }}</span
                 >
               </div></button
-            ><TaskButton :booking-key="row.booking_key" :count="row.my_pending_tasks" compact />
+            ><TaskButton
+              :booking-key="row.booking_key"
+              :count="row.my_pending_tasks"
+              compact
+            /><WatchButton :booking-key="row.booking_key" :watching="row.my_watching" />
           </div></li
       ></TransitionGroup>
       <EmptyState

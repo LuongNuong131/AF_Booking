@@ -155,3 +155,25 @@ version, so clients must compare versions rather than assuming time always advan
 MAX(non-deleted note id) now determines the final snapshot after moderation/repair.
 No integrity-specific socket event is added; its Admin progress page uses bounded
 progress-only reads while a run is active.
+
+
+## Collaboration — Prompt 8D
+
+After a committed note, booking.updated still broadcasts once with the existing
+payload. Private notification.new now supports the previously reserved watch_update,
+assigned and assignment_done types. Its payload adds merged_count: positive integer,
+default 1, maximum 65,535. Other notification senders retain the default. The client
+accepts older frames without the additive count.
+
+An unread watch_update keeps the same notification ID across notes; the latest frame
+carries updated author/time/count. Clients must refresh its content even for a known
+ID and must not increase the unread badge for that merge. A read notification is no
+longer a merge target. A previous-agent watcher receives taken_over alone for the
+current note. Assignment lifecycle messages are distinct from watch/takeover notices.
+Recipients who are offline read their persisted notices when they reconnect; the
+manager only enqueues frames to registered connections. Broadcast coalescing never
+merges private notification frames. HTTP history remains authoritative.
+
+No new client/server event name is needed. Assignment counts catch up through private
+notices, personal committed notes and reconnect/visibility reads; no polling is added.
+See [collaboration.md](collaboration.md) for transaction/ownership and API details.

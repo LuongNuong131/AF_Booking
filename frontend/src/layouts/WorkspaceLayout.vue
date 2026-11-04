@@ -14,6 +14,7 @@ import ShortcutHelp from '../components/ShortcutHelp.vue'
 import TaskOverlays from '../components/TaskOverlays.vue'
 import OutboxPanel from '../components/OutboxPanel.vue'
 import ErrorBoundary from '../components/ErrorBoundary.vue'
+const CommandPalette = defineAsyncComponent(() => import('../components/CommandPalette.vue'))
 const DevPerformance = import.meta.env.DEV
   ? defineAsyncComponent(() => import('../components/DevPerformance.vue'))
   : null
@@ -94,7 +95,9 @@ async function logout() {
           >
         </div>
         <div class="header-actions">
-          <OutboxPanel /><ThemeMenu /><button
+          <button type="button" class="button palette-trigger" @click="ui.paletteOpen = true">
+            {{ t('collabUi.palette') }} <kbd>Ctrl+K</kbd></button
+          ><OutboxPanel /><ThemeMenu /><button
             type="button"
             class="icon-button desktop-help"
             :aria-label="t('shortcuts.open')"
@@ -128,7 +131,7 @@ async function logout() {
         <ErrorBoundary :reset-key="route.fullPath"><RouterView /></ErrorBoundary>
       </main>
     </div>
-    <ShortcutHelp />
+    <ShortcutHelp /><CommandPalette v-if="ui.paletteOpen" />
     <component :is="DevPerformance" v-if="DevPerformance" /><TaskOverlays />
   </div>
 </template>

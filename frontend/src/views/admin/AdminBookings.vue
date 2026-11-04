@@ -62,6 +62,10 @@ watch(
       @retry="list.load"
     /><BookingTable
       :rows="list.items.value"
+      :page="list.page.value"
+      :total="list.total.value"
+      :size="20"
+      @page="list.page.value = $event"
       :loading="list.request.pending.value"
       @open="key = $event"
     /><PageControls

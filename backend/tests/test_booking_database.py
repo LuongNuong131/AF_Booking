@@ -26,10 +26,12 @@ from app.models import (
     Attachment,
     AuditLog,
     Booking,
+    BookingAssignment,
     BookingGroup,
     BookingInvoice,
     BookingNote,
     BookingTask,
+    BookingWatcher,
     IntegrityRun,
     Notification,
     Station,
@@ -104,10 +106,14 @@ async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
         async with app.state.engine.begin() as connection:
             for model in (
                 IntegrityRun,
+                BookingAssignment,
+                BookingWatcher,
                 Attachment,
                 Notification,
                 BookingInvoice,
                 BookingTask,
+                BookingAssignment,
+                BookingWatcher,
                 BookingNote,
                 Booking,
                 BookingGroup,
@@ -661,8 +667,9 @@ async def test_list_queries_are_batched_and_never_read_note_table(rig):
     finally:
         event.remove(rig.app.state.engine.sync_engine, "before_cursor_execute", track)
     assert not any("booking_notes" in statement for statement in statements)
-    task_queries = [s for s in statements if "from booking_tasks" in s]
-    assert len(task_queries) == 1 and "group by booking_tasks.booking_id" in task_queries[0]
+    task_queries = [s for s in statements if "join booking_tasks" in s]
+    assert len(task_queries) == 1 and "group by bookings.id" in task_queries[0]
+    assert "join booking_watchers" in task_queries[0]
     assert len([s for s in statements if s.startswith("select ")]) == 4
 
 
@@ -695,6 +702,8 @@ async def test_agent_lookup_is_authenticated_bounded_and_returns_public_active_s
     assert len((await rig.get("/users/lookup", limit=1)).json()) == 1
     assert (await rig.get("/users/lookup", q="%_")).json() == []
     assert (await rig.get("/users/lookup", limit=51)).status_code == 422
-    async with rig.app.state.engine.begin() as connection:
-        await connection.execute(update(User).where(User.id == 5).values(is_active=False))
+    response = await rig.client.patch(
+        "/api/v1/admin/users/5", headers=rig.headers["admin"], json={"is_active": False}
+    )
+    assert response.status_code == 200
     assert (await rig.get("/users/lookup", q="other")).json() == []

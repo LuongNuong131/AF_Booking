@@ -37,7 +37,7 @@ export const useTasksStore = defineStore('tasks', () => {
       presetDays?: number
     } | null>(null)
   const noteSuggestion = ref<string | null>(null),
-    rightTab = ref<'bookings' | 'tasks'>('bookings')
+    rightTab = ref<'bookings' | 'tasks' | 'assignments' | 'watching'>('bookings')
   const openBookingRequest = ref<{
     key: string
     note: boolean

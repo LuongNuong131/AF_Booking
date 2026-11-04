@@ -259,14 +259,25 @@ class WebSocketManager:
                 "WebSocket post-commit dispatch failed (%s)", type(task.exception()).__name__
             )
 
-    async def _saved(self, booking: dict, notification: tuple[int, dict] | None) -> None:
+    async def _saved(
+        self, booking: dict, notification: tuple[int, dict] | list[tuple[int, dict]] | None
+    ) -> None:
         await self.broadcast("booking.updated", booking)
         if notification:
-            user_id, payload = notification
-            await self.send_user(user_id, "notification.new", payload)
+            events = notification if isinstance(notification, list) else [notification]
+            await asyncio.gather(
+                *(
+                    self.send_user(user_id, "notification.new", payload)
+                    for user_id, payload in events
+                )
+            )
 
     def saved(
-        self, user_id: int, session_id: str, booking: dict, notification: tuple[int, dict] | None
+        self,
+        user_id: int,
+        session_id: str,
+        booking: dict,
+        notification: tuple[int, dict] | list[tuple[int, dict]] | None,
     ) -> None:
         self.locks.release(user_id, booking["booking_key"], session_id=session_id)
         # Owned background work survives cancellation of the committed HTTP request.
