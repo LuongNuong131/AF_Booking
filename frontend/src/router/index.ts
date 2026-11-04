@@ -71,6 +71,8 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
               descriptionKey: 'pages.profileDescription',
             },
           },
+          {path:'reports/daily',name:'daily-report',component:()=>import('../views/DailyReportView.vue'),meta:{titleKey:'opsUi.dailyTitle',roles:['admin','qc']}},
+          {path:'search/notes',name:'note-search',component:()=>import('../views/NoteSearchView.vue'),meta:{titleKey:'opsUi.noteSearch'}},
           {
             path: 'reports',
             name: 'reports',
@@ -121,6 +123,7 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
                 name: 'admin-suppliers',
                 component: () => import('../views/admin/AdminSuppliers.vue'),
               },
+              {path:'system',name:'admin-system',component:()=>import('../views/admin/AdminSystem.vue')},
               {
                 path: 'integrity',
                 name: 'admin-integrity',

@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: Prompts 1–8D, with later-prompt features still pending.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin user/audit/note/status/Supplier management, QC reports/daily CSV/XLSX and personal profiles. Save now uses an optimistic durable outbox with UUID retries, SWR lookup/cache, warmup and measured performance. See [Admin/QC/Profile](docs/admin-qc-profile.md) and [responsiveness/benchmarks](docs/performance-8b.md). Full invoice management, push and broader recovery tools remain for their prompts.
+**Current scope: Prompts 1–8E, with later-prompt features still pending.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin user/audit/note/status/Supplier management, QC reports/daily CSV/XLSX and personal profiles. Save now uses an optimistic durable outbox with UUID retries, SWR lookup/cache, warmup and measured performance. See [Admin/QC/Profile](docs/admin-qc-profile.md) and [responsiveness/benchmarks](docs/performance-8b.md). Full invoice management and broader recovery tools remain for their prompts.
 
 ## Stack and hosting
 
@@ -72,3 +72,9 @@ migrations through **0005** before starting this version; read
 Prompt 8D adds booking watches, merged update notifications, atomic assignments,
 Ctrl+K command palette and scoped accessible list shortcuts. Apply migration **0005**
 and see [collaboration](docs/collaboration.md) for API, workflow and checks.
+
+
+Prompt 8E adds Admin system health, QC daily reports/frozen multi-sheet Excel, safe
+note search and a static-only PWA shell with opt-in offline Web Push. Apply migration
+**0006**. TiDB uses NOTE_SEARCH_STRATEGY=like; VAPID configuration is required only
+when enabling push. See [operations and PWA](docs/operations-pwa.md).

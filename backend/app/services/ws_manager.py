@@ -46,6 +46,8 @@ class WebSocketManager:
         self.settings = settings
         self.auth = None
         self.connections: dict[int, Connection] = {}
+        self.push = None
+        self.health_status = None
         self._all: dict[str, Connection] = {}
         self._background: set[asyncio.Task] = set()
         self.stopping = False
@@ -110,6 +112,8 @@ class WebSocketManager:
 
     async def send_user(self, user_id: int, event: str, payload: dict) -> None:
         self.emit(event, payload, user_id)
+        if event == "notification.new" and self.push is not None:
+            self.push.enqueue(user_id, payload)
 
     @staticmethod
     def logout_frame(reason: str) -> dict:
@@ -142,6 +146,10 @@ class WebSocketManager:
         self.connections[user.id] = connection
         self._all[connection.id] = connection
         self._offer(connection, {"event": "lock.snapshot", "data": {"locks": snapshot}})
+        if user.role == "admin" and self.health_status is not None:
+            self._offer(
+                connection, {"event": "system.health", "data": {"degraded": self.health_status()}}
+            )
         connection.writer = asyncio.create_task(
             self._write(connection), name=f"ws-writer:{user.id}"
         )

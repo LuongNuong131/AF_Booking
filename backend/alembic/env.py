@@ -12,6 +12,17 @@ from app.models.base import UTCDateTime
 target_metadata = Base.metadata
 
 
+def include_object(item, name, kind, reflected, compared):
+    # This explicitly named extension is installed only by the optional MySQL
+    # ngram DDL. It is not a mandatory index on TiDB or other deployments.
+    return not (
+        kind == "index"
+        and name == "ft_booking_notes_note"
+        and item.table.name == "booking_notes"
+        and [column.name for column in item.columns] == ["note"]
+    )
+
+
 def render_item(kind: str, item: object, autogen_context: AutogenContext) -> str | bool:
     if kind == "type" and isinstance(item, UTCDateTime):
         autogen_context.imports.add("from sqlalchemy.dialects import mysql")
@@ -25,6 +36,7 @@ def run_migrations(connection: Connection) -> None:
         target_metadata=target_metadata,
         compare_type=True,
         render_item=render_item,
+        include_object=include_object,
     )
     with context.begin_transaction():
         context.run_migrations()

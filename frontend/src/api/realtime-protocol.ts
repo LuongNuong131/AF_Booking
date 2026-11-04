@@ -59,6 +59,9 @@ export function parseServerFrame(raw: unknown): WebSocketServerFrame | null {
         timestamp(d.updated_at) &&
         typeof d.is_done === 'boolean'
       break
+    case 'system.health':
+      valid = typeof d.degraded === 'boolean'
+      break
     case 'catalog.updated':
       valid =
         ['users', 'statuses'].includes(String(d.resource)) &&

@@ -177,3 +177,26 @@ merges private notification frames. HTTP history remains authoritative.
 No new client/server event name is needed. Assignment counts catch up through private
 notices, personal committed notes and reconnect/visibility reads; no polling is added.
 See [collaboration.md](collaboration.md) for transaction/ownership and API details.
+
+
+## Operations — Prompt 8E
+
+An explicit additive server event is now supported:
+
+| Event | Audience | Data |
+| --- | --- | --- |
+| `system.health` | Admin connections only | `{degraded:boolean}` |
+
+Admin receives this after the initial lock.snapshot and on a sampled degradation
+transition (global p95 >500 ms for five minutes, or recovery). No query/request/user
+statistics or SQL fingerprints are broadcast. Other roles receive no health frame.
+Generated unions and client validation include this event; existing event names and
+booking/notification payloads stay unchanged. The visible System page reads full
+health metrics every15 seconds only while visible; the dot needs no background HTTP
+polling. Metrics remain single-instance and reset on restart.
+
+Private notification.new remains the persisted notification source. Offline
+notifications of type task_due, assigned or watch_update may additionally enqueue a
+minimal Web Push after commit. A connected WebSocket suppresses push, with a second
+check by the worker. This adds no client WebSocket command or note-content payload.
+See operations-pwa.md for VAPID, session ownership, failure and sleeping-server limits.

@@ -49,6 +49,7 @@ class ReminderSettingsPatch(ContractModel):
         default=None, pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$"
     )
     auto_watch_on_note: bool | None = None
+    web_push_enabled: bool | None = None
     task_sound: bool | None = None
     web_notifications: bool | None = None
     skip_weekends: bool | None = None

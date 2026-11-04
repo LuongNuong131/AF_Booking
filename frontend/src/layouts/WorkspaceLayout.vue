@@ -2,6 +2,7 @@
 import { computed, ref, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useSystemHealthStore } from '../stores/systemHealth'
 import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
 import { useRealtimeStore } from '../stores/realtime'
@@ -21,7 +22,8 @@ const DevPerformance = import.meta.env.DEV
 const { t } = useI18n()
 const auth = useAuthStore(),
   ui = useUiStore(),
-  realtime = useRealtimeStore()
+  realtime = useRealtimeStore(),
+  health = useSystemHealthStore()
 const route = useRoute(),
   router = useRouter()
 const mobileOpen = ref(false)
@@ -60,12 +62,17 @@ async function logout() {
             active:
               route.name === link.name ||
               (link.name === 'summary' &&
-                ['booking', 'summary-folder'].includes(String(route.name))) ||
+                ['booking', 'summary-folder', 'note-search'].includes(String(route.name))) ||
+              (link.name === 'reports' && route.name === 'daily-report') ||
               (link.name === 'admin' && String(route.name).startsWith('admin-')),
           }"
           @click="mobileOpen = false"
-          ><BaseIcon :name="link.icon" /><span>{{ t(`nav.${link.name}`) }}</span></RouterLink
-        >
+          ><BaseIcon :name="link.icon" /><span>{{ t(`nav.${link.name}`) }}</span
+          ><span
+            v-if="link.name === 'admin' && health.degraded"
+            class="admin-degraded-dot"
+            :aria-label="t('opsUi.degraded')"
+        /></RouterLink>
       </nav>
       <div class="sidebar-bottom">
         <div class="workspace-note"><span class="workspace-note-line" />{{ t('app.footer') }}</div>

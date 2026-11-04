@@ -9,7 +9,7 @@ from app.core.config import Settings
 from app.core.request_context import query_timing
 
 
-def create_database_engine(settings: Settings) -> AsyncEngine | None:
+def create_database_engine(settings: Settings, telemetry=None) -> AsyncEngine | None:
     if settings.database_url is None:
         return None
     connect_args: dict[str, object] = {
@@ -40,9 +40,13 @@ def create_database_engine(settings: Settings) -> AsyncEngine | None:
 
     @event.listens_for(engine.sync_engine, "after_cursor_execute")
     def after_query(conn, cursor, statement, parameters, context, executemany):
+        elapsed = (time.perf_counter() - context._booking_started) * 1000
+        collector = telemetry or getattr(engine.sync_engine, "_booking_telemetry", None)
+        if collector is not None:
+            collector.query(statement, elapsed)
         timing = query_timing.get()
         if timing is not None:
-            timing.milliseconds += (time.perf_counter() - context._booking_started) * 1000
+            timing.milliseconds += elapsed
 
     @event.listens_for(engine.sync_engine, "connect")
     def set_select_timeout(connection, record) -> None:

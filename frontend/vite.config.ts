@@ -1,5 +1,6 @@
 import { fileURLToPath, URL } from 'node:url'
 import vue from '@vitejs/plugin-vue'
+import { staticPwa } from './pwa-build'
 import { defineConfig } from 'vitest/config'
 import { loadEnv } from 'vite'
 import { resolveEndpoints } from './src/config/api-url'
@@ -16,6 +17,7 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
       vue(),
+      staticPwa(),
       {
         name: 'api-preconnect',
         transformIndexHtml: () => [

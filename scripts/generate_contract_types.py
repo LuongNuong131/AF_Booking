@@ -18,6 +18,7 @@ from app.schemas.collaboration import COLLABORATION_MODELS  # noqa: E402
 from app.schemas.contracts import CONTRACT_ENUMS, CONTRACT_MODELS, ErrorCode  # noqa: E402
 from app.schemas.folders import FOLDER_MODELS, SearchResponse  # noqa: E402
 from app.schemas.integrity import INTEGRITY_MODELS  # noqa: E402
+from app.schemas.operations import OPERATIONS_MODELS  # noqa: E402
 from app.schemas.realtime import REALTIME_MODELS, ClientFrame, ServerFrame  # noqa: E402
 from app.schemas.tasks import TASK_MODELS  # noqa: E402
 
@@ -70,6 +71,7 @@ def generate() -> str:
         *COLLABORATION_MODELS,
         *ADMIN_MODELS,
         *INTEGRITY_MODELS,
+        *OPERATIONS_MODELS,
         *BOOKING_MODELS,
         *FOLDER_MODELS,
         *REALTIME_MODELS,

@@ -29,6 +29,9 @@ function change(value: 'bookings' | 'folders') {
     >
       {{ t(`folderUi.${value}`) }}
     </button>
+    <RouterLink class="button" :to="{ name: 'note-search' }">{{
+      t('opsUi.noteSearch')
+    }}</RouterLink>
   </div>
   <SummaryFolders v-if="mode === 'folders'" /><SummaryBookings v-else />
 </template>

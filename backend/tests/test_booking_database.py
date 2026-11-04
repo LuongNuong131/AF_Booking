@@ -32,8 +32,10 @@ from app.models import (
     BookingNote,
     BookingTask,
     BookingWatcher,
+    DailyReport,
     IntegrityRun,
     Notification,
+    PushSubscription,
     Station,
     Status,
     User,
@@ -106,6 +108,8 @@ async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
         async with app.state.engine.begin() as connection:
             for model in (
                 IntegrityRun,
+                DailyReport,
+                PushSubscription,
                 BookingAssignment,
                 BookingWatcher,
                 Attachment,

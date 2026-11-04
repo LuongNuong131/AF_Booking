@@ -7,6 +7,7 @@ import { useUiStore } from './stores/ui'
 import { createShortcutRegistry, shortcutRegistryKey } from './composables/useBookingShortcuts'
 import BaseIcon from './components/BaseIcon.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
+import PwaUpdateBanner from './components/PwaUpdateBanner.vue'
 const { t } = useI18n()
 const auth = useAuthStore(),
   ui = useUiStore(),
@@ -23,6 +24,7 @@ async function retryRoute() {
 }
 </script>
 <template>
+  <PwaUpdateBanner />
   <div v-if="ui.routeFailed" class="route-retry global-route-retry" role="alert">
     <span>{{ t('route.slow') }}</span
     ><button type="button" class="text-button" @click="retryRoute">

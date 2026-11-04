@@ -79,12 +79,14 @@ const commands = computed<Command[]>(() => {
     commands.push({
       id: name,
       label: t(`collabUi.command_${name}`),
-      disabled: name === 'notes',
+
       action: async () => {
         if (name === 'theme') ui.toggleTheme()
         else if (name === 'logout') {
           await auth.logout()
           await router.replace({ name: 'login' })
+        } else if (name === 'notes') {
+          await router.push({ name: 'note-search' })
         } else if (name === 'export') {
           const file = await exporting.run()
           if (file) saveDownload(file, `daily-record-${exportDate.value}.xlsx`)

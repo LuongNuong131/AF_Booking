@@ -46,6 +46,7 @@ async def transaction(
     seconds: float | None = None,
     retryable: bool = False,
     after_commit: Callable[[], None] | None = None,
+    isolation_level: str = "READ COMMITTED",
 ) -> AsyncIterator[AsyncSession]:
     if engine is None:
         raise ApiException(ErrorCode.SERVICE_BUSY)
@@ -59,7 +60,7 @@ async def transaction(
             # A locking read may see a just-committed row after waiting. Subsequent snapshot
             # reads must see the same row, rather than an earlier REPEATABLE READ snapshot.
             connection = await session.connection(
-                execution_options={"isolation_level": "READ COMMITTED"}
+                execution_options={"isolation_level": isolation_level}
             )
             yield session
             await session.commit()

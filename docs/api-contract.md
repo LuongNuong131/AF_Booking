@@ -488,4 +488,53 @@ old migrations. Full behavior, limits, ownership, defaults and wire extensions:
   up to 65,535. Reading frees the merge slot; next note creates a new ID. Previous
   agent/watch overlap receives taken_over only for that note. Assigned/completed
   workflow notices remain distinct. No type or existing path was renamed.
-- Note-search command is disabled until Prompt 8E implements its endpoint/view.
+- Prompt 8E now activates the note-search command and its endpoint/view.
+
+
+## Operations and PWA — Prompt 8E
+
+Migration **0006** adds daily_reports and session-owned push_subscriptions without
+editing prior migrations. Exact semantics/configuration/limits are documented in
+[operations-pwa.md](operations-pwa.md); wire models are schemas/operations.py.
+
+| Endpoint | Access | Result / body |
+| --- | --- | --- |
+| GET `/admin/system/health` | Admin | SystemHealth: 15-minute groups/total, approximate p50/p95/p99, DB/pool/sockets/locks/jobs, fingerprint-only slow queries, 120-point one-hour ring, uptime/version/degraded |
+| GET `/reports/daily?date=` | QC/Admin | DailyReportDTO; omitted date uses today's business date; future date is VALIDATION_ERROR |
+| GET `/reports/daily/export?date=` | QC/Admin | XLSX: Overview, Daily record, Stale; formula-safe, cancellable export deadline |
+| GET `/search/notes?q&agent_id&status_code&date_from&date_to&page&size=20` | Authenticated | NoteSearchPage with grouped latest-match NoteSearchHit, match_count and date window/timezone/strategy metadata |
+| GET `/push/public-key` | Authenticated | `{enabled:boolean,public_key:string|null}` |
+| POST `/push/subscribe` | Authenticated | `{endpoint,keys:{p256dh,auth}}` → `{ok:true}` |
+| DELETE `/push/subscribe` | Authenticated | `{endpoint}` → `{ok:true}`; non-owner endpoint is NOT_FOUND |
+
+DailyReportDTO includes report_date, timezone, generated_at, cutoff_at, provisional,
+note_count, new_booking_count, done_count, overdue_task_count, status_distribution,
+agents, stations, stale, open_rejection_parking and repeated. All booking rows carry
+canonical/display keys. Private frozen export source is stored internally and is
+excluded from the JSON/schema. Past reports and their Excel source are immutable
+after finalization; current-day reports cache for 60 seconds. Evening snapshots
+finalize the next day to include late notes. Large JSON-column payloads use a
+versioned compression envelope without changing the API result.
+
+Note search q is trimmed 3–100 characters, 60 requests/minute/user. Dates are business
+calendar dates YYYY-MM-DD, default inclusive 30 days, maximum 180; page defaults 1,
+size defaults 20/max100. Deleted notes are excluded; total counts matching bookings.
+LIKE is the default for TiDB. FULLTEXT requires the optional supported MySQL ngram
+index and otherwise returns SERVICE_BUSY with a clear configuration message.
+
+SystemHealth errors count 5xx and percentiles are histogram upper bounds. Metrics are
+bounded process memory and reset on restart. SQL text/parameters are never retained.
+An additive Admin-only WS event `system.health {degraded:boolean}` updates the menu
+indicator after five sampled minutes of global p95 >500 ms and on connection.
+
+Web Push supports task_due/assigned/watch_update only, offline active sessions only.
+Subscribe requires validated browser-generated provider HTTPS endpoints/keys, and
+records opt-in web_push_enabled in users.settings. A subscription cannot change
+account ownership. It additionally binds current session_id, preventing delivery to
+a replaced/logged-out device. Ten subscriptions/user; push mutation rate60/min/user.
+404/410 cleanup and last_success_at are guarded against concurrent key/session edits.
+
+New configuration: DAILY_REPORT_TIME (18:30), NOTE_SEARCH_STRATEGY (like), VAPID_PUBLIC_KEY,
+VAPID_PRIVATE_KEY, VAPID_SUBJECT; INTEGRITY_AUTOFIX remains false. APP_VERSION and
+SLOW_QUERY_THRESHOLD_MS are optional operational settings. Push is disabled without
+valid matching VAPID configuration; it does not disable REST or the static PWA shell.

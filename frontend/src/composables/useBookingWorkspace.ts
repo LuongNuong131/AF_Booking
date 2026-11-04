@@ -560,7 +560,15 @@ export function useBookingWorkspace() {
       hasUpdate.value = true
   })
   useViewRefresh(refresh)
+  const prepareReload = (event: Event) => {
+    flushDraft()
+    if (key.value && draftFailed.value) event.preventDefault()
+  }
+  window.addEventListener('booking:prepare-reload', prepareReload)
+  window.addEventListener('pagehide', flushDraft)
   onScopeDispose(() => {
+    window.removeEventListener('booking:prepare-reload', prepareReload)
+    window.removeEventListener('pagehide', flushDraft)
     disposed = true
     flushDraft()
     generation++

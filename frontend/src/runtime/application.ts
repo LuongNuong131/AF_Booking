@@ -15,6 +15,7 @@ import { useBookingsStore } from '../stores/bookings'
 import { useTasksStore } from '../stores/tasks'
 import { useFoldersStore } from '../stores/folders'
 import { useCollaborationStore } from '../stores/collaboration'
+import { useSystemHealthStore } from '../stores/systemHealth'
 import { useRecentBookingsStore } from '../stores/recentBookings'
 import { i18n } from '../i18n'
 import { installTaskAlerts } from '../composables/useTaskAlerts'
@@ -111,6 +112,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
         transport = null
         realtime.bindSender(null)
         realtime.reset()
+        useSystemHealthStore(pinia).reset()
         notifications.reset()
         collaboration.reset()
         recent.reset(token ? auth.user!.id : null)
@@ -147,6 +149,8 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
           },
           onFrame: (frame) => {
             if (import.meta.env.DEV) realtimeEvents.value++
+            if (frame.event === 'system.health' && auth.user?.role === 'admin')
+              useSystemHealthStore(pinia).degraded = frame.data.degraded
             if (frame.event === 'catalog.updated') {
               bookings.invalidateCatalogue()
               folders.invalidate()

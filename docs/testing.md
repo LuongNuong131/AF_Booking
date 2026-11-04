@@ -319,3 +319,50 @@ flows. Its corruption command exists only in the disposable test harness.
   SELECT page budget and no-note-table-read regression stay enforced. No new
   dependencies or old migration edits. Reproducible commands/limits are in
   [collaboration.md](collaboration.md).
+
+## Prompt 8E operations and PWA verification
+
+- **146 backend unit tests passed**; **137 integration/browser cases** are skipped
+  in the ordinary run and require the disposable runner below.
+- On **each** verified-TLS disposable MySQL 8.0 / TiDB 8.5 database, schema parity,
+  downgrade/re-upgrade and EXPLAIN (1), auth (16), booking (27), tasks (4), realtime
+  (20), folder (22), Admin (6), safeguards (8), collaboration (8) and operations
+  (11) passed: **123 checks per engine**. Head is **0006**; migrations 0001–0005
+  remain unchanged. No FULLTEXT index is part of the mandatory migration.
+- **223 Vitest tests passed**, with strict Vue/TypeScript and production PWA build.
+  Coverage includes visible-only refresh/cancellation, Unicode text highlighting,
+  explicit push permission, subscription ownership failure, and draft-safe reload.
+- **All ten Chromium scenarios passed together** against disposable TLS TiDB.
+  New flows cover Admin-only health/degraded navigation and stopped refresh after
+  leaving the page, Vietnamese note search with literal HTML, QC report Excel/print,
+  mobile fit, no automatic permission request, and the actual production service
+  worker's offline shell, static-only caches, waiting update and explicit Reload.
+- Ruff/format, generated API types and dependency consistency checks passed.
+
+Run the new database suite from `backend`:
+
+```sh
+.venv/bin/python tests/run_schema_checks.py --engine mysql --suite operations --report /tmp/operations-mysql.xml
+.venv/bin/python tests/run_schema_checks.py --engine tidb --suite operations --report /tmp/operations-tidb.xml
+```
+
+It verifies bounded request counters/slow-query fingerprints without parameters,
+daily totals and immutable past JSON/Excel after moderation, 60-second current-day
+cache/evening finalization, formula-safe workbook columns/business timezone,
+Vietnamese/date-bounded/deleted-note search, actual optional MySQL ngram queries
+with Alembic parity, explicit unsupported TiDB FULLTEXT, Admin-only health events,
+push IDOR/online suppression/revocation/dead cleanup, queue deduplication, actual
+VAPID encryption through an intercepted HTTPS transport, and disconnect-cancelled
+export queries with a healthy subsequent pool probe.
+
+The browser command above now runs ten scripts. `pwa.mjs` builds/serves production
+Vite locally; its external-looking test API origin is intercepted inside Chromium,
+not a real provider request. The update fixture changes ignored `dist/sw.js`; run
+a clean production build afterward before serving build artifacts again.
+Artifacts include `daily-report-mobile.png`, `daily-report.xlsx` and
+`pwa-offline-shell.png`. Never run two browser suites on port 5173 concurrently.
+
+These results do not validate hosted TiDB Cloud networking, real push-provider
+delivery, or physical iOS behavior. Live VAPID settings/device permission are needed
+for those checks. Historical 50,000-row performance reports were not remeasured for
+8E. Configuration and manual verification are in [operations-pwa.md](operations-pwa.md).

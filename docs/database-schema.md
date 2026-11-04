@@ -150,3 +150,10 @@ Prompt 8D advances head to **0005**, adding booking_watchers and booking_assignm
 (14 application tables total), notification merged_count and nullable generated unique
 guards. Earlier migrations are unchanged; model/migration parity and downgrade/upgrade
 are checked on both engines. See [collaboration.md](collaboration.md).
+
+
+Prompt8E advances head to **0006** and 16 application tables: daily_reports stores
+final/provisional JSON snapshots (including internal frozen export source), while
+push_subscriptions uses an ASCII-unique endpoint plus user/current-session binding.
+The optional MySQL ngram FULLTEXT index is separate DDL and explicitly excluded from
+mandatory Alembic drift removal; it is not installed on TiDB. See operations-pwa.md.

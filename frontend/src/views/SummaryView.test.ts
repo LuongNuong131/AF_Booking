@@ -17,6 +17,7 @@ beforeEach(() => {
     routes: [
       { path: '/', component: { render: () => null } },
       { path: '/summary', name: 'summary', component: SummaryView },
+      { path: '/search/notes', name: 'note-search', component: { template: '<div/>' } },
     ],
   })
 })

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import JsonValue
@@ -339,3 +339,30 @@ class IntegrityRun(Base):
     details: Mapped[dict[str, JsonValue]] = mapped_column(
         mysql.JSON(none_as_null=True), nullable=False
     )
+
+
+class DailyReport(Base):
+    __tablename__ = "daily_reports"
+    __table_args__ = TABLE_OPTIONS
+    report_date: Mapped[date] = mapped_column(mysql.DATE(), primary_key=True)
+    payload: Mapped[dict[str, JsonValue]] = mapped_column(
+        mysql.JSON(none_as_null=True), nullable=False
+    )
+    generated_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False)
+
+
+class PushSubscription(CreatedAt, Base):
+    __tablename__ = "push_subscriptions"
+    __table_args__ = (
+        UniqueConstraint("endpoint", name="uq_push_subscriptions_endpoint"),
+        Index("ix_push_subscriptions_user", "user_id"),
+        TABLE_OPTIONS,
+    )
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    user_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    session_id: Mapped[str] = mapped_column(ascii_char(36), nullable=False)
+    endpoint: Mapped[str] = mapped_column(ascii_varchar(2048), nullable=False)
+    p256dh: Mapped[str] = mapped_column(ascii_varchar(100), nullable=False)
+    auth: Mapped[str] = mapped_column(ascii_varchar(40), nullable=False)
+    user_agent: Mapped[str | None] = mapped_column(mysql.VARCHAR(255))
+    last_success_at: Mapped[datetime | None] = mapped_column(UTCDateTime())

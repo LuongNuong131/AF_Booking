@@ -12,7 +12,7 @@ from app.main import create_app
 
 
 def settings(**overrides: object) -> Settings:
-    return Settings(_env_file=None, app_env="test", **overrides)
+    return Settings(_env_file=None, app_env="test", scheduler_enabled=False, **overrides)
 
 
 def test_liveness_and_unconfigured_readiness() -> None:

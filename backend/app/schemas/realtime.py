@@ -120,6 +120,15 @@ class LockCommandFrame(Frame):
     data: LockCommandData
 
 
+class SystemHealthData(ContractModel):
+    degraded: bool
+
+
+class SystemHealthFrame(Frame):
+    event: Literal["system.health"] = "system.health"
+    data: SystemHealthData
+
+
 ClientFrame = Annotated[LockCommandFrame | HeartbeatFrame, Field(discriminator="event")]
 ServerFrame = Annotated[
     BookingUpdatedFrame
@@ -129,12 +138,14 @@ ServerFrame = Annotated[
     | TaskDueFrame
     | ForceLogoutFrame
     | HeartbeatFrame
-    | CatalogFrame,
+    | CatalogFrame
+    | SystemHealthFrame,
     # Catalog events invalidate dynamic labels and current-view snapshots.
     Field(discriminator="event"),
 ]
 client_frame_adapter = TypeAdapter(ClientFrame)
 REALTIME_MODELS = (
+    SystemHealthFrame,
     CatalogFrame,
     BookingUpdatedFrame,
     LockChangedFrame,

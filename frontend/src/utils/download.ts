@@ -1,9 +1,16 @@
 import { api } from '../api/client'
 import type { RequestContext } from '../composables/useRequest'
 import { isAxiosError } from 'axios'
-export async function downloadDaily(ctx: RequestContext, params: Record<string, string>) {
+export function downloadDaily(ctx: RequestContext, params: Record<string, string>) {
+  return downloadReport(ctx, '/export/daily', params)
+}
+export async function downloadReport(
+  ctx: RequestContext,
+  path: string,
+  params: Record<string, string>,
+) {
   try {
-    const response = await api.get<Blob>('/export/daily', {
+    const response = await api.get<Blob>(path, {
       params,
       responseType: 'blob',
       signal: ctx.signal,

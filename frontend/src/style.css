@@ -3783,3 +3783,142 @@ kbd {
     flex-wrap: wrap;
   }
 }
+
+/* Operations, reports and offline application shell. */
+.admin-degraded-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-left: 6px;
+  flex-shrink: 0;
+}
+.health-sparkline {
+  display: block;
+  width: 100%;
+  height: 140px;
+  color: var(--primary);
+  background: var(--surface-soft);
+  border-radius: 12px;
+  margin: 18px 0;
+}
+.system-health h3,
+.daily-report-view h2 {
+  margin-top: 24px;
+}
+.daily-report-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.daily-report-controls label {
+  display: grid;
+  gap: 6px;
+}
+.daily-status-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  list-style: none;
+  padding: 0;
+}
+.daily-status-list li {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.note-search-hit {
+  margin: 16px 0;
+}
+.note-search-hit small {
+  display: block;
+  color: var(--muted);
+  margin: 8px 0;
+}
+.search-note-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.note-highlight mark {
+  color: var(--ink);
+  background: #ffe08a;
+  border-radius: 3px;
+}
+.background-push-settings {
+  margin: 22px 0;
+  padding: 18px 0;
+  border-block: 1px solid var(--line);
+}
+.pwa-update-banner {
+  position: fixed;
+  z-index: 10000;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 14px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+@media print {
+  .sidebar,
+  .topbar,
+  .notice-stack,
+  .daily-report-controls,
+  .page-heading .page-eyebrow,
+  .dev-performance,
+  .pwa-update-banner {
+    display: none !important;
+  }
+  .workspace,
+  .main-panel,
+  #main-content,
+  .page-shell {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+  .booking-table-wrap {
+    overflow: visible !important;
+  }
+  .daily-report-view table {
+    min-width: 0;
+    font-size: 9pt;
+  }
+  .daily-report-view h2 {
+    break-after: avoid;
+  }
+  .daily-report-view tr {
+    break-inside: avoid;
+  }
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+}
+
+@media print {
+  .daily-report-view th,
+  .daily-report-view td {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .daily-report-view table {
+    width: 100%;
+  }
+  .daily-report-view thead {
+    display: table-header-group;
+  }
+}

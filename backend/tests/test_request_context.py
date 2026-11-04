@@ -13,7 +13,9 @@ def test_root_health_never_queries_the_database() -> None:
     engine = AsyncMock()
     with (
         patch("app.main.create_database_engine", return_value=engine),
-        TestClient(create_app()) as client,
+        # The separate 30-second health sampler legitimately probes the DB;
+        # disable jobs here so this assertion isolates the liveness request.
+        TestClient(create_app(Settings(_env_file=None, scheduler_enabled=False))) as client,
     ):
         assert client.get("/health").json() == {"status": "ok", "service": "booking-tracker-api"}
         engine.connect.assert_not_called()

@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     integrity_autofix: bool = False
     integrity_run_time: str = Field(default="02:00", pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
     integrity_timeout_seconds: float = Field(default=600, gt=0, le=3600)
+    app_version: str = Field(default="0.2.0", min_length=1, max_length=64)
+    daily_report_time: str = Field(default="18:30", pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+    note_search_strategy: Literal["like", "fulltext"] = "like"
+    slow_query_threshold_ms: float = Field(default=200, ge=0, le=30000)
+    vapid_public_key: str | None = None
+    vapid_private_key: SecretStr | None = None
+    vapid_subject: str | None = None
     scheduler_enabled: bool = True
     scheduler_job_timeout_seconds: float = Field(default=120, gt=0, le=300)
     task_job_interval_seconds: float = Field(default=30, gt=0, le=60)
@@ -80,7 +87,15 @@ class Settings(BaseSettings):
             raise ValueError("A valid ASCII regular expression is required") from None
         return value
 
-    @field_validator("database_url", "database_ssl_ca", "jwt_secret_key", mode="before")
+    @field_validator(
+        "database_url",
+        "database_ssl_ca",
+        "jwt_secret_key",
+        "vapid_public_key",
+        "vapid_private_key",
+        "vapid_subject",
+        mode="before",
+    )
     @classmethod
     def blank_to_none(cls, value: object) -> object:
         return None if value == "" else value

@@ -62,6 +62,9 @@ class RequestContextMiddleware:
         try:
             await self.app(scope, receive, add_headers)
         finally:
+            telemetry = getattr(scope["app"].state, "telemetry", None)
+            if telemetry is not None:
+                telemetry.record(scope["path"], status, (time.monotonic() - started) * 1000)
             logger.info(
                 "request_id=%s method=%s path=%r status=%s duration_ms=%.2f",
                 identifier,

@@ -6,12 +6,18 @@ import { createAppRouter } from './router'
 import { installApplication } from './runtime/application'
 import { useUiStore } from './stores/ui'
 import './style.css'
+import { installPwa } from './pwa/register'
 
 const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 const router = createAppRouter(pinia)
 const stop = installApplication(pinia, router)
+const stopPwa = installPwa(pinia)
 app.config.errorHandler = () => useUiStore(pinia).notify(i18n.global.t('errors.UNKNOWN'), 'error')
 app.use(i18n).use(router).mount('#app')
-if (import.meta.hot) import.meta.hot.dispose(stop)
+if (import.meta.hot)
+  import.meta.hot.dispose(() => {
+    stop()
+    stopPwa()
+  })

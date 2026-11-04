@@ -15,6 +15,7 @@ import type { ProfileStats } from '../types/api.generated'
 import { formatDateTime } from '../utils/dateTime'
 import UserAvatar from '../components/UserAvatar.vue'
 import RequestStatus from '../components/RequestStatus.vue'
+import BackgroundPushSettings from '../components/BackgroundPushSettings.vue'
 const { t } = useI18n(),
   auth = useAuthStore(),
   ui = useUiStore()
@@ -188,6 +189,7 @@ async function save() {
           </option>
         </select></label
       >
+      <BackgroundPushSettings />
       <form
         class="reminder-preferences"
         :aria-label="t('taskUi.preferences')"

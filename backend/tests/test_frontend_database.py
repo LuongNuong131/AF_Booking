@@ -85,6 +85,8 @@ class BackendListener:
         "outbox.mjs",
         "safeguards.mjs",
         "collaboration.mjs",
+        "operations.mjs",
+        "pwa.mjs",
     ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
@@ -103,6 +105,11 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
             },
         )
     assert (await rig.save()).status_code == 200
+    if browser_script == "operations.mjs":
+        assert (await rig.save(version=1, note="Xác nhận khách sạn")).status_code == 200
+        assert (
+            await rig.save(version=2, note="Khách sạn <img src=x onerror=alert(1)> confirmed")
+        ).status_code == 200
     if browser_script == "admin.mjs":
         assert (
             await rig.save(
@@ -138,10 +145,25 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
                 "VITE_TIMEOUT_SCALE": "1",
             }
         )
+        if browser_script == "pwa.mjs":
+            environment["VITE_API_URL"] = "https://api.pwa.test/api/v1"
+            environment["VITE_WS_URL"] = "wss://api.pwa.test/api/v1/ws"
+            build = await asyncio.create_subprocess_exec(
+                "npm",
+                "run",
+                "build",
+                cwd=ROOT / "frontend",
+                env=environment,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+            )
+            output, _ = await asyncio.wait_for(build.communicate(), 60)
+            assert build.returncode == 0, output.decode()[-3000:]
         with (tmp_path / "vite.log").open("wb") as log:
             vite = await asyncio.create_subprocess_exec(
                 "node",
                 "node_modules/vite/bin/vite.js",
+                *(["preview", "--port", "5173"] if browser_script == "pwa.mjs" else []),
                 "--host",
                 "127.0.0.1",
                 cwd=ROOT / "frontend",
@@ -167,7 +189,40 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
             async with asyncio.timeout(150):
                 while line := await browser.stdout.readline():
                     event = json.loads(line)
-                    if event.get("action") == "stop_backend":
+                    if event.get("action") == "system_sample":
+                        import time
+
+                        from sqlalchemy import text
+
+                        metrics = rig.app.state.telemetry
+                        metrics.slow_ms = 1
+                        async with rig.app.state.engine.connect() as connection:
+                            await connection.execute(
+                                text("SELECT SLEEP(:duration), :secret"),
+                                {"duration": 0.02, "secret": "hidden-health-param"},
+                            )
+                        moment = time.time()
+                        metrics.clock = lambda moment=moment: moment - 301
+                        for _ in range(200):
+                            metrics.record("/api/v1/bookings", 200, 700)
+                        await rig.app.state.scheduler.jobs["system.sample"].callback()
+                        metrics.clock = time.time
+                        for _ in range(200):
+                            metrics.record("/api/v1/bookings", 200, 700)
+                        await rig.app.state.scheduler.jobs["system.sample"].callback()
+                    elif event.get("action") == "pwa_update" and browser_script == "pwa.mjs":
+                        file = ROOT / "frontend/dist/sw.js"
+                        source = file.read_text()
+                        import re
+
+                        source = re.sub(
+                            r"(const CACHE = ['\"]booking-static-['\"] \+ )['\"][a-f0-9]+['\"]",
+                            r'\1"pwa-update-fixture"',
+                            source,
+                        )
+                        assert "pwa-update-fixture" in source
+                        file.write_text(source)
+                    elif event.get("action") == "stop_backend":
                         await live.stop()
                     elif event.get("action") == "start_backend":
                         await live.start()

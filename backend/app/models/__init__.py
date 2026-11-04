@@ -9,8 +9,10 @@ from app.models.entities import (
     BookingNote,
     BookingTask,
     BookingWatcher,
+    DailyReport,
     IntegrityRun,
     Notification,
+    PushSubscription,
     Station,
     Status,
     User,
@@ -32,4 +34,6 @@ __all__ = [
     "Station",
     "Status",
     "User",
+    "DailyReport",
+    "PushSubscription",
 ]

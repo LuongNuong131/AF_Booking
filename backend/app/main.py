@@ -13,6 +13,7 @@ from app.api.v1.folders import router as folders_router
 from app.api.v1.health import HealthResponse, health
 from app.api.v1.health import router as health_router
 from app.api.v1.notifications import router as notifications_router
+from app.api.v1.operations import router as operations_router
 from app.api.v1.realtime import router as realtime_router
 from app.api.v1.tasks import router as tasks_router
 from app.core.config import Settings
@@ -26,10 +27,13 @@ from app.services.auth import AuthService
 from app.services.booking_reads import BookingReads
 from app.services.booking_writes import BookingWrites
 from app.services.collaboration import CollaborationService
+from app.services.daily_reports import DailyReports
 from app.services.exports import ExportService
 from app.services.folders import FolderService
 from app.services.integrity import IntegrityService
 from app.services.key_index import KeyIndex
+from app.services.note_search import create_note_search
+from app.services.push import PushService
 from app.services.reports import ReportService
 from app.services.scheduler import Scheduler
 from app.services.search_limiter import SearchLimiter
@@ -39,6 +43,7 @@ from app.services.stale_reminders import StaleReminders
 from app.services.stations import StationService
 from app.services.storage import NullStorage
 from app.services.tasks import TaskService
+from app.services.telemetry import Telemetry
 from app.services.ws_manager import WebSocketManager
 
 
@@ -52,7 +57,12 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+        application.state.telemetry = Telemetry(config.slow_query_threshold_ms)
         application.state.engine = create_database_engine(config)
+        if application.state.engine is not None and hasattr(
+            application.state.engine, "sync_engine"
+        ):
+            application.state.engine.sync_engine._booking_telemetry = application.state.telemetry
         ws_manager = WebSocketManager(config)
         events = (
             CombinedSessionEvents(ws_manager, session_events)
@@ -76,6 +86,7 @@ def create_app(
         application.state.snapshot_cache = cache
         application.state.key_index = index
         application.state.ws_manager = ws_manager
+        ws_manager.health_status = application.state.telemetry.degraded
         application.state.lock_manager = ws_manager.locks
         application.state.storage = NullStorage()
         application.state.bookings = BookingReads(application.state.engine, config, index, cache)
@@ -93,8 +104,46 @@ def create_app(
             application.state.engine, config, application.state.auth, ws_manager
         )
         scheduler = Scheduler()
+        application.state.note_search = create_note_search(application.state.engine, config)
+        application.state.push = PushService(
+            application.state.engine, config, application.state.auth, ws_manager
+        )
+        scheduler.status["push.delivery"] = application.state.push.job_state
+        ws_manager.push = application.state.push
+        application.state.push.start()
+
+        last_health_degraded = False
+
+        async def health_sample():
+            nonlocal last_health_degraded
+            previous = last_health_degraded
+            await application.state.telemetry.sample(application.state.engine, config)
+            current = application.state.telemetry.degraded()
+            last_health_degraded = current
+            if current != previous:
+                for connection in list(ws_manager.connections.values()):
+                    if connection.user.role == "admin":
+                        await ws_manager.send_user(
+                            connection.user.id, "system.health", {"degraded": current}
+                        )
+
+        scheduler.add_job(
+            "system.sample",
+            health_sample,
+            interval=30,
+            timeout=config.db_connect_timeout_seconds + 2,
+        )
         application.state.reports = ReportService(application.state.engine, config)
         application.state.exports = ExportService(application.state.engine, config)
+        application.state.daily_reports = DailyReports(
+            application.state.engine, config, application.state.exports
+        )
+        scheduler.add_job(
+            "reports.daily",
+            application.state.daily_reports.tick,
+            interval=60,
+            timeout=config.export_timeout_seconds,
+        )
         application.state.admin = AdminService(
             application.state.engine,
             config,
@@ -138,6 +187,7 @@ def create_app(
         finally:
             await scheduler.stop()
             await application.state.integrity.stop()
+            await application.state.push.stop()
             await ws_manager.stop()
             await index.stop()
             if application.state.engine is not None:
@@ -145,7 +195,7 @@ def create_app(
 
     application = FastAPI(
         title="Booking Tracker API",
-        version="0.1.0",
+        version=config.app_version,
         lifespan=lifespan,
         default_response_class=ORJSONResponse,
         docs_url="/docs" if config.app_env != "production" else None,
@@ -181,6 +231,7 @@ def create_app(
     application.include_router(realtime_router, prefix="/api/v1")
     application.include_router(tasks_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
+    application.include_router(operations_router, prefix="/api/v1")
     application.include_router(collaboration_router, prefix="/api/v1")
     return application
 

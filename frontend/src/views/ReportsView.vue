@@ -88,6 +88,9 @@ useViewRefresh(load)
     <header class="page-heading">
       <p class="page-eyebrow">{{ t('app.workspace') }}</p>
       <h1>{{ t('pages.reportsTitle') }}</h1>
+      <RouterLink class="button" :to="{ name: 'daily-report' }">{{
+        t('opsUi.dailyTitle')
+      }}</RouterLink>
       <p>{{ t('adminUi.reportIntro') }}</p>
     </header>
     <form class="admin-filters" @submit.prevent="load">

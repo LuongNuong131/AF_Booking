@@ -433,3 +433,28 @@ it('persists assignment fields with the draft and durable note payload', async (
     expect.objectContaining({ assign_to: 5, assign_message: 'Please check tomorrow' }),
   )
 })
+
+it('flushes a freshly typed note before a PWA reload without waiting for debounce', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })
+  const workspace = setup()
+  await workspace.open(KEY)
+  workspace.statusCode.value = 'BUNDLE'
+  workspace.note.value = 'Draft before a new application version'
+  const event = new Event('booking:prepare-reload', { cancelable: true })
+  expect(window.dispatchEvent(event)).toBe(true)
+  expect(draftStorage(3).get(KEY)?.note).toBe('Draft before a new application version')
+})
+
+it('refuses a PWA reload when the current draft cannot be stored', async () => {
+  vi.spyOn(api, 'get').mockResolvedValue({ data: lookup() })
+  const workspace = setup()
+  await workspace.open(KEY)
+  workspace.statusCode.value = 'BUNDLE'
+  workspace.note.value = 'Must not be lost'
+  vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+    throw new DOMException('Full', 'QuotaExceededError')
+  })
+  const event = new Event('booking:prepare-reload', { cancelable: true })
+  expect(window.dispatchEvent(event)).toBe(false)
+  expect(workspace.note.value).toBe('Must not be lost')
+})

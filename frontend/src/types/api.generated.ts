@@ -43,11 +43,23 @@ export type CursorPage<T> = { "items": Array<T>; "next_cursor": string | null }
 
 export type CursorPage_Note_ = { "items": Array<Note>; "next_cursor": string | null }
 
+export type DailyAgent = { "id": number; "full_name": string; "note_count": number; "done_count": number }
+
+export type DailyBooking = { "booking_key": string; "display_key": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string; "status": StatusSummary | null; "agent": AgentSummary | null; "updated_at": string; "note_count"?: number }
+
+export type DailyReportDTO = { "report_date": string; "provisional"?: boolean; "timezone": string; "generated_at": string; "cutoff_at": string; "note_count": number; "new_booking_count": number; "done_count": number; "overdue_task_count": number; "status_distribution": Array<DailyStatusCount>; "agents": Array<DailyAgent>; "stations": Array<DailyStation>; "stale": Array<DailyBooking>; "open_rejection_parking": Array<DailyBooking>; "repeated": Array<DailyBooking> }
+
+export type DailyStation = { "station_code": string; "supplier_type": SupplierType; "note_count": number; "done_count": number }
+
+export type DailyStatusCount = { "code": string; "label": string; "count": number }
+
 export type DeleteNote = { "reason": string }
 
 export type DueTasks = { "items": Array<Task>; "total": number }
 
 export type EmptyData = {  }
+
+export type EndpointMetrics = { "requests": number; "errors": number; "error_rate": number; "p50_ms": number | null; "p95_ms": number | null; "p99_ms": number | null; "group": string }
 
 export type ErrorCode = "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
 
@@ -87,6 +99,8 @@ export type InvoiceChange = { "add"?: Array<string>; "remove_ids"?: Array<number
 
 export type InvoiceState = "unknown" | "has_invoice" | "no_invoice"
 
+export type JobMetrics = { "name": string; "running": boolean; "last_started_at": string | null; "last_finished_at": string | null; "duration_ms": number | null; "last_error": string | null }
+
 export type JsonValue = null | boolean | number | string | Array<JsonValue> | { [key: string]: JsonValue }
 
 export type KeyCandidate = { "key": string; "display_key": string; "station_code": string; "supplier_name": string }
@@ -115,6 +129,8 @@ export type LoginResponse = { "access_token": string; "user": PublicUser; "token
 
 export type MessageResponse = { "message": string }
 
+export type MetricPoint = { "requests": number; "errors": number; "error_rate": number; "p50_ms": number | null; "p95_ms": number | null; "p99_ms": number | null; "at": string; "db_latency_ms": number | null }
+
 export type MonthRow = { "booking_key": string; "display_key": string; "period": string; "period_label": string; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "is_done": boolean; "is_stale": boolean; "updated_at": string; "invoice_state": InvoiceState; "invoice_count": number }
 
 export type MutationResult = { "ok"?: boolean }
@@ -126,6 +142,10 @@ export type NoteInvoiceChange = { "added": Array<string>; "removed": Array<strin
 export type NoteSaveRequest = { "status_code": string; "note": string | null; "expected_version": number; "client_request_id": string; "confirm_new"?: boolean; "allow_duplicate"?: boolean; "assign_to"?: number | null; "assign_message"?: string | null; "invoices"?: InvoiceChange | null; "supplier_name"?: string | null; "supplier_type"?: SupplierType | null }
 
 export type NoteSaveResponse = { "my_watching"?: boolean; "snapshot": BookingSnapshot; "note": Note }
+
+export type NoteSearchHit = { "booking_key": string; "display_key": string; "note_id": number; "note": string | null; "agent": AgentSummary; "status": StatusSummary; "position": string; "created_at": string; "match_count": number; "supplier_name": string; "station_code": string; "supplier_type": SupplierType }
+
+export type NoteSearchPage = { "items": Array<NoteSearchHit>; "total": number; "page": number; "size": number; "date_from": string; "date_to": string; "timezone": string; "strategy": string }
 
 export type NotificationItem = { "booking_key": string; "display_key": string; "id": number; "type": NotificationType; "merged_count"?: number; "by_agent": AgentSummary | null; "note_id": number | null; "task_id": number | null; "created_at": string; "read_at": string | null }
 
@@ -143,13 +163,25 @@ export type PerformanceReport = { "date_from": string; "date_to": string; "timez
 
 export type PerformanceUser = { "agent": AgentSummary | null; "note_count"?: number; "done_count"?: number }
 
+export type PoolMetrics = { "size": number; "checked_out": number; "overflow": number }
+
 export type ProfilePatch = { "settings"?: ReminderSettingsPatch | null; "full_name"?: string | null }
 
 export type ProfileStats = { "notes_today": number; "notes_week": number; "timezone": string; "login_history": Array<LoginActivity> }
 
 export type PublicUser = { "id": number; "username": string; "full_name": string; "role": "admin" | "qc" | "agent"; "is_active": boolean; "settings": { [key: string]: JsonValue } | null }
 
-export type ReminderSettingsPatch = { "timezone"?: string | null; "default_remind_time"?: string | null; "auto_watch_on_note"?: boolean | null; "task_sound"?: boolean | null; "web_notifications"?: boolean | null; "skip_weekends"?: boolean | null }
+export type PushKeys = { "p256dh": string; "auth": string }
+
+export type PushPublicKey = { "public_key": string | null; "enabled": boolean }
+
+export type PushSubscribe = { "endpoint": string; "keys": PushKeys }
+
+export type PushUnsubscribe = { "endpoint": string }
+
+export type ReminderSettingsPatch = { "timezone"?: string | null; "default_remind_time"?: string | null; "auto_watch_on_note"?: boolean | null; "web_push_enabled"?: boolean | null; "task_sound"?: boolean | null; "web_notifications"?: boolean | null; "skip_weekends"?: boolean | null }
+
+export type RequestMetrics = { "requests": number; "errors": number; "error_rate": number; "p50_ms": number | null; "p95_ms": number | null; "p99_ms": number | null }
 
 export type ResetPassword = { "temporary_password": string }
 
@@ -175,6 +207,8 @@ export type SearchStationPeriod = { "query": string; "kind": "station_period"; "
 
 export type ServerEventName = "booking.updated" | "lock.acquired" | "lock.released" | "lock.snapshot" | "lock.denied" | "notification.new" | "task.due" | "session.force_logout"
 
+export type SlowQuery = { "fingerprint": string; "duration_ms": number; "at": string }
+
 export type StationInfo = { "code": string; "name": string | null }
 
 export type StationOption = { "code": string; "name": string | null; "folder_count": number }
@@ -198,6 +232,12 @@ export type Suggestion = { "booking_key": string; "display_key": string; "last_s
 export type SupplierSummary = { "name": string; "type": SupplierType }
 
 export type SupplierType = "hotel" | "transportation"
+
+export type SystemHealth = { "generated_at": string; "uptime_seconds": number; "version": string; "window_seconds": number; "percentiles_approximate": boolean; "total": RequestMetrics; "groups": Array<EndpointMetrics>; "db_latency_ms": number | null; "db_error": string | null; "pool": PoolMetrics; "websocket_connections": number; "soft_locks": number; "jobs": Array<JobMetrics>; "slow_queries": Array<SlowQuery>; "points": Array<MetricPoint>; "degraded": boolean }
+
+export type SystemHealthData = { "degraded": boolean }
+
+export type SystemHealthFrame = { "event": "system.health"; "data": SystemHealthData }
 
 export type Task = { "booking_key": string; "display_key": string; "id": number; "message": string; "remind_at": string; "status": TaskStatus; "is_due": boolean; "is_overdue": boolean; "snooze_count": number; "created_at": string; "completed_at": string | null; "booking_changed_since": boolean; "booking": TaskBookingSummary }
 
@@ -223,6 +263,6 @@ export type WatchState = { "watching": boolean }
 
 export type WebSocketClientFrame = LockCommandFrame | HeartbeatFrame
 
-export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | TaskDueFrame | ForceLogoutFrame | HeartbeatFrame | CatalogFrame
+export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | TaskDueFrame | ForceLogoutFrame | HeartbeatFrame | CatalogFrame | SystemHealthFrame
 
 export const ERROR_CODES = ["UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]

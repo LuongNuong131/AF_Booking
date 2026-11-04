@@ -11,7 +11,7 @@
 
 ## Not implemented
 
-Full invoice management/reports, service-worker Web Push, invoice exports, and broader recovery tools. Do not describe this as the completed booking application.
+Full invoice management/reports, invoice exports, and broader recovery tools. Do not describe this as the completed booking application.
 
 ## Implemented: Prompt 1B shared contract
 
@@ -164,3 +164,14 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 - Lazy role-aware Ctrl+K palette, canonical/partial booking opening, ten per-user recent bookings, recent folders, theme/task/watch/export/sign-out commands.
 - Central scoped useShortcuts, typing/IME guards, roving J/K/arrows/Enter/W/T/paging and extended ? help; note search is explicitly disabled until Prompt 8E.
 - MySQL/TiDB migration/API/private-WebSocket tests, frontend units and a three-user Chromium flow; details in docs/collaboration.md.
+
+
+## Implemented: Prompt 8E operations and analysis
+
+- New migration0006 adds daily_reports and session-owned push_subscriptions; prior migrations remain unchanged. pywebpush is hash-locked; frontend PWA uses existing Vite/Node.
+- Bounded O(1) request counters, 15-minute approximate histograms, DB/pool/WS/lock/job state, fingerprint-only slow queries and a 120-point ring; Admin health view refreshes only while visible, with Admin-only WS degradation indicator.
+- Consistent RR daily aggregates, station/type tables, immutable past JSON and frozen Excel source, 60-second provisional cache/evening job/next-day finalization and compressed large payloads without truncation.
+- Typed date-bounded/rate-limited note search, default indexed LIKE for TiDB, optional verified MySQL ngram strategy, safe Unicode text-node/mark highlighting and enabled Summary/palette entry.
+- Production manifest/icons/static-only worker, offline shell, no API caching, explicit update banner and draft-safe reload across tabs.
+- VAPID-backed bounded push queue for offline current sessions only; explicit Profile opt-in, endpoint ownership/provider/key validation, TLS/no-redirect transport, dead/stale cleanup and minimal booking-only content.
+- Real MySQL/TiDB operations/optional-FT/schema tests, VAPID encryption with intercepted transport, frontend units and production PWA/operations Chromium flows. Real provider/device delivery needs operator VAPID configuration; physical iOS has not been validated.
