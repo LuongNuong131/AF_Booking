@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import func, select, update
 
+from app.core.bounds import Identifier
 from app.core.deps import get_current_user
 from app.core.errors import ApiException
 from app.core.unit_of_work import transaction
@@ -80,7 +81,7 @@ async def read_all(request: Request, user: UserDep):
 
 
 @router.post("/notifications/{id}/read", response_model=MutationResult)
-async def read_notification(id: int, request: Request, user: UserDep):
+async def read_notification(id: Identifier, request: Request, user: UserDep):
     async with transaction(request.app.state.engine, request.app.state.settings) as session:
         row = await session.scalar(
             select(Notification)

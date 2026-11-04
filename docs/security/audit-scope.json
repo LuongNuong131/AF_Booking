@@ -1,0 +1,15 @@
+{
+  "review_date": "2026-11-04",
+  "scope": "All locked production and development dependencies; no vulnerability exclusions",
+  "pip_audit_version": "2.10.1",
+  "npm_version": "11.9.0",
+  "remaining_findings": {
+    "python": 0,
+    "npm": 0
+  },
+  "lockfile_sha256": {
+    "backend/requirements.txt": "378fbd62ae19cb2dc47a0a0c0a94431d52d972f4e2493697bc337cbcda9c7506",
+    "backend/requirements-dev.txt": "a5b95318c17b679142a451bfa4e53f22efe539122e0e23b3d832612890366844",
+    "frontend/package-lock.json": "dbfb4f0c4ea25b9e77f44696cd4531e2fc75ab265ba78135bd8edc37cb750883"
+  }
+}

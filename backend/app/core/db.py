@@ -15,10 +15,7 @@ def create_database_engine(settings: Settings, telemetry=None) -> AsyncEngine | 
     connect_args: dict[str, object] = {
         "connect_timeout": settings.db_connect_timeout_seconds,
         "charset": "utf8mb4",
-        "init_command": (
-            "SET time_zone = '+00:00', "
-            f"innodb_lock_wait_timeout = {settings.db_lock_wait_timeout_seconds}"
-        ),
+        "init_command": "SET time_zone = '+00:00'",
     }
     if settings.database_ssl:
         # The default context validates both the certificate chain and hostname.
@@ -54,14 +51,20 @@ def create_database_engine(settings: Settings, telemetry=None) -> AsyncEngine | 
         try:
             cursor.execute("SELECT VERSION()")
             version = str(cursor.fetchone()[0]).lower()
-            variable = "max_statement_time" if "mariadb" in version else "max_execution_time"
+            cursor.execute(
+                "SET SESSION innodb_lock_wait_timeout = %s",
+                (settings.db_lock_wait_timeout_seconds,),
+            )
             value = (
                 settings.db_query_timeout_ms / 1000
                 if "mariadb" in version
                 else settings.db_query_timeout_ms
             )
             try:
-                cursor.execute(f"SET SESSION {variable} = {value}")
+                if "mariadb" in version:
+                    cursor.execute("SET SESSION max_statement_time = %s", (value,))
+                else:
+                    cursor.execute("SET SESSION max_execution_time = %s", (value,))
             except Exception as exc:
                 # TiDB may lack this variable; access/network errors must still propagate.
                 if not getattr(exc, "args", ()) or exc.args[0] not in {1193, 1235}:

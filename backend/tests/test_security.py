@@ -36,6 +36,7 @@ def test_token_round_trip_and_expiry_budget(token_settings: Settings) -> None:
         "wrong_issuer",
         "wrong_audience",
         "missing_sid",
+        "missing_exp",
         "numeric_sub",
         "invalid_role",
         "invalid_sid",
@@ -66,6 +67,8 @@ def test_untrusted_or_incomplete_tokens_are_rejected(token_settings: Settings, c
         payload["aud"] = "other-client"
     elif case == "missing_sid":
         del payload["sid"]
+    elif case == "missing_exp":
+        del payload["exp"]
     elif case == "numeric_sub":
         payload["sub"] = 42
     elif case == "invalid_role":

@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query, Request
 
+from app.core.bounds import Identifier, KeyPath
 from app.core.deps import get_current_user, require_roles
 from app.core.errors import ApiException
 from app.core.timeouts import DeadlineRoute, timeout
@@ -50,14 +51,16 @@ async def create_user(body: UserCreate, request: Request, user: Admin):
 
 
 @router.patch("/admin/users/{identifier}", response_model=AdminUser)
-async def update_user(identifier: int, body: UserUpdate, request: Request, user: Admin):
+async def update_user(identifier: Identifier, body: UserUpdate, request: Request, user: Admin):
     return await request.app.state.admin.update_user(
         identifier, body, user, AuditContext.from_request(request)
     )
 
 
 @router.post("/admin/users/{identifier}/reset-password", response_model=AdminUser)
-async def reset_password(identifier: int, body: ResetPassword, request: Request, user: Admin):
+async def reset_password(
+    identifier: Identifier, body: ResetPassword, request: Request, user: Admin
+):
     return await request.app.state.admin.update_user(
         identifier,
         None,
@@ -68,7 +71,7 @@ async def reset_password(identifier: int, body: ResetPassword, request: Request,
 
 
 @router.post("/admin/users/{identifier}/kick")
-async def kick(identifier: int, request: Request, user: Admin):
+async def kick(identifier: Identifier, request: Request, user: Admin):
     kicked = await request.app.state.auth.kick_session(
         identifier, actor_id=user.id, caller=user, context=AuditContext.from_request(request)
     )
@@ -100,7 +103,9 @@ async def audit(
 
 
 @router.get("/admin/bookings/{key}/notes", response_model=Page[AdminNote])
-async def history(key: str, request: Request, user: Admin, page: PageNumber = 1, size: Size = 20):
+async def history(
+    key: KeyPath, request: Request, user: Admin, page: PageNumber = 1, size: Size = 20
+):
     return await request.app.state.admin.notes(page, size, key=key)
 
 
@@ -112,14 +117,14 @@ async def trash(
 
 
 @router.delete("/admin/notes/{identifier}", response_model=BookingItem)
-async def delete_note(identifier: int, body: DeleteNote, request: Request, user: Admin):
+async def delete_note(identifier: Identifier, body: DeleteNote, request: Request, user: Admin):
     return await request.app.state.admin.change_note(
         identifier, False, body.reason, user, AuditContext.from_request(request)
     )
 
 
 @router.post("/admin/notes/{identifier}/restore", response_model=BookingItem)
-async def restore(identifier: int, request: Request, user: Admin):
+async def restore(identifier: Identifier, request: Request, user: Admin):
     return await request.app.state.admin.change_note(
         identifier, True, None, user, AuditContext.from_request(request)
     )

@@ -35,7 +35,14 @@ async def get_current_user(
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise unauthorized()
     claims = decode_access_token(credentials.credentials, request.app.state.settings)
-    return await auth.authenticate(claims)
+    user = await auth.authenticate(claims)
+    if user.must_change_password and request.url.path not in {
+        "/api/v1/auth/me",
+        "/api/v1/auth/logout",
+        "/api/v1/auth/change-password",
+    }:
+        raise ApiException(ErrorCode.PASSWORD_CHANGE_REQUIRED)
+    return user
 
 
 def require_roles(*roles: UserRole) -> Callable[..., Awaitable[CurrentUser]]:

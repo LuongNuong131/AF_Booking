@@ -5,7 +5,7 @@ export type AdminNote = { "booking_key": string; "display_key": string; "id": nu
 
 export type AdminStatus = { "id": number; "code": string; "label": string; "position_label": string; "note_required": boolean; "is_done": boolean; "sort_order": number; "is_active": boolean; "stale_after_hours": number | null; "suggest_task": boolean; "default_task_days": number | null; "invoice_required": boolean }
 
-export type AdminUser = { "id": number; "username": string; "full_name": string; "role": "admin" | "qc" | "agent"; "is_active": boolean; "created_at": string; "last_login_at": string | null; "has_session": boolean }
+export type AdminUser = { "id": number; "username": string; "full_name": string; "role": "admin" | "qc" | "agent"; "is_active": boolean; "must_change_password": boolean; "created_at": string; "last_login_at": string | null; "has_session": boolean }
 
 export type AgentCount = { "agent": AgentSummary | null; "count": number }
 
@@ -61,7 +61,7 @@ export type EmptyData = {  }
 
 export type EndpointMetrics = { "requests": number; "errors": number; "error_rate": number; "p50_ms": number | null; "p95_ms": number | null; "p99_ms": number | null; "group": string }
 
-export type ErrorCode = "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
+export type ErrorCode = "PASSWORD_CHANGE_REQUIRED" | "PAYLOAD_TOO_LARGE" | "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
 
 export type FolderCard = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string; "booking_count": number; "open_count": number; "stale_count"?: number; "last_activity_at": string; "latest": FolderLatest | null }
 
@@ -181,7 +181,7 @@ export type ProfilePatch = { "settings"?: ReminderSettingsPatch | null; "full_na
 
 export type ProfileStats = { "notes_today": number; "notes_week": number; "timezone": string; "login_history": Array<LoginActivity> }
 
-export type PublicUser = { "id": number; "username": string; "full_name": string; "role": "admin" | "qc" | "agent"; "is_active": boolean; "settings": { [key: string]: JsonValue } | null }
+export type PublicUser = { "id": number; "username": string; "full_name": string; "role": "admin" | "qc" | "agent"; "must_change_password"?: boolean; "is_active": boolean; "settings": { [key: string]: JsonValue } | null }
 
 export type PushKeys = { "p256dh": string; "auth": string }
 
@@ -279,4 +279,4 @@ export type WebSocketClientFrame = LockCommandFrame | HeartbeatFrame
 
 export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | TaskDueFrame | ForceLogoutFrame | HeartbeatFrame | CatalogFrame | SystemHealthFrame
 
-export const ERROR_CODES = ["UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]
+export const ERROR_CODES = ["PASSWORD_CHANGE_REQUIRED", "PAYLOAD_TOO_LARGE", "UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]

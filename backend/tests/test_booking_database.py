@@ -541,7 +541,11 @@ async def test_slow_query_504_discards_connection_and_recovers(rig, caplog):
             await session.execute(text("SELECT SLEEP(2)"))
         return {"ok": True}
 
-    add_route(rig, "/test/slow", slow)
+    # Exercise query cancellation, with TLS/session setup outside the short query budget.
+    async with rig.app.state.engine.connect() as first, rig.app.state.engine.connect() as second:
+        await first.scalar(text("SELECT 1"))
+        await second.scalar(text("SELECT 1"))
+    add_route(rig, "/test/slow", slow, seconds=0.5)
     result = await rig.client.get("/test/slow", headers={"X-Request-ID": "slow-test"})
     assert (
         result.status_code == 504 and result.json()["code"] == "REQUEST_TIMEOUT" and invalidations

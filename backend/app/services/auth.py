@@ -19,6 +19,7 @@ from app.core.security import (
     create_access_token,
     signing_key,
     unauthorized,
+    validate_password,
 )
 from app.models import User
 from app.schemas.auth import LoginResponse
@@ -149,6 +150,7 @@ class AuthService:
         context: AuditContext,
     ) -> LoginResponse:
         signing_key(self.settings)  # Fail closed before any authentication state is changed.
+        self.limiter.check_ip(ip)
         async with self.transaction() as session:
             candidate = await session.scalar(select(User).where(User.username == username))
             candidate_id = candidate.id if candidate else None
@@ -236,6 +238,7 @@ class AuthService:
         async with self.transaction() as session:
             row = self.require_live_row(await session.get(User, caller.id), caller)
             encoded = row.password_hash
+        validate_password(new_password, caller.username)
         if not await self.passwords.verify(encoded, old_password):
             raise ApiException(ErrorCode.VALIDATION_ERROR, message="Current password is incorrect.")
         if old_password == new_password:
@@ -253,6 +256,7 @@ class AuthService:
                     ErrorCode.VALIDATION_ERROR, message="The password was already changed."
                 )
             row.password_hash = updated_hash
+            row.must_change_password = False
             row.current_session_id = None
             record_audit(
                 session, "password_changed", actor_id=row.id, target_user_id=row.id, context=context

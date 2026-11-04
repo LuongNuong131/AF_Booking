@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select
 
+from app.core.bounds import Identifier, KeyPath
 from app.core.deps import get_current_user
 from app.core.timeouts import DeadlineRoute
 from app.models import User
@@ -36,38 +37,38 @@ async def tasks(
 
 
 @router.get("/bookings/{key}/tasks", response_model=list[Task])
-async def booking_tasks(key: str, request: Request, user: Actor):
+async def booking_tasks(key: KeyPath, request: Request, user: Actor):
     return (await request.app.state.tasks.listing(user.id, key=key, size=5)).items
 
 
 @router.post("/bookings/{key}/tasks", response_model=Task)
-async def create(key: str, body: TaskCreate, request: Request, user: Actor):
+async def create(key: KeyPath, body: TaskCreate, request: Request, user: Actor):
     return await request.app.state.tasks.create(key, body, user, AuditContext.from_request(request))
 
 
 @router.patch("/tasks/{task_id}", response_model=Task)
-async def edit(task_id: int, body: TaskEdit, request: Request, user: Actor):
+async def edit(task_id: Identifier, body: TaskEdit, request: Request, user: Actor):
     return await request.app.state.tasks.change(
         task_id, "edit", body, user, AuditContext.from_request(request)
     )
 
 
 @router.post("/tasks/{task_id}/complete", response_model=Task)
-async def complete(task_id: int, request: Request, user: Actor):
+async def complete(task_id: Identifier, request: Request, user: Actor):
     return await request.app.state.tasks.change(
         task_id, "complete", None, user, AuditContext.from_request(request)
     )
 
 
 @router.post("/tasks/{task_id}/snooze", response_model=Task)
-async def snooze(task_id: int, body: TaskEdit, request: Request, user: Actor):
+async def snooze(task_id: Identifier, body: TaskEdit, request: Request, user: Actor):
     return await request.app.state.tasks.change(
         task_id, "snooze", body, user, AuditContext.from_request(request)
     )
 
 
 @router.delete("/tasks/{task_id}", response_model=Task)
-async def cancel(task_id: int, request: Request, user: Actor):
+async def cancel(task_id: Identifier, request: Request, user: Actor):
     return await request.app.state.tasks.change(
         task_id, "cancel", None, user, AuditContext.from_request(request)
     )

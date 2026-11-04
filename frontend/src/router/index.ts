@@ -20,6 +20,12 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
     history,
     routes: [
       {
+        path: '/change-password',
+        name: 'change-password',
+        component: () => import('../views/RequiredPasswordView.vue'),
+        meta: { titleKey: 'securityUi.changePassword' },
+      },
+      {
         path: '/login',
         name: 'login',
         component: LoginView,
@@ -71,8 +77,18 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
               descriptionKey: 'pages.profileDescription',
             },
           },
-          {path:'reports/daily',name:'daily-report',component:()=>import('../views/DailyReportView.vue'),meta:{titleKey:'opsUi.dailyTitle',roles:['admin','qc']}},
-          {path:'search/notes',name:'note-search',component:()=>import('../views/NoteSearchView.vue'),meta:{titleKey:'opsUi.noteSearch'}},
+          {
+            path: 'reports/daily',
+            name: 'daily-report',
+            component: () => import('../views/DailyReportView.vue'),
+            meta: { titleKey: 'opsUi.dailyTitle', roles: ['admin', 'qc'] },
+          },
+          {
+            path: 'search/notes',
+            name: 'note-search',
+            component: () => import('../views/NoteSearchView.vue'),
+            meta: { titleKey: 'opsUi.noteSearch' },
+          },
           {
             path: 'reports',
             name: 'reports',
@@ -123,7 +139,11 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
                 name: 'admin-suppliers',
                 component: () => import('../views/admin/AdminSuppliers.vue'),
               },
-              {path:'system',name:'admin-system',component:()=>import('../views/admin/AdminSystem.vue')},
+              {
+                path: 'system',
+                name: 'admin-system',
+                component: () => import('../views/admin/AdminSystem.vue'),
+              },
               {
                 path: 'integrity',
                 name: 'admin-integrity',
@@ -141,6 +161,14 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
     await auth.ensureSession()
     if (!to.meta.public && !auth.isAuthenticated)
       return { name: 'login', query: { redirect: to.fullPath } }
+    if (
+      auth.isAuthenticated &&
+      auth.user?.must_change_password &&
+      to.name !== 'change-password'
+    )
+      return { name: 'change-password' }
+    if (to.name === 'change-password' && !auth.user?.must_change_password)
+      return { name: 'home' }
     if (to.name === 'login' && auth.isAuthenticated) return { name: 'home' }
     if (to.meta.roles && (!auth.user || !to.meta.roles.includes(auth.user.role)))
       return { name: 'home' }

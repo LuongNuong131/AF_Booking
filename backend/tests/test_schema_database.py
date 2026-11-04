@@ -271,7 +271,10 @@ async def test_migration_seed_constraints_and_explain(schema_engine: AsyncEngine
     async with AsyncSession(engine) as session, session.begin():
         status = await session.scalar(select(Status).where(Status.code == "PARKING"))
         status.position_label = "Admin configured position"
-        original_hash = (await session.scalar(select(User))).password_hash
+        seeded = await session.scalar(select(User))
+        assert seeded.must_change_password is True
+        seeded.must_change_password = False
+        original_hash = seeded.password_hash
         assert original_hash.startswith("$argon2id$")
         assert PasswordHasher().verify(original_hash, password)
     second = await seed_database(
@@ -301,7 +304,9 @@ async def test_migration_seed_constraints_and_explain(schema_engine: AsyncEngine
     assert password not in cli.stdout + cli.stderr
     async with AsyncSession(engine) as session:
         assert await session.scalar(select(func.count()).select_from(Status)) == 5
-        assert (await session.scalar(select(User))).password_hash == original_hash
+        seeded = await session.scalar(select(User))
+        assert seeded.password_hash == original_hash
+        assert seeded.must_change_password is False
         status = await session.scalar(select(Status).where(Status.code == "PARKING"))
         assert status.position_label == "Admin configured position"
     cardinalities = await populate_query_fixture(engine)

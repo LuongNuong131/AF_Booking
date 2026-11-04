@@ -88,6 +88,7 @@ class BackendListener:
         "operations.mjs",
         "invoices.mjs",
         "pwa.mjs",
+        "security.mjs",
     ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
@@ -175,6 +176,7 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
             # The generated disposable password is inherited by this child only, never logged.
             browser_env = os.environ.copy()
             browser_env["BOOKING_E2E_PASSWORD"] = browser_account.password
+            browser_env["BOOKING_E2E_API_URL"] = environment["VITE_API_URL"]
             browser_env["BOOKING_E2E_ARTIFACTS"] = os.environ.get(
                 "BOOKING_E2E_ARTIFACTS", str(tmp_path / "screenshots")
             )

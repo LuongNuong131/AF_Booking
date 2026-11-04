@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: Prompts 1–8F, with later-prompt features still pending.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin user/audit/note/status/Supplier management, QC reports/daily CSV/XLSX and personal profiles. Save now uses an optimistic durable outbox with UUID retries, SWR lookup/cache, warmup and measured performance. See [Admin/QC/Profile](docs/admin-qc-profile.md) and [responsiveness/benchmarks](docs/performance-8b.md). Invoice chips, standalone/offline edits, exact search, monthly reconciliation and invoice exports are implemented; see [Invoices](docs/invoices.md). Broader recovery tools remain for their prompts.
+**Current scope: Prompts 1–9, with later-prompt features still pending.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin user/audit/note/status/Supplier management, QC reports/daily CSV/XLSX and personal profiles. Save now uses an optimistic durable outbox with UUID retries, SWR lookup/cache, warmup and measured performance. See [Admin/QC/Profile](docs/admin-qc-profile.md) and [responsiveness/benchmarks](docs/performance-8b.md). Invoice chips, standalone/offline edits, exact search, monthly reconciliation and invoice exports are implemented; see [Invoices](docs/invoices.md). Broader recovery tools remain for their prompts.
 
 ## Stack and hosting
 
@@ -82,6 +82,13 @@ when enabling push. See [operations and PWA](docs/operations-pwa.md).
 
 Prompt 8F adds invoice chips/owner controls, standalone and offline invoice edits,
 exact invoice search, monthly reconciliation, invoice Excel/CSV and invoice integrity
-repair. **Upgrade through migration 0007 before starting the latest version.**
+repair. **Upgrade through migration 0008 before starting the latest version.**
 Existing explicit declarations are preserved; unset bookings remain unknown.
 See [invoice management](docs/invoices.md) for contracts, exports and verification.
+
+Prompt 9 adds mandatory initial-password rotation, independent account/IP login limits,
+1 MB request bounds, strict WebSocket Origin/message limits, exact-origin CSP,
+shared localStorage sessions with expiry and cross-tab WebSocket coordination, and
+security lint/audit gates. Read the [security report](docs/security-report.md) and
+[deployment steps](docs/deploy.md). Apply migration **0008** before starting the API.
+No provider URL or live deployment is assumed; configure CSP once Render assigns its URL.

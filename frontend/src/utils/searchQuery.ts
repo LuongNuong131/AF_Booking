@@ -30,8 +30,9 @@ export function classifyQuery(
   stations: readonly string[] = [],
   stationPattern = '[A-Z]{3}',
 ): ClassifiedQuery {
+  if (raw.length > 100) return {kind:'none',query:''}
   const query = normalizeSearch(raw)
-  if (!query || raw.length > 100) return { kind: 'none', query }
+  if (!query) return { kind: 'none', query }
   if (query.startsWith('INV:') || query.startsWith('#')) return { kind: 'invoice', query }
   const parsed = parseBookingKey(raw, stationPattern)
   if (parsed)

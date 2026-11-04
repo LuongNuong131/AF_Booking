@@ -289,15 +289,15 @@ async function save() {
             type="password"
             autocomplete="current-password"
             required
-            maxlength="1024" /></label
+            maxlength="128" /></label
         ><label
           >{{ t('adminUi.newPassword')
           }}<input
             v-model="newPassword"
             type="password"
             autocomplete="new-password"
-            minlength="12"
-            maxlength="1024"
+            minlength="10"
+            maxlength="128"
             required /></label
         ><label
           >{{ t('adminUi.confirmPassword')
@@ -305,8 +305,8 @@ async function save() {
             v-model="confirmPassword"
             type="password"
             autocomplete="new-password"
-            minlength="12"
-            maxlength="1024"
+            minlength="10"
+            maxlength="128"
             required
         /></label>
         <p v-if="passwordValidation" class="field-error">

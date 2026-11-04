@@ -3,7 +3,7 @@ from typing import Literal
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import AliasChoices, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import make_url
 
@@ -28,7 +28,11 @@ class Settings(BaseSettings):
     db_query_timeout_ms: int = Field(default=5000, ge=1, le=30000)
     request_timeout_seconds: float = Field(default=8, gt=0, le=60)
     db_lock_wait_timeout_seconds: int = Field(default=5, ge=1, le=30)
-    jwt_secret_key: SecretStr | None = Field(default=None, min_length=32)
+    jwt_secret_key: SecretStr | None = Field(
+        default=None,
+        min_length=32,
+        validation_alias=AliasChoices("JWT_SECRET_KEY", "JWT_SECRET", "jwt_secret_key"),
+    )
     jwt_expire_minutes: int = Field(default=720, ge=1, le=10080)
     jwt_issuer: str = Field(default="booking-tracker", min_length=1, max_length=100)
     jwt_audience: str = Field(default="booking-tracker-web", min_length=1, max_length=100)
@@ -37,6 +41,8 @@ class Settings(BaseSettings):
     login_max_failures: int = Field(default=5, ge=1, le=20)
     login_lockout_seconds: int = Field(default=300, ge=1, le=3600)
     auth_hash_concurrency: int = Field(default=2, ge=1, le=8)
+    max_request_body_bytes: int = Field(default=1048576, ge=1, le=1048576)
+    ws_max_messages_per_second: int = Field(default=20, ge=1, le=100)
     ws_send_timeout_seconds: float = Field(default=5, gt=0, le=30)
     ws_ping_interval_seconds: float = Field(default=25, gt=0, le=60)
     ws_idle_timeout_seconds: float = Field(default=60, gt=0, le=300)
@@ -100,6 +106,29 @@ class Settings(BaseSettings):
     def blank_to_none(cls, value: object) -> object:
         return None if value == "" else value
 
+    @field_validator("jwt_secret_key")
+    @classmethod
+    def reject_default_signing_key(cls, value):
+        if value is not None:
+            key = value.get_secret_value().strip().lower()
+            if (
+                len(key) < 32
+                or key.startswith(
+                    (
+                        "change-me",
+                        "changeme",
+                        "your-secret",
+                        "your-super-secret",
+                        "replace-with",
+                        "default-secret",
+                        "development-secret",
+                    )
+                )
+                or key in {"secret" * 8, "x" * 32, "a" * 32, "0" * 32}
+            ):
+                raise ValueError("Configure a random JWT signing key; default values are forbidden")
+        return value
+
     @field_validator("database_url")
     @classmethod
     def validate_database_url(cls, value: SecretStr | None) -> SecretStr | None:
@@ -158,6 +187,8 @@ class Settings(BaseSettings):
         if self.db_pool_size + self.db_max_overflow > 10:
             raise ValueError("The total database pool must not exceed 10 connections")
         if self.app_env == "production":
+            if self.jwt_secret_key is None:
+                raise ValueError("JWT_SECRET_KEY is required in production")
             if not self.database_ssl:
                 raise ValueError("TLS verification is required in production")
             if any(not origin.startswith("https://") for origin in self.cors_origins):

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import AwareDatetime
 from sqlalchemy import select
 
+from app.core.bounds import Identifier, KeyPath
 from app.core.deps import get_current_user, require_roles
 from app.core.errors import ApiException
 from app.core.timeouts import DeadlineRoute, timeout
@@ -33,8 +34,9 @@ PageSize = Annotated[int, Query(ge=1, le=100)]
 @router.get("/bookings/lookup", response_model=BookingLookup)
 @timeout("lookup_timeout_seconds")
 async def lookup(
-    request: Request, response: Response, user: UserDep, key: Annotated[str, Query(max_length=1024)]
+    request: Request, response: Response, user: UserDep, key: Annotated[str, Query(max_length=100)]
 ):
+    request.app.state.search_limiter.check(user.id)
     result, timing = await request.app.state.bookings.lookup(key, user.id)
     response.headers["Server-Timing"] = timing
     return result
@@ -105,7 +107,8 @@ async def listing(
 
 
 @router.get("/bookings/{key}", response_model=BookingLookup)
-async def detail(key: str, request: Request, response: Response, user: UserDep):
+async def detail(key: KeyPath, request: Request, response: Response, user: UserDep):
+    request.app.state.search_limiter.check(user.id)
     result, timing = await request.app.state.bookings.lookup(key, user.id)
     if not result.exists:
         raise ApiException(ErrorCode.NOT_FOUND)
@@ -115,7 +118,7 @@ async def detail(key: str, request: Request, response: Response, user: UserDep):
 
 @router.get("/bookings/{key}/notes", response_model=CursorPage[Note])
 async def notes(
-    key: str,
+    key: KeyPath,
     request: Request,
     user: UserDep,
     cursor: Annotated[str | None, Query(max_length=256)] = None,
@@ -126,7 +129,7 @@ async def notes(
 
 @router.post("/bookings/{key}/notes", response_model=NoteSaveResponse)
 @timeout("note_save_timeout_seconds")
-async def save_note(key: str, body: NoteSaveRequest, request: Request, user: UserDep):
+async def save_note(key: KeyPath, body: NoteSaveRequest, request: Request, user: UserDep):
     return await request.app.state.booking_writes.save(
         key, body, user, AuditContext.from_request(request)
     )
@@ -134,7 +137,7 @@ async def save_note(key: str, body: NoteSaveRequest, request: Request, user: Use
 
 @router.patch("/folders/{cw}", response_model=GroupInfo)
 async def patch_folder(
-    cw: str,
+    cw: KeyPath,
     body: FolderPatch,
     request: Request,
     user: Annotated[CurrentUser, Depends(require_roles("admin", "qc"))],
@@ -168,7 +171,7 @@ async def statuses(request: Request, response: Response, user: UserDep):
 
 
 @router.post("/notes/{id}/attachments", status_code=501)
-async def attachments(id: int, request: Request, user: UserDep):
+async def attachments(id: Identifier, request: Request, user: UserDep):
     async with transaction(request.app.state.engine, request.app.state.settings) as session:
         note = await session.scalar(
             select(BookingNote).where(BookingNote.id == id, BookingNote.deleted_at.is_(None))

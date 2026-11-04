@@ -45,7 +45,7 @@ STATUS_SEEDS = (
 class AdminCredentials(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", hide_input_in_errors=True)
     admin_username: str = Field(min_length=1, max_length=50)
-    admin_password: SecretStr = Field(min_length=12, max_length=1024)
+    admin_password: SecretStr = Field(min_length=10, max_length=128)
 
     @field_validator("admin_username")
     @classmethod
@@ -91,6 +91,11 @@ async def seed_database(
             )
             created += 1
         if credentials is not None:
+            from app.core.security import validate_password
+
+            validate_password(
+                credentials.admin_password.get_secret_value(), credentials.admin_username
+            )
             admin = await session.scalar(
                 select(User).where(User.username == credentials.admin_username)
             )
@@ -109,6 +114,7 @@ async def seed_database(
                         full_name="Administrator",
                         role="admin",
                         is_active=True,
+                        must_change_password=True,
                         settings={"timezone": timezone},
                     )
                 )

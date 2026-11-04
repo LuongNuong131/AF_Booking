@@ -165,3 +165,11 @@ normalized-number/created-time indexes and bookings (period, invoice_state) /
 (invoice_state, is_done, updated_at) indexes; invoice_count becomes unsigned SMALLINT.
 Earlier invoice/status/note columns already exist and are preserved. Upgrade,
 rollback and the four EXPLAIN cases are documented in [invoices.md](invoices.md).
+
+
+Prompt 9 head **0008** is additive: `users.must_change_password` is NOT NULL with
+server default false; upgrade marks rows with last_login_at IS NULL for first-login
+rotation. New/seed/reset application writes explicitly set true. Seed reruns preserve
+an existing user's completed rotation. Existing migrations remain unchanged.
+Downgrade removes only this enforcement flag, so it must be coordinated with the
+older application version; it does not recover temporary-password history.

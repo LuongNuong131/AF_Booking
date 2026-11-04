@@ -98,7 +98,10 @@ def test_slow_request_times_out_and_is_cancelled() -> None:
 
 def test_production_hides_api_documentation() -> None:
     config = Settings(
-        _env_file=None, app_env="production", cors_origins=["https://tracker.example"]
+        _env_file=None,
+        app_env="production",
+        jwt_secret_key="unit-testing-only-generated-key-4bd1a809e2d8",
+        cors_origins=["https://tracker.example"],
     )
     with TestClient(create_app(config)) as client:
         assert client.get("/docs").status_code == 404

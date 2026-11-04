@@ -10,6 +10,7 @@ export function parseUser(value: unknown): PublicUser {
     typeof value.full_name !== 'string' ||
     !['agent', 'qc', 'admin'].includes(String(value.role)) ||
     typeof value.is_active !== 'boolean' ||
+    (value.must_change_password!==undefined && typeof value.must_change_password!=='boolean') ||
     !(value.settings === null || record(value.settings))
   )
     throw new Error('Invalid user response')

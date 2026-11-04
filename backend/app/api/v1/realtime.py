@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections import deque
 
 from fastapi import APIRouter, WebSocket
 from pydantic import ValidationError
@@ -18,10 +19,18 @@ logger = logging.getLogger(__name__)
 
 
 async def receive_commands(socket, connection, manager, settings) -> None:
+    timestamps = deque()
     while manager.current(connection):
         message = await socket.receive()
         if message["type"] == "websocket.disconnect":
             return
+        now = manager.clock()
+        while timestamps and timestamps[0] <= now - 1:
+            timestamps.popleft()
+        if len(timestamps) >= settings.ws_max_messages_per_second:
+            manager.retire(connection, 1008)
+            return
+        timestamps.append(now)
         raw = message.get("text")
         if raw is None:
             manager.retire(connection, 1003)
@@ -72,6 +81,9 @@ async def websocket(socket: WebSocket) -> None:
     manager = socket.app.state.ws_manager
     auth = socket.app.state.auth
     connection = None
+    if socket.headers.get("origin") not in settings.cors_origins:
+        await reject(socket, 4403)
+        return
     try:
         token = socket.query_params.get("token", "")
         claims = decode_access_token(token, settings)
@@ -80,7 +92,12 @@ async def websocket(socket: WebSocket) -> None:
         async with auth.user_lock(int(claims.sub)):
             async with auth.transaction() as session:
                 row = await session.get(User, int(claims.sub))
-                if row is None or not row.is_active or row.current_session_id != claims.sid:
+                if (
+                    row is None
+                    or not row.is_active
+                    or row.must_change_password
+                    or row.current_session_id != claims.sid
+                ):
                     raise ApiException(ErrorCode.UNAUTHORIZED)
                 user = CurrentUser.from_model(row)
             connection = await manager.connect(socket, user, claims)

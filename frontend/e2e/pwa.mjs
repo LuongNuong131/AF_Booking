@@ -48,6 +48,18 @@ try {
     await page.goto('http://localhost:5173/login')
     await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible()
   }).toPass({ timeout: 15000 })
+  expect(await page.locator('script:not([src])').count()).toBe(0)
+  const response = await page.request.get('http://localhost:5173/login')
+  const csp = response.headers()['content-security-policy']
+  expect(csp).toContain("connect-src 'self' https://api.pwa.test wss://api.pwa.test")
+  expect(csp).toContain("script-src 'self';")
+  expect(csp).toContain("frame-ancestors 'none'")
+  await page.evaluate(() => {
+    const script = document.createElement('script')
+    script.textContent = 'window.inlineScriptExecuted=true'
+    document.body.append(script)
+  })
+  expect(await page.evaluate(() => window.inlineScriptExecuted)).toBeUndefined()
   await page.evaluate(async () => {
     await navigator.serviceWorker.ready
   })

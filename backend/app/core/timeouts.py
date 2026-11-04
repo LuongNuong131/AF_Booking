@@ -10,7 +10,7 @@ from starlette.responses import Response
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.errors import ApiException, error_response
-from app.core.request_context import request_id, request_path
+from app.core.request_context import request_id, request_path, safe_route
 from app.schemas.contracts import ErrorCode
 
 logger = logging.getLogger(__name__)
@@ -46,6 +46,7 @@ class DeadlineRoute(APIRoute):
         handler = super().get_route_handler()
 
         async def handle(request: Request) -> Response:
+            request_path.set(safe_route(request.scope))
             override = getattr(self.endpoint, "__request_timeout__", None)
             if override is not None and "request_deadline" in request.scope.get("state", {}):
                 seconds = (
@@ -91,7 +92,7 @@ class RequestTimeoutMiddleware:
             logger.warning(
                 "request_id=%s timeout route=%r seconds=%.3f",
                 request_id.get(),
-                scope["path"],
+                safe_route(scope),
                 state["request_timeout_seconds"],
             )
             if response_started:

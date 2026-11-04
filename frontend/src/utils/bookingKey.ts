@@ -13,7 +13,7 @@ export interface PartialKey {
   normalized: string
 }
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const maxLength = 128
+const maxLength = 100
 
 export function normalize(raw: string): string {
   if (raw.length > maxLength) return ''

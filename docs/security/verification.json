@@ -1,0 +1,61 @@
+{
+  "date": "2026-11-04",
+  "backend_unit": {
+    "passed": 174,
+    "skipped": 153,
+    "skip_reason": "Database/browser tests require the disposable runner; executed separately below."
+  },
+  "database": {
+    "mysql": {
+      "business_suites": {
+        "auth": 16,
+        "booking": 27,
+        "tasks": 4,
+        "admin": 6,
+        "safeguards": 8,
+        "collaboration": 8,
+        "operations": 11,
+        "invoices": 9,
+        "realtime": 20,
+        "folder": 22,
+        "security": 5
+      },
+      "business_passed": 136,
+      "schema_migration_seed_explain_passed": 1,
+      "total_passed": 137
+    },
+    "tidb": {
+      "business_suites": {
+        "auth": 16,
+        "booking": 27,
+        "tasks": 4,
+        "admin": 6,
+        "safeguards": 8,
+        "collaboration": 8,
+        "operations": 11,
+        "invoices": 9,
+        "realtime": 20,
+        "folder": 22,
+        "security": 5
+      },
+      "business_passed": 136,
+      "schema_migration_seed_explain_passed": 1,
+      "total_passed": 137
+    }
+  },
+  "vitest": {
+    "passed": 240
+  },
+  "chromium": {
+    "passed": 12,
+    "validation": "11 regression scripts passed in the batch; security.mjs passed on targeted rerun after correcting development-socket/page-close accounting in the harness. Application Web Lock ownership and one active socket are asserted."
+  },
+  "audits": {
+    "pip_audit_known_findings": 0,
+    "npm_audit_known_findings": 0
+  },
+  "scope_limits": [
+    "Disposable MySQL/TiDB with verified TLS; system Chromium; no hosted service credentials or production URLs.",
+    "Historical 50,000-row performance benchmarks were not re-run for security hardening."
+  ]
+}

@@ -14,7 +14,7 @@ class LoginRequest(ContractModel):
 
 class ChangePasswordRequest(ContractModel):
     old_password: SecretStr = Field(min_length=1, max_length=1024)
-    new_password: SecretStr = Field(min_length=12, max_length=1024)
+    new_password: SecretStr = Field(min_length=10, max_length=128)
 
 
 class PublicUser(ContractModel):
@@ -22,6 +22,7 @@ class PublicUser(ContractModel):
     username: str
     full_name: str
     role: UserRole
+    must_change_password: bool = False
     is_active: bool
     settings: dict[str, JsonValue] | None
 

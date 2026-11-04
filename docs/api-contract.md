@@ -59,9 +59,9 @@ CI checks that the generated file is current and runs the frontend build.
 ### Auth implementation details — Prompt 3
 
 - `POST /auth/login` accepts JSON `{username,password}`. Success returns `{access_token,user,token_type:"bearer",expires_in}`; the last two fields are explicit additions for bearer-token clients. `expires_in` is seconds (default 43200).
-- `user` and the direct `GET /auth/me` result contain `id`, `username`, `full_name`, `role`, `is_active`, and `settings` (JSON or null). They never include `password_hash` or `current_session_id`.
+- `user` and the direct `GET /auth/me` result contain `id`, `username`, `full_name`, `role`, `is_active`, `must_change_password`, and `settings` (JSON or null). They never include `password_hash` or `current_session_id`.
 - `POST /auth/logout` returns `{message:"Signed out."}` and revokes the current SID.
-- `POST /auth/change-password` accepts `{old_password,new_password}`. Success returns `{message:"Password changed. Please sign in again."}` and revokes the session. The client must sign in again. A wrong old password or invalid new password is `422 VALIDATION_ERROR`. New passwords have 12–1024 characters.
+- `POST /auth/change-password` accepts `{old_password,new_password}`. Success returns `{message:"Password changed. Please sign in again."}` and revokes the session. The client must sign in again. A wrong old password or invalid new password is `422 VALIDATION_ERROR`. New passwords have 10–128 characters.
 - Authenticated requests use `Authorization: Bearer ...`. JWTs require valid HS256 signatures, issuer/audience, expiration, user ID, role, and UUID SID. Invalid/expired tokens and inactive/deleted users return `401 UNAUTHORIZED`; an active user's replaced/cleared SID returns `401 SESSION_REPLACED`. Permissions use the current user role, not a stale JWT role alone.
 - The first five invalid credential attempts return 401; later attempts in the lockout return `429 RATE_LIMITED` with `Retry-After`. Cache/session invalidation and in-memory scope are documented in [auth.md](auth.md).
 - Every HTTP response has `X-Request-ID`; browser CORS exposes it and `Retry-After`. Auth responses use `Cache-Control: no-store`.
@@ -70,6 +70,8 @@ No registration, refresh-token, booking, or admin-management endpoint is added i
 
 | Code | HTTP | Details / behavior |
 | --- | --- | --- |
+| `PASSWORD_CHANGE_REQUIRED` | 403 | Temporary password must be changed before business access |
+| `PAYLOAD_TOO_LARGE` | 413 | Request body exceeds 1 MB |
 | `UNAUTHORIZED` | 401 | No valid authenticated session |
 | `SESSION_REPLACED` | 401 | A newer login replaced this session |
 | `FORBIDDEN` | 403 | Insufficient permission |
@@ -366,7 +368,7 @@ Admin routes require Admin. Reports/export require Admin or QC. Profile requires
 active owner. `AdminUser` includes id, username, full_name, role, is_active, created_at,
 last_login_at and has_session; it omits SID, password hash and personal settings.
 Admin cannot disable/demote themselves (`FORBIDDEN`). Username duplicates use
-`VALIDATION_ERROR`. Temporary passwords have 12–1024 characters; names have 2–100.
+`VALIDATION_ERROR`. Temporary passwords have 10–128 characters; names have 2–100.
 Delete reasons have 3–255 characters. Audit filters use exact action/entity values;
 time filters are aware UTC timestamps. Admin notes expose deletion actor/time/reason
 and escaped note text, never save-request replay blobs. Default page size is 20/max 100.
@@ -608,3 +610,41 @@ New environment controls: INVOICE_NUMBER_PATTERN (default
 returned by lookup/invoice reads so frontend validation follows the backend.
 No error-code spelling or endpoint name changed. These response extensions are
 reflected in Pydantic and generated TypeScript schemas.
+
+
+## Prompt 9 — Security contract additions
+
+- `PublicUser` and `AdminUser` add `must_change_password:boolean`. Existing clients
+  may treat an omitted public flag as false during deployment transition, but the
+  server always enforces its own flag. New, seed and reset accounts require rotation.
+- Only `GET /auth/me`, `POST /auth/logout` and `POST /auth/change-password` remain
+  available to a restricted session. Other authenticated routes return
+  `403 PASSWORD_CHANGE_REQUIRED`; WS rejects that session with 4401. Successful
+  rotation clears the flag and revokes the token, requiring login again.
+- New/reset passwords have 10–128 characters and cannot equal the username after
+  NFKC/trim/casefold comparison. Login and old_password allow legacy lengths up to
+  1024. Argon2id stores the original password without trimming or normalization.
+- HTTP bodies are limited to 1,048,576 bytes before JSON parsing, including chunked
+  requests and false Content-Length. Exceeding the limit returns 413
+  `PAYLOAD_TOO_LARGE` in the standard error envelope. Notes remain capped at 5000
+  characters; booking-key parsing rejects raw input over 100 **before** normalizing;
+  lookup/search query validation is also capped at 100. Control characters are
+  removed from note text (line breaks/tabs retained); invalid/control keys are
+  rejected or normalized without ever storing the raw key.
+- Login uses independent IP and username buckets (five failures / five minutes).
+  Lookup and search share the bounded per-user search limiter. Retry-After is an
+  ASCII integer number of seconds, including overload/timeout-related retry advice.
+- HTTP responses include nosniff, frame DENY and strict-origin-when-cross-origin.
+  Personal API responses have Cache-Control: no-store. Nonpersonal station/status
+  catalogues retain their existing private ETag cache policy.
+- WS requires an Origin equal to an exact CORS_ORIGINS entry (4403 otherwise), a
+  valid nonrestricted session (4401 otherwise), text frames <=4096 UTF-8 bytes
+  (1009 otherwise), and at most 20 messages in a rolling second (1008 otherwise).
+  Limits are configurable. Missing Origin is rejected; diagnostic native clients
+  must provide it. Slow-client sends retain their bounded timeout/eviction.
+- Error envelopes never expose SQL text/parameters, stack traces or validation input.
+  Completion/timeout logs use route templates rather than untrusted path content.
+  Request IDs remain bounded; WebSocket token query strings are redacted.
+
+These are explicit additive contract changes; existing paths/event names stay intact.
+See [security-report.md](security-report.md) for review evidence and deploy setup.

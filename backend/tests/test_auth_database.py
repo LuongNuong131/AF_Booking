@@ -154,7 +154,15 @@ async def test_login_and_me_return_only_public_user_fields(rig: AuthRig) -> None
     assert response.headers["cache-control"] == "no-store"
     body = response.json()
     assert body["token_type"] == "bearer" and body["expires_in"] == 43200
-    assert set(body["user"]) == {"id", "username", "full_name", "role", "is_active", "settings"}
+    assert set(body["user"]) == {
+        "id",
+        "username",
+        "full_name",
+        "role",
+        "is_active",
+        "settings",
+        "must_change_password",
+    }
     assert body["user"]["role"] == "agent"
     me = await rig.client.get("/api/v1/auth/me", headers=bearer(body["access_token"]))
     assert me.status_code == 200 and me.json() == body["user"]
@@ -335,7 +343,21 @@ async def test_login_limit_is_five_failures_then_five_minutes_and_handles_aliase
     blocked = await rig.login("AGENT")
     assert blocked.status_code == 429 and blocked.json()["code"] == "RATE_LIMITED"
     assert 1 <= int(blocked.headers["retry-after"]) <= 300
-    assert (await rig.login("admin")).status_code == 200
+    assert (await rig.login("admin")).status_code == 429  # Independent IP limit.
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=rig.app, client=("192.0.2.10", 8001)),
+        base_url="http://testserver",
+    ) as elsewhere:
+        assert (
+            await elsewhere.post(
+                "/api/v1/auth/login", json={"username": "AGENT", "password": rig.password}
+            )
+        ).status_code == 429
+        assert (
+            await elsewhere.post(
+                "/api/v1/auth/login", json={"username": "admin", "password": rig.password}
+            )
+        ).status_code == 200
     now = time.monotonic() + 301
     rig.auth.limiter.clock = lambda: now
     assert (await rig.login()).status_code == 200

@@ -4,6 +4,7 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Query, Request
 
+from app.core.bounds import KeyPath
 from app.core.deps import get_current_user, require_roles
 from app.core.timeouts import DeadlineRoute, timeout
 from app.schemas.contracts import InvoiceChange
@@ -22,12 +23,12 @@ def current_period(request):
 
 
 @router.get("/bookings/{key}/invoices", response_model=InvoiceList)
-async def listing(key: str, request: Request, user: UserDep):
+async def listing(key: KeyPath, request: Request, user: UserDep):
     return await request.app.state.invoices.listing(key)
 
 
 @router.put("/bookings/{key}/invoices", response_model=InvoiceResult)
-async def put(key: str, body: InvoiceChange, request: Request, user: UserDep):
+async def put(key: KeyPath, body: InvoiceChange, request: Request, user: UserDep):
     return await request.app.state.invoices.put(key, body, user, AuditContext.from_request(request))
 
 

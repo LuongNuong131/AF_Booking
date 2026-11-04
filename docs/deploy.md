@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the backend and frontend through Prompt 8F. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; Admin/QC/Profile and durable note sending are implemented; invoice management/reconciliation are implemented. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
+This guide deploys the backend and frontend through Prompt 9. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; Admin/QC/Profile and durable note sending are implemented; invoice management/reconciliation are implemented. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
 
 ## 1. TiDB Cloud
 
@@ -70,7 +70,7 @@ Expected responses:
 
 A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
-Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. Current head `0007` includes the application tables, durable note/task replay, collaboration, daily reports and push subscriptions; deploy the latest `head` before starting the API. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
+Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. Current head `0008` includes the application tables, durable note/task replay, collaboration, daily reports and push subscriptions; deploy the latest `head` before starting the API. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
 
 ## 3. Vercel frontend
 
@@ -88,6 +88,24 @@ Import the GitHub repository into Vercel:
 | `VITE_API_URL` | `https://YOUR-API.onrender.com/api/v1` |
 | `VITE_WS_URL` | `wss://YOUR-API.onrender.com/api/v1/ws` (optional; derived from API URL if unset) |
 | `VITE_TIMEOUT_SCALE` | `1` (optional) |
+
+Before importing/building the frontend, wait for Render to assign its public HTTPS
+URL, then run from `frontend` with that real public URL:
+
+```sh
+VITE_API_URL=https://YOUR-API.onrender.com/api/v1 npm run configure:csp
+git add vercel.json
+git commit -m "Configure production API origins"
+git push
+```
+
+If using an explicit `VITE_WS_URL`, supply the same value to both this command and
+Vercel settings. The script updates the exact HTTP/WSS origins in the committed
+`vercel.json` header. The example `api.example.com` is a build fixture, not a Render
+endpoint. A Vercel build (`VERCEL=1`) rejects a CSP/environment mismatch. Commit the
+updated header **before** deployment; editing `vercel.json` during a build is too
+late for Vercel's configuration read. Custom domain changes require repeating this
+step. This workflow prepares configuration without provisioning a service.
 
 `frontend/vercel.json` includes the SPA fallback for client-side routes. Vercel serves the static frontend only; the browser calls Render directly. WebSockets connect directly to Render over WSS rather than through a Vercel serverless function.
 
@@ -149,3 +167,21 @@ declarations remain intact; unset bookings stay unknown. No new secret/dependenc
 is needed. Review INVOICE_NUMBER_PATTERN and INVOICE_MAX_PER_BOOKING (default 20);
 lookup sends the same rules to the frontend. See invoices.md for rollback, immutable
 past-report compatibility, exact search and the shared offline PUT queue.
+
+
+Prompt 9 requires migration **0008** (new `users.must_change_password`). Seeded, newly
+created and reset accounts must change their temporary password before accessing
+business APIs or WebSocket. Existing accounts which have never signed in are marked
+for rotation; accounts with previous logins retain their current state. Seed reruns
+do not reset a completed rotation. Passwords are 10–128 characters and cannot equal
+the username; login still accepts legacy passwords up to 1024 characters so those
+users can rotate. Production startup rejects a missing, short or known-default JWT
+secret. `JWT_SECRET` is accepted as an alias of `JWT_SECRET_KEY`; supply one only.
+
+Body limits default to `MAX_REQUEST_BODY_BYTES=1048576`; WebSocket defaults are
+`WS_MAX_MESSAGE_BYTES=4096`, `WS_MAX_MESSAGES_PER_SECOND=20` and
+`WS_SEND_TIMEOUT_SECONDS=5`. WebSocket Origin must be in the same exact CORS list;
+native diagnostic clients must send Origin too. API personal responses use no-store.
+`style-src 'unsafe-inline'` supports Element Plus and virtual-list dynamic styles;
+scripts remain external, without unsafe-inline/unsafe-eval. See security-report.md
+for storage tradeoffs, dependency audit evidence and verification commands.

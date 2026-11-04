@@ -15,16 +15,7 @@
       crossorigin
     />
     <title>Booking Tracker</title>
-    <script>
-      try {
-        var preference = localStorage.getItem('booking.theme')
-        var dark =
-          preference === 'dark' ||
-          (preference !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-        document.documentElement.classList.toggle('dark', dark)
-      } catch (_) {}
-    </script>
+    <script type="module" src="/src/theme-init.ts"></script>
   </head>
   <body>
     <div id="app"></div>

@@ -201,8 +201,8 @@ async function save() {
           }}<input
             v-model="form.temporary_password"
             type="password"
-            minlength="12"
-            maxlength="1024"
+            minlength="10"
+            maxlength="128"
             autocomplete="new-password"
             required
         /></label>

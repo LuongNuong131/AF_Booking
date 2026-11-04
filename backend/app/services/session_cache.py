@@ -21,6 +21,8 @@ class CurrentUser:
     session_id: str | None = field(repr=False)
     settings: dict[str, JsonValue] | None = field(repr=False)
 
+    must_change_password: bool = False
+
     @classmethod
     def from_model(cls, user: User) -> "CurrentUser":
         return cls(
@@ -31,6 +33,7 @@ class CurrentUser:
             user.is_active,
             user.current_session_id,
             deepcopy(user.settings),
+            user.must_change_password,
         )
 
     def public(self) -> PublicUser:
@@ -41,6 +44,7 @@ class CurrentUser:
             role=self.role,
             is_active=self.is_active,
             settings=deepcopy(self.settings),
+            must_change_password=self.must_change_password,
         )
 
 

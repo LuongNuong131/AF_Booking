@@ -27,6 +27,7 @@ class AdminUser(ContractModel):
     full_name: str
     role: UserRole
     is_active: bool
+    must_change_password: bool
     created_at: UtcTimestamp
     last_login_at: UtcTimestamp | None
     has_session: bool
@@ -36,7 +37,7 @@ class UserCreate(ContractModel):
     username: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{2,49}$")
     full_name: str
     role: UserRole = "agent"
-    temporary_password: SecretStr = Field(min_length=12, max_length=1024)
+    temporary_password: SecretStr = Field(min_length=10, max_length=128)
     _name = field_validator("full_name")(display_name)
 
 
@@ -56,7 +57,7 @@ class UserUpdate(ContractModel):
 
 
 class ResetPassword(ContractModel):
-    temporary_password: SecretStr = Field(min_length=12, max_length=1024)
+    temporary_password: SecretStr = Field(min_length=10, max_length=128)
 
 
 class DeleteNote(ContractModel):

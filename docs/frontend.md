@@ -59,8 +59,8 @@ SPA fallback; WSS connects directly to Render. See [deploy.md](deploy.md).
 - `src/types/api.generated.ts`: generated from backend schemas; never edit manually.
 - `src/utils`: shared booking-key aliases, zoned time formatting and storage helpers.
 
-Tokens live in memory plus per-tab `sessionStorage`; user data is restored with
-`GET /auth/me` after reload. They are not stored in `localStorage`. Logout, a current
+Tokens live in memory plus shared `localStorage`; user data is restored with
+`GET /auth/me` after reload. Legacy per-tab sessionStorage is migrated once and removed. Logout, a current
 401 or a WebSocket force-logout clears private stores and unmounts protected content.
 Delayed responses from an older login cannot log out a newer session. Passwords stay
 only in the editable login form and the outgoing request; normalized request errors
@@ -71,7 +71,7 @@ on another device.” Other session-end reasons ask the user to sign in again. A
 shows the permission message. Backend authorization remains authoritative.
 
 Themes default to the system setting and persist `system`, `light` or `dark` in
-`localStorage`. Other tabs receive theme changes through the storage event. An early
+`localStorage`. Other tabs receive theme changes through the storage event. An external bundled
 head script applies the preference before rendering. CSS variables and Element Plus
 variables cover both themes. No component uses `v-html`.
 
@@ -147,3 +147,25 @@ persistence, daylight-saving time formatting, route watchdog/visibility and rend
 boundaries. The shared Python/TypeScript key fixture and all Prompt 1B strings remain
 tested. See [testing.md](testing.md) for the real Chromium + Vue + FastAPI + TLS TiDB
 flow and its CI job.
+
+
+Prompt 9 adds `/change-password`, guarded by `must_change_password`, with no private
+bootstrap or WebSocket before rotation. JWT exp schedules local logout even without
+an API request. Storage events synchronize login/logout between tabs; delayed old
+errors cannot delete a newer token. Logout clears private in-memory stores, active
+requests, notifications and the bearer token. Per-user offline drafts/outbox remain
+owner-scoped on the device to preserve authorized unsent work; they are hidden and
+cannot transmit until the same account signs in again. Remove site data on shared
+computers when those drafts should be discarded.
+
+`useSharedRealtime` uses Web Locks and BroadcastChannel to share one physical socket
+across same-browser tabs for the same signed-in session. Channel messages never carry
+the bearer token. A follower takes over when the leader closes; all tabs see updates
+and session revocation. Browsers lacking either API use the original single active
+socket fallback; an older tab shows Superseded until resumed.
+
+ESLint enforces vue/no-v-html at error level (`npm run lint`), and
+`npm run test:security` verifies the rule rejects an unsafe component. CSP uses exact
+API/WSS origins from `npm run configure:csp`; style-only inline declarations support
+Element Plus/virtual lists, while script inline/eval remains blocked. Details and
+an httpOnly-cookie alternative are in security-report.md.

@@ -4,7 +4,7 @@ import type { Pinia } from 'pinia'
 import type { Router } from 'vue-router'
 import { configureApiSession } from '../api/session'
 import { endpoints } from '../api/client'
-import { useRealtime } from '../composables/useRealtime'
+import { useSharedRealtime as useRealtime } from '../composables/useSharedRealtime'
 import { installRouteResilience } from '../composables/useRouteResilience'
 import { useOutboxStore } from '../stores/outbox'
 import { useAuthStore } from '../stores/auth'
@@ -106,7 +106,14 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
   })
   scope.run(() => {
     watch(
-      () => (auth.isAuthenticated ? auth.token : null),
+      () => auth.isAuthenticated,
+      (active, previous) => {
+        if (previous && !active && router.currentRoute.value.name !== 'login')
+          void router.replace({ name: 'login' })
+      },
+    )
+    watch(
+      () => (auth.isAuthenticated && !auth.user?.must_change_password ? auth.token : null),
       (token) => {
         transport?.stop()
         transport = null
@@ -208,7 +215,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
     watch(
       () => ui.refreshVersion,
       () => {
-        if (auth.isAuthenticated) {
+        if (auth.isAuthenticated && !auth.user?.must_change_password) {
           void notifications.refresh()
           void collaboration.refreshCount()
           if (ui.refreshReason === 'visible') void tasks.refreshDue(true)
@@ -216,12 +223,18 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
       },
     )
   })
+  const storageStop = auth.syncStorage(() => {
+    if (!auth.isAuthenticated) void router.replace({ name: 'login' })
+    else if (auth.user?.must_change_password) void router.replace({ name: 'change-password' })
+    else if (router.currentRoute.value.name === 'login') void router.replace({ name: 'home' })
+  })
   const online = () => {
     transport?.resume()
     outbox.retry()
   }
   window.addEventListener('online', online)
   return () => {
+    storageStop()
     collaborationStop()
     alerts.stop()
     outbox.stop()

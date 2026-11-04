@@ -12,7 +12,7 @@ Every frame is a JSON **text** message:
 
 The supplied prompts fixed event names but left the outer envelope implicit; `{event,data}` is the explicit Prompt 5 contract. Unknown fields/events and malformed frames close with 4400. Client commands send the canonical `booking_key` only. Every server payload containing `booking_key` also includes `display_key`, such as `CW 2154654-RDU-2609`. Server timestamps use UTC ISO 8601 milliseconds (`...Z`).
 
-The JWT has the same signature/issuer/audience/expiry/SID requirements as REST. Handshake checks a fresh user row (active + matching current SID), serialized with login/revocation via the auth user lock. A stale principal cache cannot register a superseded SID. Invalid credentials close with 4401. To deliver the actual close code over a real WebSocket transport, rejection briefly accepts the upgrade and immediately closes, without registering a connection or sending a snapshot. **Ready means receipt of `lock.snapshot`, not the browser `open` event alone.**
+The JWT has the same signature/issuer/audience/expiry/SID requirements as REST. Handshake checks a fresh user row (active + matching current SID + no required password rotation), serialized with login/revocation via the auth user lock. A stale principal cache cannot register a superseded SID. Invalid credentials close with 4401. To deliver the actual close code over a real WebSocket transport, rejection briefly accepts the upgrade and immediately closes, without registering a connection or sending a snapshot. **Ready means receipt of `lock.snapshot`, not the browser `open` event alone.**
 
 One connection is active per user. Reconnecting with the same SID replaces the old socket (4409); the old socket's cleanup cannot remove the new connection or its lease. A new login SID sends `session.force_logout` to the previous SID and closes it. Inbound commands and scheduled pings recheck expiry/session, using the existing 12-second REST principal cache for ordinary checks. Auth helpers revoke the matching socket immediately after commit. Out-of-band DB changes remain bounded by cache expiry and the next heartbeat/command.
 
@@ -217,3 +217,19 @@ the affected row/workspace to obtain updated invoice previews/full objects; patc
 open MonthRow state/count without changing folder activity or stale/open counts.
 No new client command is added. Frontend parsing accepts omitted extension fields
 for rolling upgrades and validates their values when supplied.
+
+
+Prompt 9 requires an exact allowed `Origin` header before authentication. Missing or
+unlisted origins close 4403, including native clients unless they supply Origin.
+Connections needing initial password rotation close 4401. Incoming text messages
+are limited to 4096 UTF-8 bytes and 20 messages per rolling second (including
+ping/pong); excessive rate closes 1008, oversized input 1009. Clients treat 4403 and
+1008 as terminal until explicit resume/configuration correction, preventing loops.
+Each outgoing send remains bounded by WS_SEND_TIMEOUT_SECONDS and evicts slow peers.
+
+Browser tabs sharing a localStorage token coordinate through Web Locks and
+BroadcastChannel: one leader holds the server socket and relays validated frames;
+followers can forward lock commands and take over on leader close. Tokens are never
+posted to BroadcastChannel. This browser-side coordination preserves the server's
+one-connection-per-user contract. Other browsers/devices still replace the session;
+browsers without these two APIs retain the single-active-tab fallback.

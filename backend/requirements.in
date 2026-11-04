@@ -1,13 +1,13 @@
-fastapi>=0.115,<1
-uvicorn[standard]>=0.34,<1
-SQLAlchemy[asyncio]>=2.0.40,<2.1
-aiomysql>=0.2,<0.4
-alembic>=1.15,<2
-pydantic>=2.11,<3
-pydantic-settings>=2.9,<3
-cryptography>=44
-argon2-cffi>=23.1,<26
-PyJWT>=2.10,<3
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+SQLAlchemy[asyncio]==2.0.55
+aiomysql==0.3.2
+alembic==1.20.1
+pydantic==2.14.2
+pydantic-settings==2.16.2
+cryptography==50.0.2
+argon2-cffi==25.1.0
+PyJWT==2.15.1
 openpyxl==3.1.5
 orjson==3.11.7
 

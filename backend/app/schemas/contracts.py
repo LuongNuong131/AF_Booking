@@ -32,10 +32,12 @@ UtcTimestamp = Annotated[
 
 
 class ContractModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True)
+    model_config = ConfigDict(extra="forbid", hide_input_in_errors=True, str_max_length=5000)
 
 
 class ErrorCode(StrEnum):
+    PASSWORD_CHANGE_REQUIRED = "PASSWORD_CHANGE_REQUIRED"
+    PAYLOAD_TOO_LARGE = "PAYLOAD_TOO_LARGE"
     UNAUTHORIZED = "UNAUTHORIZED"
     SESSION_REPLACED = "SESSION_REPLACED"
     FORBIDDEN = "FORBIDDEN"

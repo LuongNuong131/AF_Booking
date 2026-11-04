@@ -20,6 +20,7 @@ from app.api.v1.tasks import router as tasks_router
 from app.core.config import Settings
 from app.core.db import create_database_engine
 from app.core.errors import ApiCORSMiddleware, ApiErrorMiddleware, register_error_handlers
+from app.core.http_security import BodyLimitMiddleware, SecurityHeadersMiddleware
 from app.core.request_context import RequestContextMiddleware, install_websocket_log_redaction
 from app.core.timeouts import RequestTimeoutMiddleware
 from app.schemas.contracts import ApiError
@@ -211,6 +212,7 @@ def create_app(
     )
     application.state.settings = config
     register_error_handlers(application)
+    application.add_middleware(BodyLimitMiddleware, max_bytes=config.max_request_body_bytes)
     application.add_middleware(ApiErrorMiddleware)
     application.add_middleware(GZipMiddleware, minimum_size=500)
     application.add_middleware(
@@ -224,6 +226,7 @@ def create_app(
         allow_headers=["Authorization", "Content-Type", "X-Request-ID", "If-None-Match"],
         expose_headers=["X-Request-ID", "Retry-After", "Server-Timing", "ETag"],
     )
+    application.add_middleware(SecurityHeadersMiddleware)
     application.add_middleware(RequestContextMiddleware)
 
     application.add_api_route(

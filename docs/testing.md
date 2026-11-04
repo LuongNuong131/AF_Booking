@@ -397,3 +397,43 @@ not establish hosted performance. The preview budget asserts exactly one invoice
 query for 20 booking rows; the reconciliation budget asserts one bookings-only
 aggregate, without joins. No new 50,000-row benchmark or hosted deployment is
 claimed. Browser commands/artifact paths follow the existing runner above.
+
+
+## Prompt 9 security verification
+
+On 04 Nov 2026, **174 backend unit tests passed**, with **153** DB/browser checks
+skipped in the unit-only run and exercised separately where applicable. **240
+Vitest tests passed**. Clean npm ci, strict TypeScript, production build with
+VERCEL=1 and matching example HTTPS/WSS CSP, Ruff/format, generated contract parity,
+whole-frontend ESLint and negative v-html/CSP mismatch probes passed.
+
+On **each** disposable verified-TLS MySQL/TiDB: auth 16, booking 27, tasks 4, Admin
+6, safeguards 8, collaboration 8, operations 11, invoice 9, realtime 20, folder 22
+and new hardening 5 = **136 business tests**, plus **one full schema/migration/seed/
+EXPLAIN/downgrade/re-upgrade test** through additive migration 0008: **137 per engine**.
+The query-cancellation fixture warms its TLS pool outside a 500 ms deadline and
+still cancels a two-second query, verifies invalidation and a healthy subsequent
+connection; cold setup is not confused with the intentional slow query.
+
+**Twelve Chromium scenarios were verified**: eleven existing scripts passed in the
+batch, and the new security script passed on its targeted rerun after correcting
+socket accounting for Vite development traffic and Playwright page destruction.
+It asserts one active application socket, one held Web Lock and one waiting
+follower, leader-close handoff, shared logout/token removal, and required password
+rotation without a business socket. The production PWA scenario checks the actual
+CSP response, blocks injected inline script, has no inline boot script, and verifies
+static-only caching/offline/update behavior. No failed assertion was disabled.
+
+pip-audit 2.10.1 against the entire hash-locked dev/runtime dependency graph and
+npm audit against the full lockfile both returned **zero known findings**, without
+CVE exclusions. npm audit initially identified six affected frontend packages;
+pinned tooling/transitive overrides removed them. [Audit JSON and verification
+summary](security/) include lockfile SHA-256 values. FastAPI ORJSONResponse and
+Starlette TestClient deprecation warnings remain non-security maintenance notes.
+
+The new suite uses `tests/run_schema_checks.py --engine mysql --suite security
+--report /tmp/security-mysql.xml` from backend; repeat with tidb. Existing disposable
+runner/browser commands above apply. CI now runs both-engine hardening, audits,
+security lint and the twelfth browser script. Live hosting, actual provider push,
+physical iOS behavior and 50,000-row benchmarks were not revalidated in this step.
+Production configuration/limitations are recorded in [security-report.md](security-report.md).

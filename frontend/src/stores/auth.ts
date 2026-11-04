@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
 import { parseLogin, parseUser } from '../api/auth-payload'
@@ -10,13 +10,22 @@ import type { LoginRequest, PublicUser } from '../types/api.generated'
 
 const tokenKey = 'booking.access_token'
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(readStorage('sessionStorage', tokenKey))
+  const legacy = readStorage('sessionStorage', tokenKey)
+  const initial = readStorage('localStorage', tokenKey) ?? legacy
+  if (legacy) {
+    if (!readStorage('localStorage', tokenKey)) writeStorage('localStorage', tokenKey, legacy)
+    writeStorage('sessionStorage', tokenKey, null)
+  }
+  const token = ref<string | null>(initial)
   const user = ref<PublicUser | null>(null)
   const epoch = ref(0)
   const ready = ref(!token.value)
   const signingOut = ref(false)
   const isAuthenticated = computed(() => !!token.value && !!user.value && user.value.is_active)
-  const timezone = computed(() => validTimeZone(user.value?.settings?.timezone, 'Asia/Ho_Chi_Minh'))
+  const timezone = computed(() =>
+    validTimeZone(user.value?.settings?.timezone, 'Asia/Ho_Chi_Minh'),
+  )
+  let expiryTimer: ReturnType<typeof setTimeout> | undefined
   let restoring: Promise<boolean> | null = null
   const loginRequest = useRequest(
     async ({ signal, timeoutMs }, credentials: LoginRequest) =>
@@ -47,7 +56,9 @@ export const useAuthStore = defineStore('auth', () => {
     { timeoutMs: timeouts.profile },
   )
 
-  function clear(): void {
+  function clear(removeStored = true): void {
+    const previous = token.value
+    clearTimeout(expiryTimer)
     epoch.value++
     loginRequest.cancel()
     restoreRequest.cancel()
@@ -61,6 +72,8 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = null
     ready.value = true
     restoring = null
+    if (removeStored && readStorage('localStorage', tokenKey) === previous)
+      writeStorage('localStorage', tokenKey, null)
     writeStorage('sessionStorage', tokenKey, null)
   }
   async function login(credentials: LoginRequest): Promise<boolean> {
@@ -72,7 +85,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = result.user
     token.value = result.access_token
     ready.value = true
-    writeStorage('sessionStorage', tokenKey, result.access_token)
+    writeStorage('localStorage', tokenKey, result.access_token)
     return true
   }
   async function ensureSession(): Promise<boolean> {
@@ -110,7 +123,48 @@ export const useAuthStore = defineStore('auth', () => {
     clear()
     logoutRequest.cancel()
   }
+  watch(
+    token,
+    (value) => {
+      clearTimeout(expiryTimer)
+      if (!value) return
+      try {
+        const encoded = value.split('.')[1]!.replace(/-/g, '+').replace(/_/g, '/')
+        const exp = JSON.parse(atob(encoded)).exp
+        if (typeof exp !== 'number' || !Number.isFinite(exp)) return
+        const remaining = exp * 1000 - Date.now()
+        if (remaining <= 0) {
+          expire()
+          return
+        }
+        expiryTimer = setTimeout(
+          () => {
+            if (token.value === value) expire()
+          },
+          Math.min(remaining, 2147483647),
+        )
+      } catch {
+        /* /auth/me remains authoritative for malformed persisted tokens. */
+      }
+    },
+    { immediate: true, flush: 'sync' },
+  )
+  function syncStorage(after: () => void) {
+    const listener = async (event: StorageEvent) => {
+      if (event.key !== tokenKey && event.key !== null) return
+      const next = event.key === null ? readStorage('localStorage', tokenKey) : event.newValue
+      if (next === token.value) return
+      clear(false)
+      token.value = next
+      ready.value = !next
+      if (next) await ensureSession()
+      after()
+    }
+    window.addEventListener('storage', listener)
+    return () => window.removeEventListener('storage', listener)
+  }
   return {
+    syncStorage,
     token,
     user,
     epoch,

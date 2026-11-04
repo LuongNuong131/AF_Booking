@@ -24,7 +24,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
 })
 afterEach(() => vi.restoreAllMocks())
-it('logs in using the contract, persists only the token per tab, and clears private data on expiry', async () => {
+it('logs in using the contract, shares the token through localStorage, and clears private data on expiry', async () => {
   const post = vi.spyOn(api, 'post').mockResolvedValue({
     data: {
       access_token: 'test-token',
@@ -43,8 +43,8 @@ it('logs in using the contract, persists only the token per tab, and clears priv
   const deadline = post.mock.calls[0]![2]!.timeout!
   expect(deadline).toBeGreaterThan(0)
   expect(deadline).toBeLessThanOrEqual(10000)
-  expect(sessionStorage.getItem('booking.access_token')).toBe('test-token')
-  expect(localStorage.getItem('booking.access_token')).toBeNull()
+  expect(localStorage.getItem('booking.access_token')).toBe('test-token')
+  expect(sessionStorage.getItem('booking.access_token')).toBeNull()
   expect(auth.isAuthenticated).toBe(true)
   expect(auth.timezone).toBe('America/Toronto')
   auth.expire()

@@ -258,7 +258,9 @@
     "SUPPLIER_REQUIRED": "@:new_folder_prompt",
     "VERSION_CONFLICT": "@:conflict_body",
     "RATE_LIMITED": "Too many requests. Please wait a moment and try again.",
-    "TASK_LIMIT_REACHED": "@:taskUi.limit"
+    "TASK_LIMIT_REACHED": "@:taskUi.limit",
+    "PASSWORD_CHANGE_REQUIRED": "Change your temporary password before continuing.",
+    "PAYLOAD_TOO_LARGE": "The request is larger than the 1 MB limit."
   },
   "roles": {
     "admin": "Admin",
@@ -550,7 +552,7 @@
     "personalCounts": "{today} note(s) today · {week} this week",
     "recentLogins": "Recent login activity",
     "changePassword": "Change password",
-    "passwordHint": "Use at least 12 characters. You will sign in again after changing your password.",
+    "passwordHint": "Use at least 10 characters. You will sign in again after changing your password.",
     "currentPassword": "Current password",
     "newPassword": "New password",
     "confirmPassword": "Confirm new password",
@@ -754,5 +756,15 @@
     "load": "Load invoices",
     "doneNotDeclared": "Done bookings with invoices not declared",
     "matched": "Matching invoice: {number}"
+  },
+  "securityUi": {
+    "changePassword": "Change your temporary password",
+    "firstLogin": "Set a new password before using the workspace.",
+    "passwordRule": "Use 10–128 characters and a password different from your username.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "savePassword": "Change password",
+    "signOut": "Sign out"
   }
 }

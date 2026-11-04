@@ -96,6 +96,9 @@ class AdminService:
         return Page(items=[admin_user(r) for r in rows], total=total, page=page, size=size)
 
     async def create_user(self, body, actor, context):
+        from app.core.security import validate_password
+
+        validate_password(body.temporary_password.get_secret_value(), body.username)
         encoded = await self.auth.passwords.hash(body.temporary_password.get_secret_value())
         try:
             async with self.tx(after_commit=lambda: self.catalog("users")) as session:
@@ -105,6 +108,7 @@ class AdminService:
                     full_name=body.full_name,
                     role=body.role,
                     password_hash=encoded,
+                    must_change_password=True,
                     settings=effective_settings(None, self.settings.business_timezone),
                 )
                 session.add(row)
@@ -157,7 +161,11 @@ class AdminService:
             for field, value in values.items():
                 setattr(row, field, value)
             if encoded is not None:
+                from app.core.security import validate_password
+
+                validate_password(password, row.username)
                 row.password_hash = encoded
+                row.must_change_password = True
             record_audit(
                 session,
                 "user_password_reset"

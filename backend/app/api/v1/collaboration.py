@@ -2,6 +2,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
 
+from app.core.bounds import Identifier, KeyPath
 from app.core.deps import get_current_user
 from app.core.timeouts import DeadlineRoute
 from app.schemas.bookings import BookingItem
@@ -17,12 +18,12 @@ PageSize = Annotated[int, Query(ge=1, le=100)]
 
 
 @router.put("/bookings/{key}/watch", response_model=WatchState)
-async def watch(key: str, request: Request, user: UserDep):
+async def watch(key: KeyPath, request: Request, user: UserDep):
     return await request.app.state.collaboration.watch(key, user, True)
 
 
 @router.delete("/bookings/{key}/watch", response_model=WatchState)
-async def unwatch(key: str, request: Request, user: UserDep):
+async def unwatch(key: KeyPath, request: Request, user: UserDep):
     return await request.app.state.collaboration.watch(key, user, False)
 
 
@@ -44,14 +45,14 @@ async def assignments(
 
 
 @router.post("/assignments/{id}/complete", response_model=AssignmentItem)
-async def complete(id: int, request: Request, user: UserDep):
+async def complete(id: Identifier, request: Request, user: UserDep):
     return await request.app.state.collaboration.resolve(
         id, user, None, AuditContext.from_request(request)
     )
 
 
 @router.post("/assignments/{id}/decline", response_model=AssignmentItem)
-async def decline(id: int, body: AssignmentDecline, request: Request, user: UserDep):
+async def decline(id: Identifier, body: AssignmentDecline, request: Request, user: UserDep):
     return await request.app.state.collaboration.resolve(
         id, user, body.reason, AuditContext.from_request(request)
     )

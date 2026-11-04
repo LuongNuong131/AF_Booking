@@ -1,5 +1,6 @@
 import asyncio
 import secrets
+import unicodedata
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import TypeVar
@@ -90,9 +91,22 @@ def decode_access_token(token: str, settings: Settings) -> TokenClaims:
         raise unauthorized() from None
 
 
+def validate_password(password: str, username: str) -> None:
+    def folded(value):
+        return unicodedata.normalize("NFKC", value).strip().casefold()
+
+    if not 10 <= len(password) <= 128 or folded(password) == folded(username):
+        raise ApiException(
+            ErrorCode.VALIDATION_ERROR,
+            message="Use 10–128 characters and a password different from your username.",
+        )
+
+
 class PasswordService:
     def __init__(self, concurrency: int = 2) -> None:
-        self.hasher = PasswordHasher()
+        self.hasher = PasswordHasher(
+            time_cost=3, memory_cost=65536, parallelism=2, hash_len=32, salt_len=16
+        )
         self._slots = asyncio.Semaphore(concurrency)
         self._dummy_lock = asyncio.Lock()
         self._dummy_hash: str | None = None

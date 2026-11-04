@@ -18,6 +18,11 @@ class QueryTiming:
     milliseconds: float = 0
 
 
+def safe_route(scope):
+    route = scope.get("route")
+    return getattr(route, "path", "<unmatched>")
+
+
 query_timing: ContextVar[QueryTiming | None] = ContextVar("query_timing", default=None)
 SAFE_REQUEST_ID = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
 
@@ -34,7 +39,7 @@ class RequestContextMiddleware:
         identifier = supplied if SAFE_REQUEST_ID.fullmatch(supplied) else str(uuid4())
         scope.setdefault("state", {})["request_id"] = identifier
         context_token = request_id.set(identifier)
-        path_token = request_path.set(scope["path"])
+        path_token = request_path.set("<unmatched>")
         started = time.monotonic()
         timing = QueryTiming()
         timing_token = query_timing.set(timing)
@@ -69,7 +74,7 @@ class RequestContextMiddleware:
                 "request_id=%s method=%s path=%r status=%s duration_ms=%.2f",
                 identifier,
                 scope["method"],
-                scope["path"],
+                safe_route(scope),
                 status,
                 (time.monotonic() - started) * 1000,
             )

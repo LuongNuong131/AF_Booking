@@ -30,7 +30,7 @@ python3.12 -m venv .venv
 .venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1 --no-access-log --ws websockets-sansio --ws-max-size 4096
 ```
 
-`JWT_SECRET_KEY` must be an independently generated random secret of at least 32 characters. There is no built-in signing key, password, or automatically enabled demo account. On an existing database, seed preserves an active Admin's stored password; changing `ADMIN_PASSWORD` does not rotate that password. New passwords must have 12–1024 characters. Spaces are preserved in passwords; they are not trimmed or normalized.
+`JWT_SECRET_KEY` must be an independently generated random secret of at least 32 characters. There is no built-in signing key, password, or automatically enabled demo account. On an existing database, seed preserves an active Admin's stored password; changing `ADMIN_PASSWORD` does not rotate that password. New passwords must have 10–128 characters and differ from the username. Spaces are preserved in passwords; they are not trimmed or normalized.
 
 Render's Blueprint generates its signing secret with `generateValue: true`. For an existing service, add a strong secret securely in Render settings. Do not put it in `VITE_*`, source control, logs, or chat. Rotating the signing secret invalidates all existing JWTs. A network-proxy credential placeholder is not a usable local JWT signing secret.
 
@@ -62,7 +62,7 @@ Render's Blueprint generates its signing secret with `generateValue: true`. For 
 | `POST /api/v1/auth/logout` | Bearer token | `{message:"Signed out."}` |
 | `POST /api/v1/auth/change-password` | Bearer token and `{old_password,new_password}` | `{message:"Password changed. Please sign in again."}` |
 
-Public user fields are `id`, `username`, `full_name`, `role`, `is_active`, and `settings` (JSON or null). Password hashes and `current_session_id` are never returned. Auth responses, including errors, carry `Cache-Control: no-store`.
+Public user fields are `id`, `username`, `full_name`, `role`, `is_active`, `must_change_password`, and `settings` (JSON or null). Password hashes and `current_session_id` are never returned. Auth responses, including errors, carry `Cache-Control: no-store`.
 
 JWTs use HS256 with an explicitly allowed algorithm and required `sub`, `role`, `sid`, `iat`, `exp`, `iss`, and `aud` claims. `sub` is the user ID as a string; `sid` is a UUID. Expired, malformed, unsigned, wrong-audience/issuer, or incorrectly signed tokens return `401 UNAUTHORIZED`. There is no refresh-token flow in this prompt.
 
@@ -74,9 +74,17 @@ Credential verification occurs outside database row locks. Mutations then lock a
 
 ## Login rate limiting and proxy IPs
 
-The first five failed credential attempts in a five-minute window return the generic 401. The fifth starts a five-minute lockout; subsequent attempts return `429 RATE_LIMITED` with `Retry-After`. A success clears that pair's failures. Requests for the same pair are serialized so concurrent wrong passwords cannot bypass the threshold.
+The first five failed credential attempts in a five-minute window return the generic
+401. The fifth starts a five-minute lockout. Limits are independent per IP and per
+normalized username: rotating either dimension cannot bypass the other. Subsequent
+attempts return `429 RATE_LIMITED` with a numeric Retry-After in seconds. A success
+clears the username's failures and preserves the IP's history. Both buckets are
+locked in a fixed order. A blocked IP is rejected before the account DB lookup.
 
-The pair uses the ASGI client IP and, for a known account, the stored username selected through the database's unique index. This coalesces all case/accent aliases recognized by MySQL/TiDB collation. Unknown names are normalized for limiting. A throttled request can still perform the indexed account lookup, but does not run Argon2 or append another credential-failure audit row. The limiter retains at most 10,000 pairs and rejects new pairs if full rather than evicting active lockouts. HTTP completion logs still record throttled requests.
+For a known account the limiter uses the stored username, coalescing case/accent
+aliases recognized by MySQL/TiDB. Unknown names are normalized. At most 10,000 IP
+and 10,000 username buckets are retained; active lockouts are never evicted to admit
+new names. Rate-limited requests skip Argon2 and failure-audit writes.
 
 The application does not trust an arbitrary `X-Forwarded-For` header itself. Configure Uvicorn's trusted proxy addresses (`FORWARDED_ALLOW_IPS`) for the actual deployment proxy if needed; do not trust client-supplied forwarding headers indiscriminately. Keep one backend process/instance while rate limits and cache invalidation are in memory. A restart clears lockouts; multiple workers/instances require shared coordination before scaling.
 
@@ -167,3 +175,22 @@ Integration tests verify correct/incorrect/unknown/disabled login, warmed-cache 
 
 
 Prompt 5 supplies the real WebSocket transport for the existing revocation hooks. Handshake takes the auth user lock and reads the live row before registration, so login cannot race a cached old SID into a socket. Login/logout/password/kick/disable dispatch to the matching old SID only; callback transport failure never restores revoked credentials. `AuthService` now requires a transport; `create_app` provides the real manager and optionally composes an injected observer for integration/tests. There is no default no-op fallback. Frames, ping/pong, close codes and connection replacement: [ws-protocol.md](ws-protocol.md).
+
+
+## Prompt 9 password rotation
+
+Migration 0008 adds `users.must_change_password`. New/seed/reset accounts set it;
+never-signed-in existing accounts are marked during upgrade. Login and `/auth/me`
+return the flag. Until rotation, only `/auth/me`, `/auth/logout` and
+`/auth/change-password` are available to that session; other authenticated APIs return
+`403 PASSWORD_CHANGE_REQUIRED`, and WebSocket rejects it with 4401. The dedicated
+frontend `/change-password` route omits private workspace bootstrap and WebSocket.
+A successful change clears the flag, revokes the SID, clears the token and requires
+sign-in again. Admin reset also revokes the old session immediately.
+
+Argon2id uses 64 MiB, three passes, parallelism two, a 32-byte hash and a 16-byte salt
+in request handlers, with two bounded worker slots by default. The seed CLI uses
+Argon2id's 64 MiB/three-pass default with parallelism four. JWT_SECRET is an alias;
+production requires a random signing key, rejects known placeholders/blank/short
+values, and never prints its value. See security-report.md for frontend storage and
+cross-tab session handling.

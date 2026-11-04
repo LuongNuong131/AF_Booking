@@ -28,18 +28,36 @@ async function login(username, password = process.env.BOOKING_E2E_PASSWORD) {
     .toPass({ timeout: 15000 })
     .catch(async (error) => {
       await page.screenshot({ path: path.join(artifacts, 'login-failed.png') })
-      console.error(errors)
       throw error
     })
   await page.getByLabel('Username', { exact: true }).fill(username)
   await page.getByLabel('Password', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByLabel('Realtime connection: Live', { exact: true })).toBeVisible()
+  await expect(async () => {
+    if (
+      await page
+        .getByRole('heading', { name: 'Change your temporary password', exact: true })
+        .isVisible()
+    ) {
+      await page.getByLabel('Current password', { exact: true }).fill(password)
+      const permanent = `Permanent_${randomUUID()}!`
+      await page.getByLabel('New password', { exact: true }).fill(permanent)
+      await page.getByLabel('Confirm new password', { exact: true }).fill(permanent)
+      await page.getByRole('button', { name: 'Change password', exact: true }).click()
+      await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible()
+      await page.getByLabel('Username', { exact: true }).fill(username)
+      await page.getByLabel('Password', { exact: true }).fill(permanent)
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    }
+    await expect(page.getByLabel('Realtime connection: Live', { exact: true })).toBeVisible()
+  }).toPass({ timeout: 20000 })
   return { ctx, page }
 }
 async function go(page, url) {
   await page.goto('http://localhost:5173' + url)
-  await expect(page.getByLabel('Realtime connection: Live', { exact: true })).toBeVisible({timeout:15000})
+  await expect(page.getByLabel('Realtime connection: Live', { exact: true })).toBeVisible({
+    timeout: 15000,
+  })
 }
 
 try {
@@ -179,7 +197,10 @@ try {
     .locator('.admin-table tbody tr')
     .getByRole('button', { name: 'Edit', exact: true })
     .click()
-  await page.getByRole('dialog').getByLabel('Label', { exact: true }).fill('Raleigh crew station')
+  await page
+    .getByRole('dialog')
+    .getByLabel('Label', { exact: true })
+    .fill('Raleigh crew station')
   await page.getByRole('dialog').getByRole('button', { name: 'Confirm', exact: true }).click()
   await expect(page.locator('.admin-table')).toContainText('Raleigh crew station')
   const qc = await login('qc')

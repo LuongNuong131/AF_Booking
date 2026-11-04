@@ -3,7 +3,7 @@ import unicodedata
 from dataclasses import dataclass
 
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
-MAX_RAW_KEY_LENGTH = 128
+MAX_RAW_KEY_LENGTH = 100
 DASHES = str.maketrans({c: "-" for c in "–—−‐‑"})
 
 

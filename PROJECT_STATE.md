@@ -185,3 +185,14 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 - Monthly one-query reconciliation/cache, safe streamed two-sheet invoice Excel/CSV, daily invoice columns and unknown Done lists with immutable report compatibility.
 - Reusable InvoicePanel/chips/copy/shortcuts, badges, Reports panel, timeline changes and the shared durable note/invoice outbox with draft retention.
 - Shared parsing fixtures, transaction/permission/concurrency/export/query-budget regressions and the invoice Chromium flow. See docs/invoices.md and docs/testing.md.
+
+
+## Implemented: Prompt 9 security hardening
+
+- Migration 0008 and restricted initial-password sessions; seed/new/reset require rotation, reusable authorization and immediate cache/SID revocation retained.
+- Independent IP/account login protection, strict HS256 required claims, production signing-key validation, bounded text/path/body input and parameterized database session configuration.
+- Exact HTTP/WS origins, inbound WS byte/rate limits, existing slow-client eviction, response headers/no-store, sanitized route/error logging.
+- Shared localStorage tokens, explicit expiry/cross-tab cleanup, one physical WebSocket per same-browser session via Web Locks/BroadcastChannel, dedicated first-password screen.
+- CSP deployment configuration script and Vercel mismatch guard; external theme script, no unsafe script inline/eval, style-only inline exception documented.
+- Whole-frontend vue/no-v-html lint and negative probe, exact dependency pins/hash locks, pip-audit/npm audit gates, automated security regression tests and report in docs/security-report.md.
+- Hosting is still prepared configuration only. Actual Render URL/CORS/CSP and TiDB credentials are entered when provisioning providers; no live deployment is claimed.

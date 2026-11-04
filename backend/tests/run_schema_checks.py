@@ -123,6 +123,7 @@ def main() -> None:
             "collaboration",
             "operations",
             "invoices",
+            "security",
             "integrity-performance",
             "search-performance",
         ],
@@ -224,6 +225,7 @@ def main() -> None:
                 "collaboration": "tests/test_collaboration_database.py",
                 "operations": "tests/test_operations_database.py",
                 "invoices": "tests/test_invoices_database.py",
+                "security": "tests/test_hardening_database.py",
                 "integrity-performance": "tests/test_integrity_performance.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]

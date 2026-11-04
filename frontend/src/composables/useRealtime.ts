@@ -163,7 +163,7 @@ export function useRealtime(options: RealtimeOptions) {
         options.onState('superseded')
         return
       }
-      if ([4400, 1003, 1009].includes(event.code)) {
+      if ([4400, 4403, 1003, 1008, 1009].includes(event.code)) {
         stop()
         return
       }

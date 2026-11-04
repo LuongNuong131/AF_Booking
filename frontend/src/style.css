@@ -4003,3 +4003,6 @@ kbd {
   padding: 16px;
   border-bottom: 1px solid var(--line);
 }
+.required-password-page {min-height:100dvh;display:grid;place-items:center;padding:24px;}
+.required-password-page>form {width:min(100%,480px);display:grid;gap:16px;}
+.required-password-page input {width:100%;min-width:0;}

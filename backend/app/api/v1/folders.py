@@ -2,6 +2,7 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 
+from app.core.bounds import KeyPath
 from app.core.deps import get_current_user, require_roles
 from app.core.timeouts import DeadlineRoute, timeout
 from app.schemas.contracts import FolderCard, Page
@@ -54,7 +55,7 @@ async def folders(
 
 
 @router.get("/folders/{cw}", response_model=FolderDetail)
-async def folder(cw: str, request: Request, user: UserDep):
+async def folder(cw: KeyPath, request: Request, user: UserDep):
     return await request.app.state.folders.detail(cw)
 
 
@@ -77,7 +78,7 @@ async def stations(request: Request, response: Response, user: UserDep, q: Searc
 
 @router.patch("/admin/stations/{code}", response_model=StationInfo)
 async def rename_station(
-    code: str,
+    code: KeyPath,
     body: StationPatch,
     request: Request,
     user: Annotated[CurrentUser, Depends(require_roles("admin"))],

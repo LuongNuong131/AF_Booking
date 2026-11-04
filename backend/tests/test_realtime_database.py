@@ -72,7 +72,12 @@ async def peer(live, rig, name="agent", token=None):
     )
     # Only the test's loopback ASGI listener uses proxy=None; external networking is unchanged.
     async with connect(
-        live + "?token=" + token, proxy=None, open_timeout=3, close_timeout=1, ping_interval=None
+        live + "?token=" + token,
+        origin="http://localhost:5173",
+        proxy=None,
+        open_timeout=3,
+        close_timeout=1,
+        ping_interval=None,
     ) as websocket:
         yield websocket
 

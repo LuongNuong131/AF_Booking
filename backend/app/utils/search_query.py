@@ -40,8 +40,10 @@ def normalize_search(raw: str) -> str:
 def classify_query(
     raw: str, station_codes: Collection[str] = (), station_pattern: str = r"[A-Z]{3}"
 ) -> ClassifiedQuery:
+    if len(raw) > 100:
+        return ClassifiedQuery(QueryKind.NONE, "")
     query = normalize_search(raw)
-    if not query or len(raw) > 100:
+    if not query:
         return ClassifiedQuery(QueryKind.NONE, query)
     if query.startswith(("INV:", "#")):
         return ClassifiedQuery(QueryKind.INVOICE, query)

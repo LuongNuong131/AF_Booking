@@ -17,6 +17,8 @@ from app.schemas.contracts import ApiError, ErrorCode
 logger = logging.getLogger(__name__)
 
 ERROR_HTTP_STATUS: dict[ErrorCode, int] = {
+    ErrorCode.PASSWORD_CHANGE_REQUIRED: 403,
+    ErrorCode.PAYLOAD_TOO_LARGE: 413,
     ErrorCode.UNAUTHORIZED: 401,
     ErrorCode.SESSION_REPLACED: 401,
     ErrorCode.FORBIDDEN: 403,
@@ -45,6 +47,8 @@ ERROR_HTTP_STATUS: dict[ErrorCode, int] = {
 }
 
 DEFAULT_MESSAGES: dict[ErrorCode, str] = {
+    ErrorCode.PASSWORD_CHANGE_REQUIRED: "Change your temporary password before continuing.",
+    ErrorCode.PAYLOAD_TOO_LARGE: "Request body exceeds the 1 MB limit.",
     ErrorCode.UNAUTHORIZED: "Please sign in to continue.",
     ErrorCode.SESSION_REPLACED: "Your account was signed in on another device.",
     ErrorCode.FORBIDDEN: "You do not have permission to perform this action.",
@@ -125,7 +129,12 @@ def register_error_handlers(application: FastAPI) -> None:
     @application.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
         # Do not echo input values, passwords, or validator context into responses.
-        errors = [{"loc": list(item["loc"]), "type": item["type"]} for item in exc.errors()]
+        errors = []
+        for item in exc.errors()[:50]:
+            location = [part if isinstance(part, int) else str(part)[:64] for part in item["loc"]]
+            if item["type"] == "extra_forbidden" and location:
+                location[-1] = "<extra>"
+            errors.append({"loc": location, "type": item["type"]})
         return error_response(
             ErrorCode.VALIDATION_ERROR, details=cast(JsonValue, {"errors": errors})
         )
