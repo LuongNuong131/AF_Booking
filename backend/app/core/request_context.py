@@ -71,12 +71,16 @@ class RequestContextMiddleware:
             if telemetry is not None:
                 telemetry.record(scope["path"], status, (time.monotonic() - started) * 1000)
             logger.info(
-                "request_id=%s method=%s path=%r status=%s duration_ms=%.2f",
-                identifier,
-                scope["method"],
-                safe_route(scope),
-                status,
-                (time.monotonic() - started) * 1000,
+                "Request completed",
+                extra={
+                    "event": "http.request",
+                    "request_id": identifier,
+                    "user_id": scope.get("state", {}).get("authenticated_user_id"),
+                    "method": scope["method"],
+                    "path": safe_route(scope),
+                    "status": status,
+                    "duration_ms": round((time.monotonic() - started) * 1000, 3),
+                },
             )
             request_id.reset(context_token)
             request_path.reset(path_token)

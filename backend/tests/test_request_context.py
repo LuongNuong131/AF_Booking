@@ -37,7 +37,7 @@ def test_request_ids_are_returned_logged_and_do_not_log_tokens_or_query_strings(
         assert response.status_code == 503
         assert response.headers["x-request-id"] == "auth-check-123"
         assert response.headers["cache-control"] == "no-store"
-        assert "request_id=auth-check-123" in caplog.text
+        assert any(getattr(r, "request_id", None) == "auth-check-123" for r in caplog.records)
         assert "do-not-log-this" not in caplog.text
         generated = client.get("/health", headers={"X-Request-ID": "x" * 100})
         UUID(generated.headers["x-request-id"])

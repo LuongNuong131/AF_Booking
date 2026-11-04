@@ -29,7 +29,10 @@ def create_database_engine(settings: Settings, telemetry=None) -> AsyncEngine | 
         pool_recycle=settings.db_pool_recycle_seconds,
         pool_timeout=settings.db_pool_timeout_seconds,
         hide_parameters=True,
+        isolation_level="READ COMMITTED",
     )
+
+    engine.sync_engine._booking_default_isolation = "READ COMMITTED"
 
     @event.listens_for(engine.sync_engine, "before_cursor_execute")
     def before_query(conn, cursor, statement, parameters, context, executemany):

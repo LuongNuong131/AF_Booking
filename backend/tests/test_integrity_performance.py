@@ -34,6 +34,8 @@ def stats(samples):
 
 
 async def test_scan_50000_bookings_and_fix_beyond_sample_cap_without_blocking_lookup(rig):
+    # Isolate scan latency from per-user abuse protection (tested in security suites).
+    rig.app.state.search_limiter.limit = 10000
     now = datetime.now(UTC)
     now = now.replace(microsecond=now.microsecond // 1000 * 1000)
     async with rig.app.state.engine.begin() as conn:

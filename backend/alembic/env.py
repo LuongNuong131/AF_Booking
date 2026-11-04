@@ -57,5 +57,7 @@ if context.is_offline_mode():
     raise RuntimeError(
         "Offline migrations are not enabled; use the verified TLS database connection"
     )
+elif context.config.attributes.get("connection") is not None:
+    run_migrations(context.config.attributes["connection"])
 else:
     asyncio.run(run_online())

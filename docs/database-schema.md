@@ -173,3 +173,11 @@ rotation. New/seed/reset application writes explicitly set true. Seed reruns pre
 an existing user's completed rotation. Existing migrations remain unchanged.
 Downgrade removes only this enforcement flag, so it must be coordinated with the
 older application version; it does not recover temporary-password history.
+
+## Prompt 10: migration 0009
+
+Additive indexes: notifications `(read_at,id)`, terminal-task retention
+`(status,updated_at,id)`, and live-note daily-report aggregation
+`(deleted_at,booking_id,id,created_at)`. Existing migrations 0001–0008 remain
+unchanged. Upgrade with `alembic upgrade head`; downgrade drops only these indexes.
+Retention runs in the scheduler, independently of migration, using configured ages.

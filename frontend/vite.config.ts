@@ -14,7 +14,11 @@ export default defineConfig(({ command, mode }) => {
   ).origin
   const endpoints = resolveEndpoints({ ...publicEnv, ...process.env }, command === 'build')
   const csp = endpoints.apiUrl.startsWith('https:')
-    ? buildCsp(endpoints.apiUrl, endpoints.wsUrl)
+    ? buildCsp(
+        endpoints.apiUrl,
+        endpoints.wsUrl,
+        process.env.VITE_SENTRY_DSN ?? publicEnv.VITE_SENTRY_DSN,
+      )
     : null
   if (command === 'build' && process.env.VERCEL === '1') {
     const config = JSON.parse(readFileSync(new URL('./vercel.json', import.meta.url), 'utf8'))

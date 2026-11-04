@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Status } from '../types/api.generated'
 import type { RequestFailure } from '../api/errors'
@@ -31,13 +31,22 @@ const sorted = computed(() =>
 )
 const selected = computed(() => props.statuses.find((s) => s.code === props.statusCode))
 const noteInvalid = computed(() => !!selected.value?.note_required && !props.note.trim())
+let submitting = false
+function submit() {
+  if (submitting || props.pending || !props.canSave || noteInvalid.value) return
+  submitting = true
+  emit('save')
+  void nextTick(() => {
+    submitting = false
+  })
+}
 function selectStatus(code: string) {
   emit('update:statusCode', code)
   emit('engage')
 }
 </script>
 <template>
-  <form class="note-form" :aria-label="t('bookingUi.noteForm')" @submit.prevent="emit('save')">
+  <form class="note-form" :aria-label="t('bookingUi.noteForm')" @submit.prevent="submit">
     <div class="section-heading">
       <h2>{{ t('bookingUi.addUpdate') }}</h2>
       <span v-if="draftPending" class="draft-label">{{ t('bookingUi.savingDraft') }}</span
@@ -97,7 +106,11 @@ function selectStatus(code: string) {
     </p>
     <div class="note-actions">
       <div class="note-primary-actions">
-        <button type="submit" class="button primary save-note" :disabled="!canSave || pending">
+        <button
+          type="submit"
+          class="button primary save-note"
+          :disabled="!canSave || pending || noteInvalid"
+        >
           <span v-if="pending" class="button-spinner" aria-hidden="true" />{{
             t(pending ? 'bookingUi.saving' : 'bookingUi.save')
           }}<kbd v-if="!pending">{{ t('bookingUi.saveShortcut') }}</kbd></button

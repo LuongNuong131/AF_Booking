@@ -725,7 +725,10 @@
     "enablePush": "Enable background push",
     "disablePush": "Disable background push",
     "pushRebind": "A previous account used this browser subscription. Enable again to create a fresh subscription.",
-    "pushFailure": "Push setup could not finish. Please try again."
+    "pushFailure": "Push setup could not finish. Please try again.",
+    "keyIndex": "Indexed booking keys",
+    "snapshotHitRate": "Snapshot cache hit rate",
+    "cacheScope": "Cache hits are counted since startup. Error counts use the configured alert window. Index container bytes exclude entry payloads."
   },
   "invoiceUi": {
     "count": "{n} invoice(s)",

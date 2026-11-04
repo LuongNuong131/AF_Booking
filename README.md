@@ -82,7 +82,7 @@ when enabling push. See [operations and PWA](docs/operations-pwa.md).
 
 Prompt 8F adds invoice chips/owner controls, standalone and offline invoice edits,
 exact invoice search, monthly reconciliation, invoice Excel/CSV and invoice integrity
-repair. **Upgrade through migration 0008 before starting the latest version.**
+repair. **Upgrade through migration 0009 before starting the latest version.**
 Existing explicit declarations are preserved; unset bookings remain unknown.
 See [invoice management](docs/invoices.md) for contracts, exports and verification.
 
@@ -92,3 +92,11 @@ shared localStorage sessions with expiry and cross-tab WebSocket coordination, a
 security lint/audit gates. Read the [security report](docs/security-report.md) and
 [deployment steps](docs/deploy.md). Apply migration **0008** before starting the API.
 No provider URL or live deployment is assumed; configure CSP once Render assigns its URL.
+
+Prompt 10 adds real MySQL service coverage, multi-user browser deadline/replay
+checks, reproducible 50-user/100-WebSocket load tests, JSON request/SQL alerts,
+optional Sentry, bounded retention and encrypted all-table backups with tested
+empty-database recovery. Apply migration **0009**. Read [testing](docs/testing.md),
+[load testing](docs/performance/load-testing.md), [observability](docs/observability.md)
+and [backup/recovery](docs/backup.md). Scheduled production backups remain disabled
+until repository secrets and `BACKUP_ENABLED` are configured.

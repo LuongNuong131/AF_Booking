@@ -36,6 +36,7 @@ async def get_current_user(
         raise unauthorized()
     claims = decode_access_token(credentials.credentials, request.app.state.settings)
     user = await auth.authenticate(claims)
+    request.scope.setdefault("state", {})["authenticated_user_id"] = user.id
     if user.must_change_password and request.url.path not in {
         "/api/v1/auth/me",
         "/api/v1/auth/logout",

@@ -1,0 +1,858 @@
+{
+  "label": "baseline",
+  "dataset": {
+    "bookings": 50000,
+    "notes": 250000,
+    "users": 50,
+    "folders": 2000,
+    "stations": 40,
+    "initial_version": 5
+  },
+  "seed_seconds": 20.989,
+  "users": 50,
+  "observer_accounts": 50,
+  "websockets": 100,
+  "duration_seconds_per_phase": 60,
+  "think_time_seconds": [
+    0.4,
+    0.8
+  ],
+  "network": "Loopback HTTP; SQL end-to-end verified TLS through a byte-forwarding proxy; load generator and API in separate processes.",
+  "scheduler_enabled": false,
+  "results": {
+    "mixed": {
+      "mode": "mixed",
+      "warmup_seconds": 10.0,
+      "rest": {
+        "count": 3541,
+        "p50_ms": 51.516,
+        "p95_ms": 465.069,
+        "p99_ms": 1655.359
+      },
+      "errors": 0,
+      "groups": {
+        "list/mine": {
+          "client": {
+            "count": 571,
+            "p50_ms": 69.099,
+            "p95_ms": 540.51,
+            "p99_ms": 2100.181
+          },
+          "server": {
+            "count": 571,
+            "p50_ms": 65.9,
+            "p95_ms": 420.4,
+            "p99_ms": 2088.33
+          }
+        },
+        "lookup/formatted": {
+          "client": {
+            "count": 573,
+            "p50_ms": 43.334,
+            "p95_ms": 425.857,
+            "p99_ms": 1289.836
+          },
+          "server": {
+            "count": 573,
+            "p50_ms": 39.93,
+            "p95_ms": 294.72,
+            "p99_ms": 1279.27
+          }
+        },
+        "lookup/full": {
+          "client": {
+            "count": 572,
+            "p50_ms": 44.21,
+            "p95_ms": 366.613,
+            "p99_ms": 1559.308
+          },
+          "server": {
+            "count": 572,
+            "p50_ms": 40.2,
+            "p95_ms": 244.9,
+            "p99_ms": 1549.05
+          }
+        },
+        "lookup/missing": {
+          "client": {
+            "count": 572,
+            "p50_ms": 7.177,
+            "p95_ms": 43.534,
+            "p99_ms": 510.303
+          },
+          "server": {
+            "count": 572,
+            "p50_ms": 3.82,
+            "p95_ms": 29.6,
+            "p99_ms": 62.44
+          }
+        },
+        "lookup/partial": {
+          "client": {
+            "count": 575,
+            "p50_ms": 46.341,
+            "p95_ms": 479.318,
+            "p99_ms": 1740.277
+          },
+          "server": {
+            "count": 575,
+            "p50_ms": 41.98,
+            "p95_ms": 318.28,
+            "p99_ms": 1728.5
+          }
+        },
+        "notes/save": {
+          "client": {
+            "count": 495,
+            "p50_ms": 103.376,
+            "p95_ms": 710.466,
+            "p99_ms": 2575.21
+          },
+          "server": {
+            "count": 495,
+            "p50_ms": 99.07,
+            "p95_ms": 481.82,
+            "p99_ms": 2558.15
+          }
+        },
+        "reports/daily": {
+          "client": {
+            "count": 6,
+            "p50_ms": 47.741,
+            "p95_ms": 5215.259,
+            "p99_ms": 5215.259
+          },
+          "server": {
+            "count": 6,
+            "p50_ms": 9.74,
+            "p95_ms": 5028.14,
+            "p99_ms": 5028.14
+          }
+        },
+        "search/notes": {
+          "client": {
+            "count": 177,
+            "p50_ms": 58.016,
+            "p95_ms": 461.594,
+            "p99_ms": 2005.331
+          },
+          "server": {
+            "count": 177,
+            "p50_ms": 53.59,
+            "p95_ms": 384.7,
+            "p99_ms": 1986.22
+          }
+        }
+      }
+    },
+    "keys": {
+      "mode": "keys",
+      "warmup_seconds": 10.0,
+      "rest": {
+        "count": 3907,
+        "p50_ms": 31.14,
+        "p95_ms": 82.816,
+        "p99_ms": 368.478
+      },
+      "errors": 0,
+      "groups": {
+        "lookup/formatted": {
+          "client": {
+            "count": 988,
+            "p50_ms": 35.523,
+            "p95_ms": 91.463,
+            "p99_ms": 404.278
+          },
+          "server": {
+            "count": 988,
+            "p50_ms": 32.79,
+            "p95_ms": 84.2,
+            "p99_ms": 279.23
+          }
+        },
+        "lookup/full": {
+          "client": {
+            "count": 985,
+            "p50_ms": 37.462,
+            "p95_ms": 109.504,
+            "p99_ms": 470.578
+          },
+          "server": {
+            "count": 985,
+            "p50_ms": 34.37,
+            "p95_ms": 97.03,
+            "p99_ms": 244.37
+          }
+        },
+        "lookup/missing": {
+          "client": {
+            "count": 972,
+            "p50_ms": 5.183,
+            "p95_ms": 24.131,
+            "p99_ms": 208.641
+          },
+          "server": {
+            "count": 972,
+            "p50_ms": 2.63,
+            "p95_ms": 17.64,
+            "p99_ms": 31.59
+          }
+        },
+        "lookup/partial": {
+          "client": {
+            "count": 962,
+            "p50_ms": 35.781,
+            "p95_ms": 78.603,
+            "p99_ms": 404.599
+          },
+          "server": {
+            "count": 962,
+            "p50_ms": 32.94,
+            "p95_ms": 72.46,
+            "p99_ms": 177.71
+          }
+        }
+      }
+    }
+  },
+  "exit_codes": {
+    "mixed": 0,
+    "keys": 0
+  },
+  "broadcast": {
+    "count": 60700,
+    "p50_ms": 134.912,
+    "p95_ms": 216.843,
+    "p99_ms": 513.436,
+    "probe_receivers": 100
+  },
+  "fault": {
+    "latency_seconds_per_direction": 2,
+    "statuses": [
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504
+    ],
+    "codes": [
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT"
+    ],
+    "elapsed_seconds": 7.079,
+    "recovered": true
+  },
+  "cache": {
+    "entries": 2000,
+    "hits": 106,
+    "misses": 5412,
+    "hit_ratio": 0.01920985864443639
+  },
+  "index": {
+    "ready": true,
+    "keys": 50000,
+    "folders": 2000,
+    "container_bytes": 4595976
+  },
+  "slow_queries": [
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 926.905,
+      "at": "2026-11-04T14:04:59.054Z"
+    },
+    {
+      "fingerprint": "b66cbf1c624ecba9d668084b6aef3f8f8f7a5d333cb972f7268e3981dfa4ab7c",
+      "duration_ms": 736.141,
+      "at": "2026-11-04T14:05:42.037Z"
+    },
+    {
+      "fingerprint": "d0de452d7a46fc0940f189e0dacc44865422ad4e2a224d145b4f0644f6315dcc",
+      "duration_ms": 729.421,
+      "at": "2026-11-04T14:05:42.032Z"
+    },
+    {
+      "fingerprint": "b66cbf1c624ecba9d668084b6aef3f8f8f7a5d333cb972f7268e3981dfa4ab7c",
+      "duration_ms": 723.789,
+      "at": "2026-11-04T14:05:42.039Z"
+    },
+    {
+      "fingerprint": "d0de452d7a46fc0940f189e0dacc44865422ad4e2a224d145b4f0644f6315dcc",
+      "duration_ms": 717.302,
+      "at": "2026-11-04T14:05:42.038Z"
+    },
+    {
+      "fingerprint": "851eabb551cacfec51103625b475b9d6da7fed56f737fff0e88c9f98aad60d21",
+      "duration_ms": 711.09,
+      "at": "2026-11-04T14:05:42.035Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 696.789,
+      "at": "2026-11-04T14:04:59.417Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 689.066,
+      "at": "2026-11-04T14:04:57.799Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 569.033,
+      "at": "2026-11-04T14:04:58.640Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 550.823,
+      "at": "2026-11-04T14:04:57.949Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 538.695,
+      "at": "2026-11-04T14:04:59.233Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 502.8,
+      "at": "2026-11-04T14:05:00.039Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 496.01,
+      "at": "2026-11-04T14:04:58.450Z"
+    },
+    {
+      "fingerprint": "f93e0f43f18ec52e68d6a9182fee038f320612168c5fedb47c61d19cf27ea22b",
+      "duration_ms": 486.368,
+      "at": "2026-11-04T14:04:56.669Z"
+    },
+    {
+      "fingerprint": "ce39a362b629e46fb427f247a3e5fa6ed6b831fde33626e6bbb5abd21791fabb",
+      "duration_ms": 481.708,
+      "at": "2026-11-04T14:05:58.809Z"
+    },
+    {
+      "fingerprint": "07918e9cf8450b3b43b5bb4180df1017eefc6075bb192e448a88638339f2adf4",
+      "duration_ms": 479.003,
+      "at": "2026-11-04T14:05:58.805Z"
+    },
+    {
+      "fingerprint": "d0de452d7a46fc0940f189e0dacc44865422ad4e2a224d145b4f0644f6315dcc",
+      "duration_ms": 477.989,
+      "at": "2026-11-04T14:05:58.802Z"
+    },
+    {
+      "fingerprint": "07918e9cf8450b3b43b5bb4180df1017eefc6075bb192e448a88638339f2adf4",
+      "duration_ms": 450.667,
+      "at": "2026-11-04T14:05:12.841Z"
+    },
+    {
+      "fingerprint": "2bf7059637c3f62449f40a08b766435ccfd2b41b940ff6d761639e37309940d7",
+      "duration_ms": 446.881,
+      "at": "2026-11-04T14:05:12.838Z"
+    },
+    {
+      "fingerprint": "07918e9cf8450b3b43b5bb4180df1017eefc6075bb192e448a88638339f2adf4",
+      "duration_ms": 444.044,
+      "at": "2026-11-04T14:06:15.280Z"
+    }
+  ],
+  "explain_note_search": [
+    {
+      "fingerprint": "b612182d9b47bed11ce1c1b767a945f1c864fde6781c84645cc99a925bf09d72",
+      "plan": [
+        {
+          "id": "HashAgg_8",
+          "estRows": "1.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "funcs:count(1)->Column#17"
+        },
+        {
+          "id": "\u2514\u2500HashAgg_16",
+          "estRows": "387.64",
+          "task": "root",
+          "access object": "",
+          "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:count(Column#21)->Column#19"
+        },
+        {
+          "id": "  \u2514\u2500IndexLookUp_17",
+          "estRows": "387.64",
+          "task": "root",
+          "access object": "",
+          "operator info": ""
+        },
+        {
+          "id": "    \u251c\u2500IndexRangeScan_13(Build)",
+          "estRows": "2418.56",
+          "task": "cop[tikv]",
+          "access object": "table:booking_notes, index:ix_booking_notes_created_at(created_at)",
+          "operator info": "range:[2026-11-03 17:00:00.000,2026-11-04 17:00:00.000), keep order:false, stats:partial[note:unInitialized]"
+        },
+        {
+          "id": "    \u2514\u2500HashAgg_11(Probe)",
+          "estRows": "387.64",
+          "task": "cop[tikv]",
+          "access object": "",
+          "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:count(1)->Column#21"
+        },
+        {
+          "id": "      \u2514\u2500Selection_15",
+          "estRows": "1934.85",
+          "task": "cop[tikv]",
+          "access object": "",
+          "operator info": "isnull(booking_schema_4b25a14dbd15_test.booking_notes.deleted_at), like(booking_schema_4b25a14dbd15_test.booking_notes.note, \"%supplier%\", 47)"
+        },
+        {
+          "id": "        \u2514\u2500TableRowIDScan_14",
+          "estRows": "2418.56",
+          "task": "cop[tikv]",
+          "access object": "table:booking_notes",
+          "operator info": "keep order:false, stats:partial[note:unInitialized]"
+        }
+      ]
+    },
+    {
+      "fingerprint": "bf02e1d7a66c93f6422642466beff54f72df07d31f7ca70d246f8506424ec95c",
+      "plan": [
+        {
+          "id": "Projection_16",
+          "estRows": "20.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "Column#15, Column#16"
+        },
+        {
+          "id": "\u2514\u2500TopN_19",
+          "estRows": "20.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "booking_schema_4b25a14dbd15_test.booking_notes.created_at:desc, booking_schema_4b25a14dbd15_test.booking_notes.id:desc, offset:0, count:20"
+        },
+        {
+          "id": "  \u2514\u2500IndexJoin_28",
+          "estRows": "310.11",
+          "task": "root",
+          "access object": "",
+          "operator info": "inner join, inner:TableReader_25, outer key:Column#15, inner key:booking_schema_4b25a14dbd15_test.booking_notes.id, equal cond:eq(Column#15, booking_schema_4b25a14dbd15_test.booking_notes.id)"
+        },
+        {
+          "id": "    \u251c\u2500Selection_35(Build)",
+          "estRows": "310.11",
+          "task": "root",
+          "access object": "",
+          "operator info": "not(isnull(Column#15))"
+        },
+        {
+          "id": "    \u2502 \u2514\u2500HashAgg_42",
+          "estRows": "387.64",
+          "task": "root",
+          "access object": "",
+          "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:max(Column#33)->Column#15, funcs:count(Column#34)->Column#16"
+        },
+        {
+          "id": "    \u2502   \u2514\u2500IndexLookUp_43",
+          "estRows": "387.64",
+          "task": "root",
+          "access object": "",
+          "operator info": ""
+        },
+        {
+          "id": "    \u2502     \u251c\u2500IndexRangeScan_39(Build)",
+          "estRows": "2418.56",
+          "task": "cop[tikv]",
+          "access object": "table:booking_notes, index:ix_booking_notes_created_at(created_at)",
+          "operator info": "range:[2026-11-03 17:00:00.000,2026-11-04 17:00:00.000), keep order:false"
+        },
+        {
+          "id": "    \u2502     \u2514\u2500HashAgg_37(Probe)",
+          "estRows": "387.64",
+          "task": "cop[tikv]",
+          "access object": "",
+          "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:max(booking_schema_4b25a14dbd15_test.booking_notes.id)->Column#33, funcs:count(1)->Column#34"
+        },
+        {
+          "id": "    \u2502       \u2514\u2500Selection_41",
+          "estRows": "1934.85",
+          "task": "cop[tikv]",
+          "access object": "",
+          "operator info": "isnull(booking_schema_4b25a14dbd15_test.booking_notes.deleted_at), like(booking_schema_4b25a14dbd15_test.booking_notes.note, \"%supplier%\", 47)"
+        },
+        {
+          "id": "    \u2502         \u2514\u2500TableRowIDScan_40",
+          "estRows": "2418.56",
+          "task": "cop[tikv]",
+          "access object": "table:booking_notes",
+          "operator info": "keep order:false"
+        },
+        {
+          "id": "    \u2514\u2500TableReader_25(Probe)",
+          "estRows": "310.11",
+          "task": "root",
+          "access object": "",
+          "operator info": "data:TableRangeScan_24"
+        },
+        {
+          "id": "      \u2514\u2500TableRangeScan_24",
+          "estRows": "310.11",
+          "task": "cop[tikv]",
+          "access object": "table:booking_notes",
+          "operator info": "range: decided by [Column#15], keep order:false"
+        }
+      ]
+    },
+    {
+      "fingerprint": "a8ec3cb732651a14ecf1b0a5dfe0b43e9236a1587e87cb628894c716fe3fd996",
+      "plan": [
+        {
+          "id": "Sort_23",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "booking_schema_4b25a14dbd15_test.booking_notes.created_at:desc, booking_schema_4b25a14dbd15_test.booking_notes.id:desc"
+        },
+        {
+          "id": "\u2514\u2500Projection_25",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "booking_schema_4b25a14dbd15_test.bookings.booking_key, booking_schema_4b25a14dbd15_test.bookings.station_code, booking_schema_4b25a14dbd15_test.booking_groups.supplier_name, booking_schema_4b25a14dbd15_test.booking_groups.supplier_type, booking_schema_4b25a14dbd15_test.booking_notes.id, booking_schema_4b25a14dbd15_test.booking_notes.note, booking_schema_4b25a14dbd15_test.booking_notes.position_label, booking_schema_4b25a14dbd15_test.booking_notes.created_at, booking_schema_4b25a14dbd15_test.users.id, booking_schema_4b25a14dbd15_test.users.full_name, booking_schema_4b25a14dbd15_test.statuses.code, booking_schema_4b25a14dbd15_test.statuses.label"
+        },
+        {
+          "id": "  \u2514\u2500Projection_26",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "booking_schema_4b25a14dbd15_test.booking_notes.id, booking_schema_4b25a14dbd15_test.booking_notes.position_label, booking_schema_4b25a14dbd15_test.booking_notes.note, booking_schema_4b25a14dbd15_test.booking_notes.created_at, booking_schema_4b25a14dbd15_test.bookings.booking_key, booking_schema_4b25a14dbd15_test.bookings.station_code, booking_schema_4b25a14dbd15_test.booking_groups.supplier_name, booking_schema_4b25a14dbd15_test.booking_groups.supplier_type, booking_schema_4b25a14dbd15_test.users.id, booking_schema_4b25a14dbd15_test.users.full_name, booking_schema_4b25a14dbd15_test.statuses.code, booking_schema_4b25a14dbd15_test.statuses.label"
+        },
+        {
+          "id": "    \u2514\u2500IndexJoin_32",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "inner join, inner:TableReader_29, outer key:booking_schema_4b25a14dbd15_test.bookings.group_id, inner key:booking_schema_4b25a14dbd15_test.booking_groups.id, equal cond:eq(booking_schema_4b25a14dbd15_test.bookings.group_id, booking_schema_4b25a14dbd15_test.booking_groups.id)"
+        },
+        {
+          "id": "      \u251c\u2500IndexJoin_43(Build)",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "inner join, inner:TableReader_40, outer key:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, inner key:booking_schema_4b25a14dbd15_test.bookings.id, equal cond:eq(booking_schema_4b25a14dbd15_test.booking_notes.booking_id, booking_schema_4b25a14dbd15_test.bookings.id)"
+        },
+        {
+          "id": "      \u2502 \u251c\u2500IndexJoin_54(Build)",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "inner join, inner:TableReader_51, outer key:booking_schema_4b25a14dbd15_test.booking_notes.agent_id, inner key:booking_schema_4b25a14dbd15_test.users.id, equal cond:eq(booking_schema_4b25a14dbd15_test.booking_notes.agent_id, booking_schema_4b25a14dbd15_test.users.id)"
+        },
+        {
+          "id": "      \u2502 \u2502 \u251c\u2500HashJoin_71(Build)",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "inner join, equal:[eq(booking_schema_4b25a14dbd15_test.statuses.id, booking_schema_4b25a14dbd15_test.booking_notes.status_id)]"
+        },
+        {
+          "id": "      \u2502 \u2502 \u2502 \u251c\u2500TableReader_74(Build)",
+          "estRows": "5.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "data:TableFullScan_73"
+        },
+        {
+          "id": "      \u2502 \u2502 \u2502 \u2502 \u2514\u2500TableFullScan_73",
+          "estRows": "5.00",
+          "task": "cop[tikv]",
+          "access object": "table:statuses",
+          "operator info": "keep order:false, stats:pseudo"
+        },
+        {
+          "id": "      \u2502 \u2502 \u2502 \u2514\u2500Batch_Point_Get_72(Probe)",
+          "estRows": "20.00",
+          "task": "root",
+          "access object": "table:booking_notes",
+          "operator info": "handle:[5 905 1805 2705 3605 4505 5405 6305 7205 8105 9005 9905 10805 11705 12605 13505 14405 15305 16205 17105], keep order:false, desc:false"
+        },
+        {
+          "id": "      \u2502 \u2502 \u2514\u2500TableReader_51(Probe)",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "data:TableRangeScan_50"
+        },
+        {
+          "id": "      \u2502 \u2502   \u2514\u2500TableRangeScan_50",
+          "estRows": "25.00",
+          "task": "cop[tikv]",
+          "access object": "table:users",
+          "operator info": "range: decided by [booking_schema_4b25a14dbd15_test.booking_notes.agent_id], keep order:false"
+        },
+        {
+          "id": "      \u2502 \u2514\u2500TableReader_40(Probe)",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "data:TableRangeScan_39"
+        },
+        {
+          "id": "      \u2502   \u2514\u2500TableRangeScan_39",
+          "estRows": "25.00",
+          "task": "cop[tikv]",
+          "access object": "table:bookings",
+          "operator info": "range: decided by [booking_schema_4b25a14dbd15_test.booking_notes.booking_id], keep order:false"
+        },
+        {
+          "id": "      \u2514\u2500TableReader_29(Probe)",
+          "estRows": "25.00",
+          "task": "root",
+          "access object": "",
+          "operator info": "data:TableRangeScan_28"
+        },
+        {
+          "id": "        \u2514\u2500TableRangeScan_28",
+          "estRows": "25.00",
+          "task": "cop[tikv]",
+          "access object": "table:booking_groups",
+          "operator info": "range: decided by [booking_schema_4b25a14dbd15_test.bookings.group_id], keep order:false"
+        }
+      ]
+    }
+  ],
+  "explain": {
+    "lookup": [
+      {
+        "id": "Point_Get_1",
+        "estRows": "1.00",
+        "task": "root",
+        "access object": "table:bookings, index:booking_key(booking_key)",
+        "operator info": ""
+      }
+    ],
+    "mine": [
+      {
+        "id": "IndexLookUp_24",
+        "estRows": "10.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "limit embedded(offset:0, count:10)"
+      },
+      {
+        "id": "\u251c\u2500Limit_23(Build)",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "offset:0, count:10"
+      },
+      {
+        "id": "\u2502 \u2514\u2500IndexRangeScan_21",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_agent_updated(last_agent_id, updated_at, id)",
+        "operator info": "range:[1001,1001], keep order:true, desc, stats:partial[ix_bookings_last_note_id:allEvicted]"
+      },
+      {
+        "id": "\u2514\u2500TableRowIDScan_22(Probe)",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings",
+        "operator info": "keep order:false, stats:partial[ix_bookings_last_note_id:allEvicted]"
+      }
+    ],
+    "latest_before": [
+      {
+        "id": "Projection_5",
+        "estRows": "50247.87",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_4b25a14dbd15_test.booking_notes.booking_id, Column#15"
+      },
+      {
+        "id": "\u2514\u2500HashAgg_13",
+        "estRows": "50247.87",
+        "task": "root",
+        "access object": "",
+        "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:max(Column#16)->Column#15, funcs:firstrow(booking_schema_4b25a14dbd15_test.booking_notes.booking_id)->booking_schema_4b25a14dbd15_test.booking_notes.booking_id"
+      },
+      {
+        "id": "  \u2514\u2500TableReader_14",
+        "estRows": "50247.87",
+        "task": "root",
+        "access object": "",
+        "operator info": "data:HashAgg_6"
+      },
+      {
+        "id": "    \u2514\u2500HashAgg_6",
+        "estRows": "50247.87",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:max(booking_schema_4b25a14dbd15_test.booking_notes.id)->Column#16"
+      },
+      {
+        "id": "      \u2514\u2500Selection_12",
+        "estRows": "250804.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "isnull(booking_schema_4b25a14dbd15_test.booking_notes.deleted_at), lt(booking_schema_4b25a14dbd15_test.booking_notes.created_at, 2026-11-04 14:06:56.207557)"
+      },
+      {
+        "id": "        \u2514\u2500TableFullScan_11",
+        "estRows": "250804.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes",
+        "operator info": "keep order:false"
+      }
+    ],
+    "latest_after": [
+      {
+        "id": "Projection_5",
+        "estRows": "50247.87",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_4b25a14dbd15_test.booking_notes.booking_id, Column#15"
+      },
+      {
+        "id": "\u2514\u2500HashAgg_13",
+        "estRows": "50247.87",
+        "task": "root",
+        "access object": "",
+        "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:max(Column#16)->Column#15, funcs:firstrow(booking_schema_4b25a14dbd15_test.booking_notes.booking_id)->booking_schema_4b25a14dbd15_test.booking_notes.booking_id"
+      },
+      {
+        "id": "  \u2514\u2500IndexReader_14",
+        "estRows": "50247.87",
+        "task": "root",
+        "access object": "",
+        "operator info": "index:HashAgg_6"
+      },
+      {
+        "id": "    \u2514\u2500HashAgg_6",
+        "estRows": "50247.87",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:max(booking_schema_4b25a14dbd15_test.booking_notes.id)->Column#16"
+      },
+      {
+        "id": "      \u2514\u2500Selection_12",
+        "estRows": "250804.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "lt(booking_schema_4b25a14dbd15_test.booking_notes.created_at, 2026-11-04 14:06:56.207562)"
+      },
+      {
+        "id": "        \u2514\u2500IndexRangeScan_11",
+        "estRows": "250804.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes, index:ix_booking_notes_live_booking_created(deleted_at, booking_id, id, created_at)",
+        "operator info": "range:[NULL,NULL], keep order:false"
+      }
+    ],
+    "note_window": [
+      {
+        "id": "Projection_5",
+        "estRows": "348.75",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_4b25a14dbd15_test.booking_notes.booking_id, Column#15, Column#16"
+      },
+      {
+        "id": "\u2514\u2500HashAgg_18",
+        "estRows": "348.75",
+        "task": "root",
+        "access object": "",
+        "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:max(Column#20)->Column#15, funcs:count(Column#21)->Column#16, funcs:firstrow(booking_schema_4b25a14dbd15_test.booking_notes.booking_id)->booking_schema_4b25a14dbd15_test.booking_notes.booking_id"
+      },
+      {
+        "id": "  \u2514\u2500IndexLookUp_19",
+        "estRows": "348.75",
+        "task": "root",
+        "access object": "",
+        "operator info": ""
+      },
+      {
+        "id": "    \u251c\u2500IndexRangeScan_15(Build)",
+        "estRows": "2175.90",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes, index:ix_booking_notes_created_at(created_at)",
+        "operator info": "range:[2026-11-04 00:00:00.208,+inf], keep order:false, stats:partial[note:unInitialized]"
+      },
+      {
+        "id": "    \u2514\u2500HashAgg_7(Probe)",
+        "estRows": "348.75",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "group by:booking_schema_4b25a14dbd15_test.booking_notes.booking_id, funcs:max(booking_schema_4b25a14dbd15_test.booking_notes.id)->Column#20, funcs:count(1)->Column#21"
+      },
+      {
+        "id": "      \u2514\u2500Selection_17",
+        "estRows": "1740.72",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "like(booking_schema_4b25a14dbd15_test.booking_notes.note, \"%supplier%\", 92)"
+      },
+      {
+        "id": "        \u2514\u2500TableRowIDScan_16",
+        "estRows": "2175.90",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes",
+        "operator info": "keep order:false, stats:partial[note:unInitialized]"
+      }
+    ]
+  },
+  "thresholds": {
+    "rest_p50": {
+      "actual_ms": 51.516,
+      "limit_ms": 100,
+      "met": true
+    },
+    "rest_p95": {
+      "actual_ms": 465.069,
+      "limit_ms": 300,
+      "met": false
+    },
+    "key_p95_server": {
+      "actual_ms": 97.03,
+      "limit_ms": 50,
+      "met": false
+    },
+    "broadcast_p95": {
+      "actual_ms": 216.843,
+      "limit_ms": 500,
+      "met": true
+    },
+    "unexpected_rest_errors": {
+      "actual": 0,
+      "met": true
+    },
+    "broadcast_receivers": {
+      "actual": 100,
+      "met": true
+    },
+    "db_recovered": {
+      "met": true
+    }
+  },
+  "hardware": {
+    "logical_cpus": 5,
+    "cpu_max": "400000 100000",
+    "memory_max_bytes": 34359738368,
+    "api_workers": 1,
+    "db_pool_size": 5
+  }
+}

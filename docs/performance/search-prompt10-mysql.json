@@ -1,0 +1,325 @@
+{
+  "database_version": "8.0.46",
+  "fixture": {
+    "folders": 2000,
+    "bookings": 50000
+  },
+  "method": "Warm sequential in-process ASGI requests, one worker, real verified-TLS loopback DB. Includes auth cache, classification, SQL and serialization; excludes public HTTP/hosting latency. Three warmups and 60 samples per query.",
+  "target_p95_ms": 100,
+  "index_load_ms": 1048.05,
+  "measurements": [
+    {
+      "query": "CW5000000-YUL-2501",
+      "samples": 60,
+      "p50_ms": 1.091,
+      "p95_ms": 1.392,
+      "max_ms": 2.646
+    },
+    {
+      "query": "CW9999999-YUL-2501",
+      "samples": 60,
+      "p50_ms": 1.14,
+      "p95_ms": 1.417,
+      "max_ms": 1.95
+    },
+    {
+      "query": "CW5000000-2501",
+      "samples": 60,
+      "p50_ms": 1.253,
+      "p95_ms": 2.174,
+      "max_ms": 5.084
+    },
+    {
+      "query": "CW5000000",
+      "samples": 60,
+      "p50_ms": 12.992,
+      "p95_ms": 19.303,
+      "max_ms": 25.98
+    },
+    {
+      "query": "CW500",
+      "samples": 60,
+      "p50_ms": 12.697,
+      "p95_ms": 17.091,
+      "max_ms": 20.261
+    },
+    {
+      "query": "YUL",
+      "samples": 60,
+      "p50_ms": 14.445,
+      "p95_ms": 18.348,
+      "max_ms": 24.925
+    },
+    {
+      "query": "YUL-2501",
+      "samples": 60,
+      "p50_ms": 12.964,
+      "p95_ms": 17.449,
+      "max_ms": 21.333
+    },
+    {
+      "query": "double tree",
+      "samples": 60,
+      "p50_ms": 18.035,
+      "p95_ms": 23.163,
+      "max_ms": 27.901
+    },
+    {
+      "query": "tree doub",
+      "samples": 60,
+      "p50_ms": 15.454,
+      "p95_ms": 20.819,
+      "max_ms": 25.785
+    },
+    {
+      "query": "hotel yul",
+      "samples": 60,
+      "p50_ms": 13.098,
+      "p95_ms": 16.708,
+      "max_ms": 19.306
+    }
+  ],
+  "plans": {
+    "folder_aggregate": [
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "booking_groups",
+        "partitions": null,
+        "type": "range",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": null,
+        "rows": 20,
+        "filtered": 100.0,
+        "Extra": "Using where"
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "<derived2>",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "<auto_key0>",
+        "key": "<auto_key0>",
+        "key_len": "8",
+        "ref": "booking_schema_9af3a2695acf_test.booking_groups.id",
+        "rows": 11,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "latest",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "folder_stats.latest_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "statuses",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "booking_schema_9af3a2695acf_test.latest.last_status_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      },
+      {
+        "id": 1,
+        "select_type": "PRIMARY",
+        "table": "users",
+        "partitions": null,
+        "type": "ALL",
+        "possible_keys": "PRIMARY",
+        "key": null,
+        "key_len": null,
+        "ref": null,
+        "rows": 3,
+        "filtered": 100.0,
+        "Extra": "Using where; Using join buffer (hash join)"
+      },
+      {
+        "id": 2,
+        "select_type": "DERIVED",
+        "table": "bookings",
+        "partitions": null,
+        "type": "range",
+        "possible_keys": "ix_bookings_group_period",
+        "key": "ix_bookings_group_period",
+        "key_len": "8",
+        "ref": null,
+        "rows": 500,
+        "filtered": 100.0,
+        "Extra": "Using index condition"
+      },
+      {
+        "id": 2,
+        "select_type": "DERIVED",
+        "table": "activity_status",
+        "partitions": null,
+        "type": "eq_ref",
+        "possible_keys": "PRIMARY",
+        "key": "PRIMARY",
+        "key_len": "8",
+        "ref": "booking_schema_9af3a2695acf_test.bookings.last_status_id",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      }
+    ],
+    "station_folders": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_groups",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_booking_groups_station_type_activity",
+        "key": "ix_booking_groups_station_type_activity",
+        "key_len": "7",
+        "ref": "const,const",
+        "rows": 250,
+        "filtered": 100.0,
+        "Extra": "Backward index scan; Using index"
+      }
+    ],
+    "station_period": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_station_period,ix_bookings_period_invoice_state",
+        "key": "ix_bookings_station_period",
+        "key_len": "10",
+        "ref": "const,const",
+        "rows": 500,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ]
+  },
+  "lookup_after": {
+    "measurements": [
+      {
+        "query": "CW5000000-YUL-2501",
+        "samples": 60,
+        "p50_ms": 6.667,
+        "p95_ms": 8.54,
+        "p99_ms": 10.575
+      },
+      {
+        "query": "CW9999999-YUL-2501",
+        "samples": 60,
+        "p50_ms": 1.13,
+        "p95_ms": 1.366,
+        "p99_ms": 1.622
+      },
+      {
+        "query": "CW5000000-2501",
+        "samples": 60,
+        "p50_ms": 6.477,
+        "p95_ms": 7.792,
+        "p99_ms": 9.265
+      },
+      {
+        "query": "cw 5000000 - yul - 2501",
+        "samples": 60,
+        "p50_ms": 7.571,
+        "p95_ms": 9.868,
+        "p99_ms": 13.977
+      }
+    ],
+    "index_load_ms": 968.822,
+    "index_retained_bytes_estimate": 33551836,
+    "snapshot_cache": {
+      "hits": 188,
+      "misses": 1,
+      "hit_ratio": 0.9947,
+      "ttl_seconds": 30.0,
+      "capacity": 2000
+    },
+    "plans": {
+      "full_key": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "const",
+          "possible_keys": "booking_key",
+          "key": "booking_key",
+          "key_len": "34",
+          "ref": "const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": "Using index"
+        }
+      ],
+      "partial_key": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "ix_bookings_cw_period,ix_bookings_period_invoice_state",
+          "key": "ix_bookings_cw_period",
+          "key_len": "18",
+          "ref": "const,const",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": null
+        }
+      ],
+      "summary_recent": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "index",
+          "possible_keys": null,
+          "key": "ix_bookings_updated_at",
+          "key_len": "15",
+          "ref": null,
+          "rows": 20,
+          "filtered": 100.0,
+          "Extra": "Backward index scan"
+        }
+      ],
+      "summary_mine": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "ref",
+          "possible_keys": "ix_bookings_agent_updated",
+          "key": "ix_bookings_agent_updated",
+          "key_len": "9",
+          "ref": "const",
+          "rows": 24832,
+          "filtered": 100.0,
+          "Extra": "Backward index scan"
+        }
+      ]
+    }
+  },
+  "lookup_before": null,
+  "lookup_baseline_commit": null
+}

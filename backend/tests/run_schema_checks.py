@@ -124,6 +124,10 @@ def main() -> None:
             "operations",
             "invoices",
             "security",
+            "coverage",
+            "backup",
+            "observability",
+            "load",
             "integrity-performance",
             "search-performance",
         ],
@@ -226,12 +230,34 @@ def main() -> None:
                 "operations": "tests/test_operations_database.py",
                 "invoices": "tests/test_invoices_database.py",
                 "security": "tests/test_hardening_database.py",
+                "coverage": "tests",
+                "backup": "tests/test_backup_database.py",
+                "observability": "tests/test_observability_database.py",
+                "load": "tests/test_load_database.py",
                 "integrity-performance": "tests/test_integrity_performance.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]
             test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]
-            if args.suite not in {"schema", "search-performance", "integrity-performance"}:
+            if args.suite not in {"schema", "search-performance", "integrity-performance", "load"}:
                 test_command.append(f"--junitxml={args.report.resolve()}")
+            if args.suite == "coverage":
+                for test_stem in [
+                    "frontend_database",
+                    "schema_database",
+                    "integrity_performance",
+                    "search_performance",
+                    "load_database",
+                ]:
+                    test_command.append(f"--ignore=tests/test_{test_stem}.py")
+                test_command.extend(
+                    [
+                        "--cov=app.services",
+                        "--cov-report=term-missing",
+                        f"--cov-report=json:{args.report.resolve().with_suffix('.coverage.json')}",
+                        f"--cov-report=xml:{args.report.resolve().with_suffix('.coverage.xml')}",
+                        "--cov-fail-under=80",
+                    ]
+                )
             if args.suite == "frontend":
                 test_command.append("--tb=short")
             subprocess.run(
@@ -239,7 +265,7 @@ def main() -> None:
                 cwd=BACKEND,
                 env=test_env,
                 check=True,
-                timeout=360,
+                timeout=900 if args.suite in {"coverage", "load"} else 360,
             )
             print(f"{args.engine} {args.suite}: checks passed; report: {args.report}")
         finally:

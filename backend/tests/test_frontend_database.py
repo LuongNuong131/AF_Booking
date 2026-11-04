@@ -89,6 +89,7 @@ class BackendListener:
         "invoices.mjs",
         "pwa.mjs",
         "security.mjs",
+        "deadlines.mjs",
     ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(

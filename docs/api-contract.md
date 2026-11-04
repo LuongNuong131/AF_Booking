@@ -648,3 +648,17 @@ reflected in Pydantic and generated TypeScript schemas.
 
 These are explicit additive contract changes; existing paths/event names stay intact.
 See [security-report.md](security-report.md) for review evidence and deploy setup.
+
+## Prompt 10 additive diagnostics
+
+Public `GET /health/db` and `GET /api/v1/health/db` share the DB probe and per-IP
+10/minute limit. `/health` remains database-free. Errors retain the standard envelope.
+Admin `GET /api/v1/admin/system/health` adds `operational_errors`
+(`counts` keyed by `REQUEST_TIMEOUT` / `SERVICE_BUSY`, `window_seconds`, `threshold`), `key_index`
+(`ready`, `keys`, `folders`, `container_bytes`) and `snapshot_cache`
+(`entries`, `hits`, `misses`, `hit_ratio`). Container bytes describe shallow index
+dictionaries; cache counters are process-lifetime. Existing fields are unchanged.
+Daily report JSON may be served from a cached gzip representation according to
+Accept-Encoding; decoded JSON fields and access rules remain unchanged.
+Optional monitoring and retention environment variables are documented in
+[observability.md](observability.md); backup settings in [backup.md](backup.md).

@@ -18,6 +18,12 @@ async def warm(request: Request):
     return await ready(request)
 
 
+@router.get("/health/db")
+async def database_health(request: Request):
+    request.app.state.db_health_limiter.check(request.client.host if request.client else "unknown")
+    return await ready(request)
+
+
 class HealthResponse(BaseModel):
     status: Literal["ok"] = "ok"
     service: str = "booking-tracker-api"

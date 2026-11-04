@@ -2,14 +2,18 @@
 
 import asyncio
 import base64
+import gzip
+import io
 import json
 import tempfile
 import time
 import zlib
+from collections import OrderedDict
 from datetime import UTC, datetime, timedelta
 from datetime import time as local_time
 from zoneinfo import ZoneInfo
 
+import orjson
 from fastapi.responses import StreamingResponse
 from openpyxl import Workbook
 from sqlalchemy import func, select
@@ -17,7 +21,16 @@ from sqlalchemy.dialects.mysql import insert
 
 from app.core.errors import ApiException
 from app.core.unit_of_work import transaction
-from app.models import Booking, BookingGroup, BookingNote, BookingTask, DailyReport, Status, User
+from app.models import (
+    Booking,
+    BookingGroup,
+    BookingInvoice,
+    BookingNote,
+    BookingTask,
+    DailyReport,
+    Status,
+    User,
+)
 from app.schemas.contracts import ErrorCode
 from app.schemas.operations import DailyBooking, DailyReportDTO
 from app.services.audit import record_audit
@@ -63,17 +76,73 @@ def unpack_report(payload):
     return json.loads(value)
 
 
+async def encode_report(report):
+    # Bound each Python/Rust serialization and gzip step, then yield. A single huge
+    # model_dump_json can hold the GIL even when submitted to a worker thread.
+    sections = ("stale", "open_rejection_parking", "repeated", "done_not_declared")
+    target = io.BytesIO()
+    with gzip.GzipFile(fileobj=target, mode="wb", compresslevel=5, mtime=0) as output:
+        base = report.model_dump(mode="json", exclude=set(sections))
+        output.write(orjson.dumps(base)[:-1])
+        for section in sections:
+            output.write(b"," + orjson.dumps(section) + b":[")
+            rows = getattr(report, section)
+            for start in range(0, len(rows), 200):
+                if start:
+                    output.write(b",")
+                output.write(
+                    orjson.dumps(
+                        [row.model_dump(mode="json") for row in rows[start : start + 200]]
+                    )[1:-1]
+                )
+                await asyncio.sleep(0)
+            output.write(b"]")
+        output.write(b"}")
+    return target.getvalue()
+
+
 class DailyReports:
     def __init__(self, engine, settings, exports):
         self.engine, self.settings, self.exports = engine, settings, exports
         self.lock = asyncio.Lock()
         self.cache = None
+        self.wire_lock = asyncio.Lock()
+        self.wire_cache = OrderedDict()
         self.clock = lambda: datetime.now(UTC)
 
     def tx(self, **kwargs):
         return transaction(self.engine, self.settings, **kwargs)
 
-    async def get(self, day, *, persist_today=False):
+    async def wire(self, day, compressed):
+        # A cached byte representation avoids repeated deep-copy, validation and gzip of
+        # tens of thousands of report rows on the ASGI event loop. Payload stays complete.
+        async with self.wire_lock:
+            saved = self.wire_cache.get(day)
+            today = self.clock().astimezone(ZoneInfo(self.settings.business_timezone)).date()
+            source_expired = (
+                self.cache and self.cache[0] == day and self.cache[1] <= time.monotonic()
+            )
+            if (
+                saved is None
+                or saved[0] <= time.monotonic()
+                or source_expired
+                or (day < today and saved[2])
+            ):
+                report = await self.get(day, clone=False)
+                packed = await encode_report(report)
+                expires = (
+                    self.cache[1]
+                    if self.cache and self.cache[0] == day
+                    else time.monotonic() + 3600
+                )
+                saved = (expires, packed, report.provisional)
+                self.wire_cache[day] = saved
+                self.wire_cache.move_to_end(day)
+                while len(self.wire_cache) > 4:
+                    self.wire_cache.popitem(last=False)
+            return saved[1] if compressed else await asyncio.to_thread(gzip.decompress, saved[1])
+
+    async def get(self, day, *, persist_today=False, clone=True):
         zone = ZoneInfo(self.settings.business_timezone)
         today = self.clock().astimezone(zone).date()
         if day > today:
@@ -89,7 +158,9 @@ class DailyReports:
                     ):
                         payload = dict(await asyncio.to_thread(unpack_report, existing.payload))
                         records = payload.pop("_records", [])
-                        return DailyReportDTO.model_validate({**payload, "record_rows": records})
+                        return await asyncio.to_thread(
+                            DailyReportDTO.model_validate, {**payload, "record_rows": records}
+                        )
             if (
                 day == today
                 and not persist_today
@@ -97,7 +168,11 @@ class DailyReports:
                 and self.cache[0] == day
                 and self.cache[1] > time.monotonic()
             ):
-                return self.cache[2].model_copy(deep=True)
+                return (
+                    await asyncio.to_thread(self.cache[2].model_copy, deep=True)
+                    if clone
+                    else self.cache[2]
+                )
             value = await self.calculate(day)
             if day < today or persist_today:
                 async with self.tx() as session:
@@ -117,8 +192,9 @@ class DailyReports:
                         )
                     )
             if day == today:
-                self.cache = (day, time.monotonic() + 60, value.model_copy(deep=True))
-            return value
+                self.cache = (day, time.monotonic() + 60, value)
+                self.wire_cache.pop(day, None)
+            return await asyncio.to_thread(value.model_copy, deep=True) if clone else value
 
     async def calculate(self, day):
         now = self.clock()
@@ -142,13 +218,21 @@ class DailyReports:
             .group_by(BookingNote.booking_id)
             .subquery()
         )
+        invoices = (
+            select(
+                BookingInvoice.booking_id,
+                func.json_arrayagg(BookingInvoice.invoice_number).label("invoice_numbers"),
+            )
+            .group_by(BookingInvoice.booking_id)
+            .subquery()
+        )
         current = (
             select(
                 Booking.booking_key,
                 Booking.station_code,
                 Booking.invoice_state,
                 Booking.invoice_count,
-                invoice_numbers_query(),
+                invoices.c.invoice_numbers,
                 Booking.created_at,
                 BookingGroup.supplier_name,
                 BookingGroup.supplier_type,
@@ -162,6 +246,7 @@ class DailyReports:
                 by_book.c.note_count,
             )
             .join(BookingGroup, BookingGroup.id == Booking.group_id)
+            .outerjoin(invoices, invoices.c.booking_id == Booking.id)
             .outerjoin(latest, latest.c.booking_id == Booking.id)
             .outerjoin(BookingNote, BookingNote.id == latest.c.note_id)
             .outerjoin(Status, Status.id == BookingNote.status_id)
@@ -234,7 +319,14 @@ class DailyReports:
                     BookingTask.created_at < cutoff,
                 )
             )
-            rows = (await session.execute(current)).all()
+            rows = []
+            stream = await session.stream(current.execution_options(yield_per=500))
+            try:
+                async for batch in stream.partitions(500):
+                    rows.extend(batch)
+                    await asyncio.sleep(0)
+            finally:
+                await stream.close()
             record_rows = []
             query = (
                 select(
@@ -288,7 +380,9 @@ class DailyReports:
         stale, open_rows, repeated, done_not_declared = [], [], [], []
         done_agents, done_stations = {}, {}
         done_count = 0
-        for r in rows:
+        for index, r in enumerate(rows):
+            if index % 250 == 0:
+                await asyncio.sleep(0)
             updated = r.last_at or r.created_at
             if r.is_done and lo <= updated < cutoff:
                 done_count += 1

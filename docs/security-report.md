@@ -105,3 +105,10 @@ Kết quả không khẳng định hệ thống không thể có lỗ hổng tro
 credential/provider thật, chưa xác minh ingress/header sau deploy hay chạy kiểm thử
 xâm nhập trên hạ tầng Vercel/Render/TiDB Cloud; đó là bước cấu hình/kiểm tra khi có
 URL theo yêu cầu triển khai sau của chủ dự án.
+
+Prompt 10 adds a current dependency scan with zero known findings at
+[quality/audits/metadata.json](quality/audits/metadata.json). Its complete functional
+regressions, 13-script browser batch and coverage are recorded in
+[testing.md](testing.md). Load latency targets remain separately reported in
+[performance/load-results.md](performance/load-results.md); they are not labeled
+as passed security or production-capacity checks.

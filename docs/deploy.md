@@ -185,3 +185,15 @@ native diagnostic clients must send Origin too. API personal responses use no-st
 `style-src 'unsafe-inline'` supports Element Plus and virtual-list dynamic styles;
 scripts remain external, without unsafe-inline/unsafe-eval. See security-report.md
 for storage tradeoffs, dependency audit evidence and verification commands.
+
+## Prompt 10 optional production settings
+
+Migrate through **0009** before this version starts. Keep one API worker/instance.
+Backend `SENTRY_DSN` and frontend `VITE_SENTRY_DSN` are optional; leave blank to
+disable them. When enabling frontend Sentry, rerun `npm run configure:csp` with
+the same API/WS/DSN values as the Vercel build, and commit the resulting header.
+This adds only the configured Sentry origin. The existing production CSP/URL guard
+still fails on mismatched origins. Use `/health` for Render liveness; `/health/db`
+is a separately throttled DB probe. Retention defaults and external alert routing
+are in [observability.md](observability.md). Configure encrypted backup secrets
+and opt-in scheduling only after database provisioning; see [backup.md](backup.md).

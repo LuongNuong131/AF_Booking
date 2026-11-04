@@ -1,0 +1,38 @@
+name: Disposable load benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      engine:
+        description: Disposable SQL engine
+        type: choice
+        options: [mysql, tidb]
+        default: mysql
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-benchmark
+  cancel-in-progress: false
+
+jobs:
+  load:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+      - run: pip install --require-hashes -r backend/requirements-dev.txt
+      - name: Measure 50 actors and 100 WebSocket peers on synthetic data
+        run: python backend/tests/run_schema_checks.py --engine "${{ inputs.engine }}" --suite load --report /tmp/load-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-${{ inputs.engine }}-${{ github.run_id }}
+          path: /tmp/load-report.json
+          if-no-files-found: warn

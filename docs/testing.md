@@ -1,5 +1,99 @@
 # Testing
 
+Current Prompt 10 workflow is below. Earlier prompt sections retain their historical
+results; they do not replace the current verification record.
+
+## Prompt 10 commands and gates
+
+Verified locally on 04 Nov 2026: **323 passed, 2 optional hosted-probe skips on
+each engine** in the coverage run. Services coverage: **92.63% MySQL / 92.57% TiDB**,
+with the 80% gate enabled. Separate schema/migration/rollback checks passed on both
+engines. Unit-only mode: 180 passed/162 DB-browser skips. Frontend: **245 Vitest
+tests**, lint, strict TypeScript, security negative probes and configured production
+build passed. **All 13 Chromium scripts passed** in one complete batch.
+Python/npm audits report zero known vulnerabilities; no CVE exclusions were used.
+Measured load: [before/after report and remaining latency gaps](performance/load-results.md).
+The manual load suite currently fails REST/key p95 targets on the shared runner;
+its failures are retained.
+Raw summaries: [service coverage](quality/service-coverage.json),
+[audit metadata](quality/audits/metadata.json). Backup CLI/empty-target recovery and
+retention/isolation checks are included in the real-engine coverage counts.
+Separate 2,000-folder/50,000-booking search and 50,000-booking integrity
+performance checks passed on both engines; raw reports are under
+`docs/performance/{search,integrity}-prompt10-{mysql,tidb}.json`.
+GitHub Actions execution and hosted-provider probes are not claimed by local checks.
+
+
+From `backend`, install the committed hash-locked development requirements. Unit
+tests deliberately ignore database environment variables; mutating integration
+tests run only with the disposable Docker runner. Local MySQL/TiDB use a generated
+CA and hostname verification; no hosted account is required.
+
+```sh
+mkdir -p /tmp/booking-coverage
+COVERAGE_FILE=/tmp/booking-coverage/.coverage .venv/bin/python tests/run_schema_checks.py --engine mysql --suite coverage --report /tmp/coverage-mysql.xml
+COVERAGE_FILE=/tmp/booking-coverage/.coverage .venv/bin/python tests/run_schema_checks.py --engine tidb --suite coverage --report /tmp/coverage-tidb.xml
+.venv/bin/python tests/run_schema_checks.py --engine mysql --report /tmp/schema-mysql.json
+.venv/bin/python tests/run_schema_checks.py --engine tidb --report /tmp/schema-tidb.json
+```
+
+Coverage includes all ordinary unit and business database suites, including backup
+and observability, and fails below **80% for app/services**. Separate browser,
+50k-record performance and schema rollback suites are not included in its denominator.
+Use a dedicated directory for COVERAGE_FILE: coverage erases old files with that
+prefix; never give it a prefix shared by unrelated logs. Locust
+pytest auto-loading is disabled (`-p no:locust`) so its gevent patch cannot change
+async application tests; coverage still supports greenlet/thread workers.
+
+`tests/factories.py` provides deterministic account rows; the shared Rig supplies
+authenticated HTTPX AsyncClient requests and private disposable data. Unit tests
+exercise bounded slow-client sends independently of actual socket scheduling.
+Backend and FE key parsing share JSON fixtures and all five resolution states.
+Note-history pagination is checked with timestamp ties, deleted rows and multiple
+attachments, including a one-note page that must keep every attachment.
+
+From `frontend`, run `npm run lint`, `npm run typecheck`, `npm test`,
+`npm run test:security`, `npm audit --audit-level=low` and a configured `npm run build`.
+Vitest covers shared key formats, useRequest slow/timeout/cancellation with fake
+clocks, realtime My bookings insert/remove, task events/calendar validation, and
+NoteForm required-status validation plus synchronous double-submit prevention.
+Optional Sentry tests verify disabled initialization and private-data removal.
+
+The separate browser job runs 13 real Chromium scripts with multiple browser
+contexts and real FastAPI/TLS TiDB. The task/reminder harness advances its owned
+DB clock; it does not add a production test endpoint. Scenario mapping:
+
+| Requested scenarios | Browser scripts |
+| --- | --- |
+| 1–4: history, locks, takeover, Done/Parking, concurrent conflicts | workspace.mjs, deadlines.mjs |
+| 5–8: replaced session, shortcuts, role guards, backend restart/reconnect | smoke.mjs, workspace.mjs, security.mjs, deadlines.mjs |
+| 9: due toast, bell, offline catch-up, completion and ownership | tasks.mjs |
+| 10: optimistic save, offline queue and UUID replay | outbox.mjs, deadlines.mjs |
+| 11–12: typo confirmation and duplicate-note review | safeguards.mjs |
+| 13–14: watch merging, assignment auto-completion, palette | collaboration.mjs |
+| 15: station/folder/Supplier search and new-folder rules | folders.mjs |
+| 16: invoice chips/declaration/standalone edits/search/export | invoices.mjs |
+| 17: display/partial keys, mandatory station, exported display keys | folders.mjs, invoices.mjs, admin.mjs |
+| 18: actual 8 s lookup deadline/slow/Retry, >15 s withheld note response/replay | deadlines.mjs |
+| Additional: daily report, safe note highlighting, PWA updates, CSP/password rotation | operations.mjs, pwa.mjs, security.mjs |
+
+```sh
+# From checkout root; omit BOOKING_CHROMIUM_PATH when using Playwright-installed Chromium.
+BOOKING_CHROMIUM_PATH=/usr/bin/chromium BOOKING_E2E_ARTIFACTS=/tmp/booking-browser backend/.venv/bin/python backend/tests/run_schema_checks.py --engine tidb --suite frontend --report /tmp/browser.xml
+```
+
+The GitHub Actions pipeline runs lint, hash-locked dependency audits, units, MySQL
+coverage, both-engine schema/business/performance checks, FE lint/types/Vitest/build
+and a separate browser job. Reports/screenshots/coverage are uploaded.
+The sequential lookup/scan microbenchmarks raise only their isolated test-app
+request limit to allow hundreds of samples from one account. Production rate
+limits, abuse tests and the separate 50-user mixed load retain normal defaults.
+Large mixed load runs are manual because timing gates need an uncontended runner;
+see [load testing](performance/load-testing.md). Encrypted backup scheduling is
+opt-in; see [backup and tested recovery](backup.md). Logs, metrics, optional Sentry
+and cleanup ages are documented in [observability](observability.md).
+
+
 Run the backend unit suite from `backend` with `.venv/bin/python -m pytest -q`. Tests verify readiness failure/success, CORS, request cancellation and its elapsed deadline, TLS verification configuration, production restrictions, and database pool configuration. Contract tests also verify UTC millisecond serialization, nullable fields, required display keys, pagination, sanitized validation errors, domain statuses, safe internal errors, and preserved response headers. Two integration tests are skipped unless `TEST_DATABASE_URL` is set; skipped tests are not database validation.
 
 To validate a real TiDB connection, use an isolated test database. Supply connection settings through your terminal's secure environment or a secrets manager; do not paste credentials into commands committed to Git.

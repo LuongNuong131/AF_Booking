@@ -14,6 +14,7 @@ import pytest
 import pytest_asyncio
 from alembic.config import Config
 from argon2 import PasswordHasher
+from factories import user_row
 from fastapi import Request
 from sqlalchemy import delete, event, select, text, update
 
@@ -130,14 +131,7 @@ async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
             await connection.execute(
                 User.__table__.insert(),
                 [
-                    {
-                        "id": identifier,
-                        "username": name,
-                        "full_name": name.title(),
-                        "role": role,
-                        "password_hash": password_pair[1],
-                        "is_active": True,
-                    }
+                    user_row(identifier, password_pair[1], username=name, role=role)
                     for identifier, name, role in [
                         (1, "admin", "admin"),
                         (3, "agent", "agent"),
@@ -421,6 +415,22 @@ async def test_history_cursor_ties_deleted_notes_and_attachments(rig):
                 storage_key="placeholder",
             )
         )
+        await connection.execute(
+            Attachment.__table__.insert().values(
+                note_id=ids[3],
+                file_name="second.pdf",
+                mime_type="application/pdf",
+                size_bytes=15,
+                storage_key="placeholder-2",
+            )
+        )
+    single = (await rig.get(f"/bookings/{KEY}/notes", limit=1)).json()
+    assert [item["id"] for item in single["items"]] == [ids[3]]
+    assert len(single["items"][0]["attachments"]) == 2
+    following = (
+        await rig.get(f"/bookings/{KEY}/notes", limit=1, cursor=single["next_cursor"])
+    ).json()
+    assert [item["id"] for item in following["items"]] == [ids[2]]
     first = (await rig.get(f"/bookings/{KEY}/notes", limit=2)).json()
     assert [i["id"] for i in first["items"]] == [ids[3], ids[2]] and first["items"][0][
         "attachments"

@@ -1,0 +1,2401 @@
+{
+  "database_version": "8.0.11-TiDB-v8.5.0",
+  "fixture": {
+    "bookings": 50000,
+    "notes": 50000,
+    "folders": 2000,
+    "mismatches": 250
+  },
+  "method": "Sequential authenticated ASGI/TLS-loopback lookups before and during a 1000-row keyset scan, 50ms yield between batches. Excludes public hosting/network latency.",
+  "report_seconds": 13.729,
+  "fix_scan_seconds": 18.546,
+  "baseline_lookup": {
+    "samples": 30,
+    "p50_ms": 18.978,
+    "p95_ms": 27.834,
+    "p99_ms": 148.262
+  },
+  "during_scan_lookup": {
+    "samples": 284,
+    "p50_ms": 24.089,
+    "p95_ms": 46.671,
+    "p99_ms": 58.48
+  },
+  "checked": 50000,
+  "mismatched": 250,
+  "fixed": 250,
+  "sample_limit": 200,
+  "batch_size": 1000,
+  "pause_ms": 50,
+  "plan": [
+    {
+      "id": "Sort_67",
+      "estRows": "1250.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "booking_schema_6ab3f6a782cb_test.bookings.id"
+    },
+    {
+      "id": "\u2514\u2500Projection_69",
+      "estRows": "1250.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "booking_schema_6ab3f6a782cb_test.bookings.id, booking_schema_6ab3f6a782cb_test.bookings.booking_key, booking_schema_6ab3f6a782cb_test.bookings.invoice_state, booking_schema_6ab3f6a782cb_test.bookings.invoice_count, booking_schema_6ab3f6a782cb_test.bookings.last_note_id, booking_schema_6ab3f6a782cb_test.bookings.last_agent_id, booking_schema_6ab3f6a782cb_test.bookings.last_status_id, booking_schema_6ab3f6a782cb_test.bookings.last_position, booking_schema_6ab3f6a782cb_test.bookings.last_note_preview, booking_schema_6ab3f6a782cb_test.bookings.is_done, booking_schema_6ab3f6a782cb_test.bookings.done_at, coalesce(Column#47, 0)->Column#90, booking_schema_6ab3f6a782cb_test.booking_notes.id, booking_schema_6ab3f6a782cb_test.booking_notes.agent_id, booking_schema_6ab3f6a782cb_test.booking_notes.status_id, booking_schema_6ab3f6a782cb_test.booking_notes.position_label, booking_schema_6ab3f6a782cb_test.booking_notes.created_at, left(booking_schema_6ab3f6a782cb_test.booking_notes.note, 255)->Column#91, booking_schema_6ab3f6a782cb_test.statuses.id, booking_schema_6ab3f6a782cb_test.statuses.is_done"
+    },
+    {
+      "id": "  \u2514\u2500Projection_70",
+      "estRows": "1250.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "booking_schema_6ab3f6a782cb_test.bookings.id, booking_schema_6ab3f6a782cb_test.bookings.booking_key, booking_schema_6ab3f6a782cb_test.bookings.last_note_id, booking_schema_6ab3f6a782cb_test.bookings.last_agent_id, booking_schema_6ab3f6a782cb_test.bookings.last_status_id, booking_schema_6ab3f6a782cb_test.bookings.last_position, booking_schema_6ab3f6a782cb_test.bookings.last_note_preview, booking_schema_6ab3f6a782cb_test.bookings.is_done, booking_schema_6ab3f6a782cb_test.bookings.done_at, booking_schema_6ab3f6a782cb_test.bookings.invoice_state, booking_schema_6ab3f6a782cb_test.bookings.invoice_count, Column#47, booking_schema_6ab3f6a782cb_test.booking_notes.id, booking_schema_6ab3f6a782cb_test.booking_notes.agent_id, booking_schema_6ab3f6a782cb_test.booking_notes.status_id, booking_schema_6ab3f6a782cb_test.booking_notes.position_label, booking_schema_6ab3f6a782cb_test.booking_notes.note, booking_schema_6ab3f6a782cb_test.booking_notes.created_at, booking_schema_6ab3f6a782cb_test.statuses.id, booking_schema_6ab3f6a782cb_test.statuses.is_done"
+    },
+    {
+      "id": "    \u2514\u2500HashJoin_72",
+      "estRows": "1250.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "left outer join, equal:[eq(booking_schema_6ab3f6a782cb_test.bookings.id, booking_schema_6ab3f6a782cb_test.booking_invoices.booking_id)]"
+    },
+    {
+      "id": "      \u251c\u2500HashAgg_156(Build)",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "group by:booking_schema_6ab3f6a782cb_test.booking_invoices.booking_id, funcs:count(1)->Column#47, funcs:firstrow(booking_schema_6ab3f6a782cb_test.booking_invoices.booking_id)->booking_schema_6ab3f6a782cb_test.booking_invoices.booking_id"
+    },
+    {
+      "id": "      \u2502 \u2514\u2500IndexHashJoin_163",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "inner join, inner:IndexReader_160, outer key:booking_schema_6ab3f6a782cb_test.bookings.id, inner key:booking_schema_6ab3f6a782cb_test.booking_invoices.booking_id, equal cond:eq(booking_schema_6ab3f6a782cb_test.bookings.id, booking_schema_6ab3f6a782cb_test.booking_invoices.booking_id)"
+    },
+    {
+      "id": "      \u2502   \u251c\u2500Selection_170(Build)",
+      "estRows": "640.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "not(isnull(booking_schema_6ab3f6a782cb_test.bookings.id))"
+    },
+    {
+      "id": "      \u2502   \u2502 \u2514\u2500CTEFullScan_171",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "CTE:integrity_batch",
+      "operator info": "data:CTE_0"
+    },
+    {
+      "id": "      \u2502   \u2514\u2500IndexReader_160(Probe)",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "index:IndexRangeScan_159"
+    },
+    {
+      "id": "      \u2502     \u2514\u2500IndexRangeScan_159",
+      "estRows": "800.00",
+      "task": "cop[tikv]",
+      "access object": "table:booking_invoices, index:uq_booking_invoices_normalized(booking_id, invoice_number_normalized)",
+      "operator info": "range: decided by [eq(booking_schema_6ab3f6a782cb_test.booking_invoices.booking_id, booking_schema_6ab3f6a782cb_test.bookings.id)], keep order:false, stats:pseudo"
+    },
+    {
+      "id": "      \u2514\u2500HashJoin_101(Probe)",
+      "estRows": "1250.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "left outer join, equal:[eq(booking_schema_6ab3f6a782cb_test.booking_notes.status_id, booking_schema_6ab3f6a782cb_test.statuses.id)]"
+    },
+    {
+      "id": "        \u251c\u2500HashJoin_112(Build)",
+      "estRows": "1000.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "left outer join, equal:[eq(Column#63, booking_schema_6ab3f6a782cb_test.booking_notes.id)]"
+    },
+    {
+      "id": "        \u2502 \u251c\u2500HashJoin_114(Build)",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "left outer join, equal:[eq(booking_schema_6ab3f6a782cb_test.bookings.id, booking_schema_6ab3f6a782cb_test.booking_notes.booking_id)]"
+    },
+    {
+      "id": "        \u2502 \u2502 \u251c\u2500HashAgg_131(Build)",
+      "estRows": "8.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "group by:booking_schema_6ab3f6a782cb_test.booking_notes.booking_id, funcs:max(booking_schema_6ab3f6a782cb_test.booking_notes.id)->Column#63, funcs:firstrow(booking_schema_6ab3f6a782cb_test.booking_notes.booking_id)->booking_schema_6ab3f6a782cb_test.booking_notes.booking_id"
+    },
+    {
+      "id": "        \u2502 \u2502 \u2502 \u2514\u2500HashJoin_147",
+      "estRows": "10.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "inner join, equal:[eq(booking_schema_6ab3f6a782cb_test.booking_notes.booking_id, booking_schema_6ab3f6a782cb_test.bookings.id)]"
+    },
+    {
+      "id": "        \u2502 \u2502 \u2502   \u251c\u2500IndexReader_151(Build)",
+      "estRows": "10.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "index:IndexRangeScan_150"
+    },
+    {
+      "id": "        \u2502 \u2502 \u2502   \u2502 \u2514\u2500IndexRangeScan_150",
+      "estRows": "10.00",
+      "task": "cop[tikv]",
+      "access object": "table:booking_notes, index:ix_booking_notes_live_booking_created(deleted_at, booking_id, id, created_at)",
+      "operator info": "range:[NULL,NULL], keep order:false, stats:pseudo"
+    },
+    {
+      "id": "        \u2502 \u2502 \u2502   \u2514\u2500Selection_148(Probe)",
+      "estRows": "640.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "not(isnull(booking_schema_6ab3f6a782cb_test.bookings.id))"
+    },
+    {
+      "id": "        \u2502 \u2502 \u2502     \u2514\u2500CTEFullScan_149",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "CTE:integrity_batch",
+      "operator info": "data:CTE_0"
+    },
+    {
+      "id": "        \u2502 \u2502 \u2514\u2500HashJoin_126(Probe)",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "inner join, equal:[eq(booking_schema_6ab3f6a782cb_test.bookings.id, booking_schema_6ab3f6a782cb_test.bookings.id)]"
+    },
+    {
+      "id": "        \u2502 \u2502   \u251c\u2500Selection_127(Build)",
+      "estRows": "640.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "not(isnull(booking_schema_6ab3f6a782cb_test.bookings.id))"
+    },
+    {
+      "id": "        \u2502 \u2502   \u2502 \u2514\u2500CTEFullScan_128",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "CTE:integrity_batch",
+      "operator info": "data:CTE_0"
+    },
+    {
+      "id": "        \u2502 \u2502   \u2514\u2500TableReader_130(Probe)",
+      "estRows": "10000.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "data:TableFullScan_129"
+    },
+    {
+      "id": "        \u2502 \u2502     \u2514\u2500TableFullScan_129",
+      "estRows": "10000.00",
+      "task": "cop[tikv]",
+      "access object": "table:bookings",
+      "operator info": "keep order:false, stats:pseudo"
+    },
+    {
+      "id": "        \u2502 \u2514\u2500TableReader_153(Probe)",
+      "estRows": "10000.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "data:TableFullScan_152"
+    },
+    {
+      "id": "        \u2502   \u2514\u2500TableFullScan_152",
+      "estRows": "10000.00",
+      "task": "cop[tikv]",
+      "access object": "table:booking_notes",
+      "operator info": "keep order:false, stats:pseudo"
+    },
+    {
+      "id": "        \u2514\u2500TableReader_155(Probe)",
+      "estRows": "10000.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "data:TableFullScan_154"
+    },
+    {
+      "id": "          \u2514\u2500TableFullScan_154",
+      "estRows": "10000.00",
+      "task": "cop[tikv]",
+      "access object": "table:statuses",
+      "operator info": "keep order:false, stats:pseudo"
+    },
+    {
+      "id": "CTE_0",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "Non-Recursive CTE"
+    },
+    {
+      "id": "\u2514\u2500Selection_36(Seed Part)",
+      "estRows": "800.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "or(not(isnull(booking_schema_6ab3f6a782cb_test.bookings.id)), or(not(isnull(booking_schema_6ab3f6a782cb_test.bookings.id)), not(isnull(booking_schema_6ab3f6a782cb_test.bookings.id))))"
+    },
+    {
+      "id": "  \u2514\u2500Limit_42",
+      "estRows": "1000.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "offset:0, count:1000"
+    },
+    {
+      "id": "    \u2514\u2500TableReader_52",
+      "estRows": "1000.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "data:Limit_51"
+    },
+    {
+      "id": "      \u2514\u2500Limit_51",
+      "estRows": "1000.00",
+      "task": "cop[tikv]",
+      "access object": "",
+      "operator info": "offset:0, count:1000"
+    },
+    {
+      "id": "        \u2514\u2500TableRangeScan_50",
+      "estRows": "1000.00",
+      "task": "cop[tikv]",
+      "access object": "table:bookings",
+      "operator info": "range:(0,149999], keep order:true, stats:pseudo"
+    }
+  ],
+  "suggestion_fallback_ms": 57.9,
+  "suggestion_fallback_plan": [
+    {
+      "id": "HashJoin_465",
+      "estRows": "279.30",
+      "task": "root",
+      "access object": "",
+      "operator info": "left outer join, equal:[eq(booking_schema_6ab3f6a782cb_test.bookings.last_status_id, booking_schema_6ab3f6a782cb_test.statuses.id)]"
+    },
+    {
+      "id": "\u251c\u2500HashJoin_486(Build)",
+      "estRows": "223.44",
+      "task": "root",
+      "access object": "",
+      "operator info": "left outer join, equal:[eq(booking_schema_6ab3f6a782cb_test.bookings.last_agent_id, booking_schema_6ab3f6a782cb_test.users.id)]"
+    },
+    {
+      "id": "\u2502 \u251c\u2500IndexJoin_490(Build)",
+      "estRows": "178.75",
+      "task": "root",
+      "access object": "",
+      "operator info": "inner join, inner:IndexLookUp_489, outer key:Column#343, inner key:booking_schema_6ab3f6a782cb_test.bookings.booking_key, equal cond:eq(Column#343, booking_schema_6ab3f6a782cb_test.bookings.booking_key)"
+    },
+    {
+      "id": "\u2502 \u2502 \u251c\u2500HashAgg_501(Build)",
+      "estRows": "143.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "group by:Column#1210, funcs:firstrow(Column#1210)->Column#343"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502 \u2514\u2500Projection_1099",
+      "estRows": "143.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "concat(Column#330, -, coalesce(booking_schema_6ab3f6a782cb_test.booking_groups.station_code, XPL), -, Column#331)->Column#1210"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502   \u2514\u2500Selection_502",
+      "estRows": "143.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "not(isnull(concat(Column#330, \"-\", coalesce(booking_schema_6ab3f6a782cb_test.booking_groups.station_code, \"XPL\"), \"-\", Column#331)))"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502     \u2514\u2500IndexJoin_506",
+      "estRows": "178.75",
+      "task": "root",
+      "access object": "",
+      "operator info": "left outer join, inner:IndexLookUp_505, outer key:Column#330, inner key:booking_schema_6ab3f6a782cb_test.booking_groups.cw_number, equal cond:eq(Column#330, booking_schema_6ab3f6a782cb_test.booking_groups.cw_number)"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u251c\u2500Union_517(Build)",
+      "estRows": "143.00",
+      "task": "root",
+      "access object": "",
+      "operator info": ""
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_519",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000000->Column#330, 2312->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_520",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_521",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000000->Column#330, 2402->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_522",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_523",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000000->Column#330, 2311->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_524",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_525",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000000->Column#330, 2403->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_526",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_527",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW0000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_528",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_529",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW1000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_530",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_531",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW2000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_532",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_533",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW3000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_534",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_535",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW4000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_536",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_537",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW5000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_538",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_539",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW6000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_540",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_541",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW8000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_542",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_543",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW9000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_544",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_545",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_546",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_547",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW0700000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_548",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_549",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7100000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_550",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_551",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7200000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_552",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_553",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7300000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_554",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_555",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7400000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_556",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_557",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7500000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_558",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_559",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7600000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_560",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_561",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7700000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_562",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_563",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7800000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_564",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_565",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7900000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_566",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_567",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW700000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_568",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_569",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7010000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_570",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_571",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7020000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_572",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_573",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7030000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_574",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_575",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7040000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_576",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_577",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7050000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_578",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_579",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7060000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_580",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_581",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7070000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_582",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_583",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7080000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_584",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_585",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7090000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_586",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_587",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7001000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_588",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_589",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7002000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_590",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_591",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7003000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_592",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_593",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7004000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_594",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_595",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7005000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_596",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_597",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7006000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_598",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_599",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7007000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_600",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_601",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7008000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_602",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_603",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7009000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_604",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_605",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000100->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_606",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_607",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000200->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_608",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_609",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000300->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_610",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_611",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000400->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_612",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_613",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000500->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_614",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_615",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000600->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_616",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_617",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000700->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_618",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_619",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000800->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_620",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_621",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000900->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_622",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_623",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000010->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_624",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_625",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000020->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_626",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_627",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000030->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_628",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_629",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000040->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_630",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_631",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000050->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_632",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_633",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000060->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_634",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_635",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000070->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_636",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_637",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000080->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_638",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_639",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000090->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_640",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_641",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000001->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_642",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_643",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000002->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_644",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_645",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000003->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_646",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_647",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000004->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_648",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_649",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000005->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_650",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_651",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000006->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_652",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_653",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000007->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_654",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_655",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000008->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_656",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_657",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW7000009->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_658",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_659",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW07000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_660",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_661",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW17000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_662",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_663",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW27000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_664",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_665",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW37000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_666",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_667",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW47000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_668",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_669",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW57000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_670",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_671",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW67000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_672",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_673",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW77000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_674",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_675",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW87000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_676",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_677",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW97000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_678",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_679",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_680",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_681",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW71000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_682",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_683",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW72000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_684",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_685",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW73000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_686",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_687",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW74000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_688",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_689",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW75000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_690",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_691",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW76000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_692",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_693",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW78000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_694",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_695",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW79000000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_696",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_697",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70100000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_698",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_699",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70200000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_700",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_701",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70300000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_702",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_703",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70400000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_704",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_705",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70500000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_706",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_707",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70600000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_708",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_709",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70700000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_710",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_711",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70800000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_712",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_713",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70900000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_714",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_715",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70010000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_716",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_717",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70020000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_718",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_719",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70030000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_720",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_721",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70040000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_722",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_723",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70050000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_724",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_725",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70060000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_726",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_727",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70070000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_728",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_729",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70080000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_730",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_731",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70090000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_732",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_733",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70001000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_734",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_735",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70002000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_736",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_737",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70003000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_738",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_739",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70004000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_740",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_741",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70005000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_742",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_743",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70006000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_744",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_745",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70007000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_746",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_747",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70008000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_748",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_749",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70009000->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_750",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_751",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000100->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_752",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_753",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000200->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_754",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_755",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000300->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_756",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_757",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000400->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_758",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_759",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000500->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_760",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_761",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000600->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_762",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_763",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000700->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_764",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_765",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000800->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_766",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_767",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000900->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_768",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_769",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000010->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_770",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_771",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000020->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_772",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_773",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000030->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_774",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_775",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000040->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_776",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_777",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000050->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_778",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_779",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000060->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_780",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_781",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000070->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_782",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_783",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000080->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_784",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_785",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000090->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_786",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_787",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000001->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_788",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_789",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000002->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_790",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_791",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000003->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_792",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_793",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000004->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_794",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_795",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000005->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_796",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_797",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000006->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_798",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_799",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000007->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_800",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u251c\u2500Projection_801",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000008->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2502 \u2514\u2500TableDual_802",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502 \u2514\u2500Projection_803",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "CW70000009->Column#330, 2401->Column#331"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2502   \u2514\u2500TableDual_804",
+      "estRows": "1.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "rows:1"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502       \u2514\u2500IndexLookUp_505(Probe)",
+      "estRows": "143.00",
+      "task": "root",
+      "access object": "",
+      "operator info": ""
+    },
+    {
+      "id": "\u2502 \u2502 \u2502         \u251c\u2500IndexRangeScan_503(Build)",
+      "estRows": "143.00",
+      "task": "cop[tikv]",
+      "access object": "table:booking_groups, index:cw_number(cw_number)",
+      "operator info": "range: decided by [eq(booking_schema_6ab3f6a782cb_test.booking_groups.cw_number, Column#330)], keep order:false, stats:pseudo"
+    },
+    {
+      "id": "\u2502 \u2502 \u2502         \u2514\u2500TableRowIDScan_504(Probe)",
+      "estRows": "143.00",
+      "task": "cop[tikv]",
+      "access object": "table:booking_groups",
+      "operator info": "keep order:false, stats:pseudo"
+    },
+    {
+      "id": "\u2502 \u2502 \u2514\u2500IndexLookUp_489(Probe)",
+      "estRows": "143.00",
+      "task": "root",
+      "access object": "",
+      "operator info": ""
+    },
+    {
+      "id": "\u2502 \u2502   \u251c\u2500IndexRangeScan_487(Build)",
+      "estRows": "143.00",
+      "task": "cop[tikv]",
+      "access object": "table:bookings, index:booking_key(booking_key)",
+      "operator info": "range: decided by [eq(booking_schema_6ab3f6a782cb_test.bookings.booking_key, Column#343)], keep order:false, stats:pseudo"
+    },
+    {
+      "id": "\u2502 \u2502   \u2514\u2500TableRowIDScan_488(Probe)",
+      "estRows": "143.00",
+      "task": "cop[tikv]",
+      "access object": "table:bookings",
+      "operator info": "keep order:false, stats:pseudo"
+    },
+    {
+      "id": "\u2502 \u2514\u2500TableReader_1096(Probe)",
+      "estRows": "10000.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "data:TableFullScan_1095"
+    },
+    {
+      "id": "\u2502   \u2514\u2500TableFullScan_1095",
+      "estRows": "10000.00",
+      "task": "cop[tikv]",
+      "access object": "table:users",
+      "operator info": "keep order:false, stats:pseudo"
+    },
+    {
+      "id": "\u2514\u2500TableReader_1098(Probe)",
+      "estRows": "10000.00",
+      "task": "root",
+      "access object": "",
+      "operator info": "data:TableFullScan_1097"
+    },
+    {
+      "id": "  \u2514\u2500TableFullScan_1097",
+      "estRows": "10000.00",
+      "task": "cop[tikv]",
+      "access object": "table:statuses",
+      "operator info": "keep order:false, stats:pseudo"
+    }
+  ]
+}

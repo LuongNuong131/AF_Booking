@@ -10,7 +10,7 @@ const global = config.headers.find((row) => row.source === '/(.*)')
 const existing = global.headers.find(
   (row) => row.key.toLowerCase() === 'content-security-policy',
 )
-const value = buildCsp(apiUrl, wsUrl)
+const value = buildCsp(apiUrl, wsUrl, process.env.VITE_SENTRY_DSN)
 if (existing) existing.value = value
 else global.headers.push({ key: 'Content-Security-Policy', value })
 writeFileSync(file, JSON.stringify(config, null, 2) + '\n')

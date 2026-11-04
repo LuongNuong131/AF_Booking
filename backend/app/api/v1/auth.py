@@ -37,6 +37,7 @@ async def login(body: LoginRequest, request: Request, auth: Auth) -> LoginRespon
     result.user.settings = effective_settings(
         result.user.settings, request.app.state.settings.business_timezone
     )
+    request.scope.setdefault("state", {})["authenticated_user_id"] = result.user.id
     return result
 
 

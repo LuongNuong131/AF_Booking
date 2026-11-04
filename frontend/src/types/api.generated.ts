@@ -117,6 +117,8 @@ export type JsonValue = null | boolean | number | string | Array<JsonValue> | { 
 
 export type KeyCandidate = { "key": string; "display_key": string; "station_code": string; "supplier_name": string }
 
+export type KeyIndexMetrics = { "ready"?: boolean; "keys"?: number; "folders"?: number; "container_bytes"?: number }
+
 export type KeyResolution = { "status": ResolutionStatus; "input_kind": InputKind; "key": string | null; "display_key": string | null; "candidates"?: Array<KeyCandidate> }
 
 export type LockChangedFrame = { "event": "lock.acquired" | "lock.released" | "lock.denied"; "data": LockHolder }
@@ -168,6 +170,8 @@ export type NotificationNewData = { "id": number; "merged_count"?: number; "book
 export type NotificationNewFrame = { "event": "notification.new"; "data": NotificationNewData }
 
 export type NotificationType = "taken_over" | "stale" | "task_due" | "watch_update" | "assigned" | "assignment_done"
+
+export type OperationalErrors = { "window_seconds"?: number; "counts"?: { [key: string]: number }; "threshold"?: number }
 
 export type Page<T> = { "items": Array<T>; "total": number; "page": number; "size": number }
 
@@ -223,6 +227,8 @@ export type ServerEventName = "booking.updated" | "lock.acquired" | "lock.releas
 
 export type SlowQuery = { "fingerprint": string; "duration_ms": number; "at": string }
 
+export type SnapshotMetrics = { "entries"?: number; "hits"?: number; "misses"?: number; "hit_ratio"?: number | null }
+
 export type StationInfo = { "code": string; "name": string | null }
 
 export type StationOption = { "code": string; "name": string | null; "folder_count": number }
@@ -247,7 +253,7 @@ export type SupplierSummary = { "name": string; "type": SupplierType }
 
 export type SupplierType = "hotel" | "transportation"
 
-export type SystemHealth = { "generated_at": string; "uptime_seconds": number; "version": string; "window_seconds": number; "percentiles_approximate": boolean; "total": RequestMetrics; "groups": Array<EndpointMetrics>; "db_latency_ms": number | null; "db_error": string | null; "pool": PoolMetrics; "websocket_connections": number; "soft_locks": number; "jobs": Array<JobMetrics>; "slow_queries": Array<SlowQuery>; "points": Array<MetricPoint>; "degraded": boolean }
+export type SystemHealth = { "generated_at": string; "uptime_seconds": number; "version": string; "window_seconds": number; "percentiles_approximate": boolean; "total": RequestMetrics; "groups": Array<EndpointMetrics>; "db_latency_ms": number | null; "db_error": string | null; "pool": PoolMetrics; "websocket_connections": number; "soft_locks": number; "jobs": Array<JobMetrics>; "slow_queries": Array<SlowQuery>; "points": Array<MetricPoint>; "degraded": boolean; "key_index"?: KeyIndexMetrics; "snapshot_cache"?: SnapshotMetrics; "operational_errors"?: OperationalErrors }
 
 export type SystemHealthData = { "degraded": boolean }
 

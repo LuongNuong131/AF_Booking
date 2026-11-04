@@ -185,6 +185,9 @@ class ApiErrorMiddleware:
                 request_id.get(),
                 type(exc).__name__,
             )
+            from app.core.monitoring import report_exception
+
+            report_exception(exc, scope["app"].state.settings)
             await error_response(ErrorCode.INTERNAL)(scope, receive, send)
 
 

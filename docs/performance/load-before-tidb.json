@@ -1,0 +1,596 @@
+{
+  "label": "baseline",
+  "dataset": {
+    "bookings": 50000,
+    "notes": 250000,
+    "users": 50,
+    "folders": 2000,
+    "stations": 40,
+    "initial_version": 5
+  },
+  "seed_seconds": 20.298,
+  "users": 50,
+  "observer_accounts": 50,
+  "websockets": 100,
+  "duration_seconds_per_phase": 60,
+  "think_time_seconds": [
+    0.4,
+    0.8
+  ],
+  "network": "Loopback HTTP; SQL end-to-end verified TLS through a byte-forwarding proxy; load generator and API in separate processes.",
+  "scheduler_enabled": false,
+  "results": {
+    "mixed": {
+      "mode": "mixed",
+      "warmup_seconds": 10.0,
+      "rest": {
+        "count": 2405,
+        "p50_ms": 310.514,
+        "p95_ms": 1360.906,
+        "p99_ms": 2392.123
+      },
+      "errors": 0,
+      "groups": {
+        "list/mine": {
+          "client": {
+            "count": 373,
+            "p50_ms": 360.798,
+            "p95_ms": 1236.406,
+            "p99_ms": 2851.953
+          },
+          "server": {
+            "count": 373,
+            "p50_ms": 357.84,
+            "p95_ms": 1224.08,
+            "p99_ms": 2836.58
+          }
+        },
+        "lookup/formatted": {
+          "client": {
+            "count": 396,
+            "p50_ms": 303.408,
+            "p95_ms": 1040.769,
+            "p99_ms": 2217.347
+          },
+          "server": {
+            "count": 396,
+            "p50_ms": 298.84,
+            "p95_ms": 1010.9,
+            "p99_ms": 2201.31
+          }
+        },
+        "lookup/full": {
+          "client": {
+            "count": 393,
+            "p50_ms": 385.502,
+            "p95_ms": 1342.995,
+            "p99_ms": 2207.389
+          },
+          "server": {
+            "count": 393,
+            "p50_ms": 376.54,
+            "p95_ms": 1339.03,
+            "p99_ms": 2195.7
+          }
+        },
+        "lookup/missing": {
+          "client": {
+            "count": 393,
+            "p50_ms": 7.605,
+            "p95_ms": 341.596,
+            "p99_ms": 2012.49
+          },
+          "server": {
+            "count": 393,
+            "p50_ms": 3.91,
+            "p95_ms": 278.31,
+            "p99_ms": 1778.78
+          }
+        },
+        "lookup/partial": {
+          "client": {
+            "count": 390,
+            "p50_ms": 373.839,
+            "p95_ms": 1078.129,
+            "p99_ms": 1902.144
+          },
+          "server": {
+            "count": 390,
+            "p50_ms": 359.18,
+            "p95_ms": 1076.72,
+            "p99_ms": 1891.0
+          }
+        },
+        "notes/save": {
+          "client": {
+            "count": 343,
+            "p50_ms": 459.341,
+            "p95_ms": 1657.109,
+            "p99_ms": 3110.766
+          },
+          "server": {
+            "count": 343,
+            "p50_ms": 439.78,
+            "p95_ms": 1651.74,
+            "p99_ms": 3092.07
+          }
+        },
+        "reports/daily": {
+          "client": {
+            "count": 5,
+            "p50_ms": 78.412,
+            "p95_ms": 6059.463,
+            "p99_ms": 6059.463
+          },
+          "server": {
+            "count": 5,
+            "p50_ms": 1.52,
+            "p95_ms": 5991.97,
+            "p99_ms": 5991.97
+          }
+        },
+        "search/notes": {
+          "client": {
+            "count": 112,
+            "p50_ms": 1180.932,
+            "p95_ms": 1856.391,
+            "p99_ms": 2995.057
+          },
+          "server": {
+            "count": 112,
+            "p50_ms": 1178.75,
+            "p95_ms": 1850.69,
+            "p99_ms": 2982.54
+          }
+        }
+      }
+    },
+    "keys": {
+      "mode": "keys",
+      "warmup_seconds": 10.0,
+      "rest": {
+        "count": 3923,
+        "p50_ms": 27.374,
+        "p95_ms": 63.563,
+        "p99_ms": 452.258
+      },
+      "errors": 0,
+      "groups": {
+        "lookup/formatted": {
+          "client": {
+            "count": 982,
+            "p50_ms": 31.077,
+            "p95_ms": 67.551,
+            "p99_ms": 486.139
+          },
+          "server": {
+            "count": 982,
+            "p50_ms": 28.7,
+            "p95_ms": 62.35,
+            "p99_ms": 216.29
+          }
+        },
+        "lookup/full": {
+          "client": {
+            "count": 991,
+            "p50_ms": 30.519,
+            "p95_ms": 67.636,
+            "p99_ms": 386.4
+          },
+          "server": {
+            "count": 991,
+            "p50_ms": 28.0,
+            "p95_ms": 62.75,
+            "p99_ms": 226.18
+          }
+        },
+        "lookup/missing": {
+          "client": {
+            "count": 976,
+            "p50_ms": 4.444,
+            "p95_ms": 19.807,
+            "p99_ms": 224.057
+          },
+          "server": {
+            "count": 976,
+            "p50_ms": 2.27,
+            "p95_ms": 14.91,
+            "p99_ms": 29.49
+          }
+        },
+        "lookup/partial": {
+          "client": {
+            "count": 974,
+            "p50_ms": 30.342,
+            "p95_ms": 72.942,
+            "p99_ms": 519.95
+          },
+          "server": {
+            "count": 974,
+            "p50_ms": 28.27,
+            "p95_ms": 67.02,
+            "p99_ms": 237.48
+          }
+        }
+      }
+    }
+  },
+  "exit_codes": {
+    "mixed": 0,
+    "keys": 0
+  },
+  "broadcast": {
+    "count": 43600,
+    "p50_ms": 165.456,
+    "p95_ms": 311.719,
+    "p99_ms": 591.042,
+    "probe_receivers": 100
+  },
+  "fault": {
+    "latency_seconds_per_direction": 2,
+    "statuses": [
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504
+    ],
+    "codes": [
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT"
+    ],
+    "elapsed_seconds": 5.123,
+    "recovered": true
+  },
+  "cache": {
+    "entries": 2000,
+    "hits": 93,
+    "misses": 4829,
+    "hit_ratio": 0.018894758228362455
+  },
+  "index": {
+    "ready": true,
+    "keys": 50000,
+    "folders": 2000,
+    "container_bytes": 4595976
+  },
+  "slow_queries": [
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1499.261,
+      "at": "2026-11-04T13:51:41.949Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1217.663,
+      "at": "2026-11-04T13:52:09.344Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1130.482,
+      "at": "2026-11-04T13:51:20.976Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1050.869,
+      "at": "2026-11-04T13:51:50.561Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1044.593,
+      "at": "2026-11-04T13:51:41.332Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1033.237,
+      "at": "2026-11-04T13:51:41.282Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1026.218,
+      "at": "2026-11-04T13:51:50.626Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1022.157,
+      "at": "2026-11-04T13:51:21.097Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1018.683,
+      "at": "2026-11-04T13:52:15.285Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1015.926,
+      "at": "2026-11-04T13:51:21.151Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1015.2,
+      "at": "2026-11-04T13:51:20.047Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1006.543,
+      "at": "2026-11-04T13:51:41.133Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 1003.147,
+      "at": "2026-11-04T13:51:50.647Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 987.817,
+      "at": "2026-11-04T13:51:44.232Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 985.469,
+      "at": "2026-11-04T13:51:45.883Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 977.373,
+      "at": "2026-11-04T13:51:59.537Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 972.842,
+      "at": "2026-11-04T13:51:55.874Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 942.174,
+      "at": "2026-11-04T13:51:37.229Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 938.732,
+      "at": "2026-11-04T13:51:26.163Z"
+    },
+    {
+      "fingerprint": "248c318bf8c51b424dccfa168b296d58603186e7d43eeb5caae06c17591f6b90",
+      "duration_ms": 936.071,
+      "at": "2026-11-04T13:51:23.125Z"
+    }
+  ],
+  "explain": {
+    "lookup": [
+      {
+        "id": "Point_Get_1",
+        "estRows": "1.00",
+        "task": "root",
+        "access object": "table:bookings, index:booking_key(booking_key)",
+        "operator info": ""
+      }
+    ],
+    "mine": [
+      {
+        "id": "IndexLookUp_24",
+        "estRows": "10.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "limit embedded(offset:0, count:10)"
+      },
+      {
+        "id": "\u251c\u2500Limit_23(Build)",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "offset:0, count:10"
+      },
+      {
+        "id": "\u2502 \u2514\u2500IndexRangeScan_21",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings, index:ix_bookings_agent_updated(last_agent_id, updated_at, id)",
+        "operator info": "range:[1001,1001], keep order:true, desc, stats:partial[ix_bookings_last_note_id:allEvicted]"
+      },
+      {
+        "id": "\u2514\u2500TableRowIDScan_22(Probe)",
+        "estRows": "10.00",
+        "task": "cop[tikv]",
+        "access object": "table:bookings",
+        "operator info": "keep order:false, stats:partial[ix_bookings_last_note_id:allEvicted]"
+      }
+    ],
+    "latest_before": [
+      {
+        "id": "Projection_5",
+        "estRows": "50208.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_f32018ea227a_test.booking_notes.booking_id, Column#15"
+      },
+      {
+        "id": "\u2514\u2500HashAgg_13",
+        "estRows": "50208.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "group by:booking_schema_f32018ea227a_test.booking_notes.booking_id, funcs:max(Column#16)->Column#15, funcs:firstrow(booking_schema_f32018ea227a_test.booking_notes.booking_id)->booking_schema_f32018ea227a_test.booking_notes.booking_id"
+      },
+      {
+        "id": "  \u2514\u2500TableReader_14",
+        "estRows": "50208.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "data:HashAgg_6"
+      },
+      {
+        "id": "    \u2514\u2500HashAgg_6",
+        "estRows": "50208.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "group by:booking_schema_f32018ea227a_test.booking_notes.booking_id, funcs:max(booking_schema_f32018ea227a_test.booking_notes.id)->Column#16"
+      },
+      {
+        "id": "      \u2514\u2500Selection_12",
+        "estRows": "250435.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "isnull(booking_schema_f32018ea227a_test.booking_notes.deleted_at), lt(booking_schema_f32018ea227a_test.booking_notes.created_at, 2026-11-04 13:53:24.439999)"
+      },
+      {
+        "id": "        \u2514\u2500TableFullScan_11",
+        "estRows": "250435.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes",
+        "operator info": "keep order:false"
+      }
+    ],
+    "latest_after": [
+      {
+        "id": "Projection_5",
+        "estRows": "50208.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_f32018ea227a_test.booking_notes.booking_id, Column#15"
+      },
+      {
+        "id": "\u2514\u2500HashAgg_13",
+        "estRows": "50208.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "group by:booking_schema_f32018ea227a_test.booking_notes.booking_id, funcs:max(Column#16)->Column#15, funcs:firstrow(booking_schema_f32018ea227a_test.booking_notes.booking_id)->booking_schema_f32018ea227a_test.booking_notes.booking_id"
+      },
+      {
+        "id": "  \u2514\u2500IndexReader_14",
+        "estRows": "50208.00",
+        "task": "root",
+        "access object": "",
+        "operator info": "index:HashAgg_6"
+      },
+      {
+        "id": "    \u2514\u2500HashAgg_6",
+        "estRows": "50208.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "group by:booking_schema_f32018ea227a_test.booking_notes.booking_id, funcs:max(booking_schema_f32018ea227a_test.booking_notes.id)->Column#16"
+      },
+      {
+        "id": "      \u2514\u2500Selection_12",
+        "estRows": "250435.00",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "lt(booking_schema_f32018ea227a_test.booking_notes.created_at, 2026-11-04 13:53:24.440006)"
+      },
+      {
+        "id": "        \u2514\u2500IndexRangeScan_11",
+        "estRows": "250435.00",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes, index:ix_booking_notes_live_booking_created(deleted_at, booking_id, id, created_at)",
+        "operator info": "range:[NULL,NULL], keep order:false"
+      }
+    ],
+    "note_window": [
+      {
+        "id": "Projection_5",
+        "estRows": "255.62",
+        "task": "root",
+        "access object": "",
+        "operator info": "booking_schema_f32018ea227a_test.booking_notes.booking_id, Column#15, Column#16"
+      },
+      {
+        "id": "\u2514\u2500HashAgg_18",
+        "estRows": "255.62",
+        "task": "root",
+        "access object": "",
+        "operator info": "group by:booking_schema_f32018ea227a_test.booking_notes.booking_id, funcs:max(Column#20)->Column#15, funcs:count(Column#21)->Column#16, funcs:firstrow(booking_schema_f32018ea227a_test.booking_notes.booking_id)->booking_schema_f32018ea227a_test.booking_notes.booking_id"
+      },
+      {
+        "id": "  \u2514\u2500IndexLookUp_19",
+        "estRows": "255.62",
+        "task": "root",
+        "access object": "",
+        "operator info": ""
+      },
+      {
+        "id": "    \u251c\u2500IndexRangeScan_15(Build)",
+        "estRows": "1593.78",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes, index:ix_booking_notes_created_at(created_at)",
+        "operator info": "range:(2026-11-04 00:00:00.440,+inf], keep order:false, stats:partial[note:unInitialized]"
+      },
+      {
+        "id": "    \u2514\u2500HashAgg_7(Probe)",
+        "estRows": "255.62",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "group by:booking_schema_f32018ea227a_test.booking_notes.booking_id, funcs:max(booking_schema_f32018ea227a_test.booking_notes.id)->Column#20, funcs:count(1)->Column#21"
+      },
+      {
+        "id": "      \u2514\u2500Selection_17",
+        "estRows": "1275.02",
+        "task": "cop[tikv]",
+        "access object": "",
+        "operator info": "like(booking_schema_f32018ea227a_test.booking_notes.note, \"%supplier%\", 92)"
+      },
+      {
+        "id": "        \u2514\u2500TableRowIDScan_16",
+        "estRows": "1593.78",
+        "task": "cop[tikv]",
+        "access object": "table:booking_notes",
+        "operator info": "keep order:false, stats:partial[note:unInitialized]"
+      }
+    ]
+  },
+  "thresholds": {
+    "rest_p50": {
+      "actual_ms": 310.514,
+      "limit_ms": 100,
+      "met": false
+    },
+    "rest_p95": {
+      "actual_ms": 1360.906,
+      "limit_ms": 300,
+      "met": false
+    },
+    "key_p95_server": {
+      "actual_ms": 67.02,
+      "limit_ms": 50,
+      "met": false
+    },
+    "broadcast_p95": {
+      "actual_ms": 311.719,
+      "limit_ms": 500,
+      "met": true
+    },
+    "unexpected_rest_errors": {
+      "actual": 0,
+      "met": true
+    },
+    "broadcast_receivers": {
+      "actual": 100,
+      "met": true
+    },
+    "db_recovered": {
+      "met": true
+    }
+  },
+  "hardware": {
+    "logical_cpus": 5,
+    "cpu_max": "400000 100000",
+    "memory_max_bytes": 34359738368,
+    "api_workers": 1,
+    "db_pool_size": 5
+  }
+}

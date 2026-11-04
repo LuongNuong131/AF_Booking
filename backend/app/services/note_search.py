@@ -71,6 +71,18 @@ class NoteSearch(ABC):
         ) as session:
             await self.validate(session)
             total = await session.scalar(select(func.count()).select_from(matches))
+            # Materialize the small ordered page before joining display tables.
+            # Otherwise TiDB can hash-join every historical note before LIMIT.
+            page_matches = (
+                select(matches.c.note_id, matches.c.match_count)
+                .join(BookingNote, BookingNote.id == matches.c.note_id)
+                .order_by(BookingNote.created_at.desc(), BookingNote.id.desc())
+                .offset((page - 1) * size)
+                .limit(size)
+                .subquery("note_search_page")
+            )
+            selected = (await session.execute(select(page_matches))).all()
+            counts = {row.note_id: row.match_count for row in selected}
             rows = (
                 await session.execute(
                     select(
@@ -86,16 +98,14 @@ class NoteSearch(ABC):
                         User.full_name,
                         Status.code,
                         Status.label,
-                        matches.c.match_count,
                     )
-                    .join(matches, matches.c.booking_id == Booking.id)
+                    .select_from(BookingNote)
+                    .join(Booking, Booking.id == BookingNote.booking_id)
                     .join(BookingGroup, BookingGroup.id == Booking.group_id)
-                    .join(BookingNote, BookingNote.id == matches.c.note_id)
                     .join(User, User.id == BookingNote.agent_id)
                     .join(Status, Status.id == BookingNote.status_id)
+                    .where(BookingNote.id.in_(counts))
                     .order_by(BookingNote.created_at.desc(), BookingNote.id.desc())
-                    .offset((page - 1) * size)
-                    .limit(size)
                 )
             ).all()
         return NoteSearchPage(
@@ -109,7 +119,7 @@ class NoteSearch(ABC):
                     status={"code": r.code, "label": r.label},
                     position=r.position_label,
                     created_at=r.created_at,
-                    match_count=r.match_count,
+                    match_count=counts[r.id],
                     supplier_name=r.supplier_name,
                     station_code=r.station_code,
                     supplier_type=r.supplier_type,

@@ -1,0 +1,13 @@
+{
+  "date": "2026-11-04",
+  "commands": [
+    "pip-audit --disable-pip --no-deps -r requirements-dev.txt -f json",
+    "npm audit --audit-level=low --json"
+  ],
+  "known_vulnerabilities": 0,
+  "lock_sha256": {
+    "backend/requirements.txt": "fbb0c377fb08597d7a227098d1bd6b81c1595bb883313756afb0e650b8ad25ab",
+    "backend/requirements-dev.txt": "1808addc4e54cdd692b0bb4f69f9dbc1c86d537f8dff08d28fb93a599a7f2aee",
+    "frontend/package-lock.json": "80dc392c382c58a145ca5abd51812c385b3f28c98d25479180e345d5cc4cc820"
+  }
+}

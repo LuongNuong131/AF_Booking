@@ -86,6 +86,29 @@ const spark = computed(() => {
           })
         }}
       </p>
+      <div class="report-metrics">
+        <article>
+          <span>{{ t('opsUi.keyIndex') }}</span
+          ><strong>{{ health.key_index?.keys ?? 0 }}</strong>
+        </article>
+        <article>
+          <span>{{ t('opsUi.snapshotHitRate') }}</span
+          ><strong>{{
+            health.snapshot_cache?.hit_ratio == null
+              ? '—'
+              : (health.snapshot_cache.hit_ratio * 100).toFixed(1) + '%'
+          }}</strong>
+        </article>
+        <article>
+          <span>REQUEST_TIMEOUT</span
+          ><strong>{{ health.operational_errors?.counts?.REQUEST_TIMEOUT ?? 0 }}</strong>
+        </article>
+        <article>
+          <span>SERVICE_BUSY</span
+          ><strong>{{ health.operational_errors?.counts?.SERVICE_BUSY ?? 0 }}</strong>
+        </article>
+      </div>
+      <p class="muted">{{ t('opsUi.cacheScope') }}</p>
       <svg
         class="health-sparkline"
         viewBox="0 0 600 110"
@@ -136,7 +159,9 @@ const spark = computed(() => {
                 {{ job.name }} <span v-if="job.running">· {{ t('opsUi.running') }}</span>
               </td>
               <td>
-                {{ job.last_started_at ? formatDateTime(job.last_started_at, auth.timezone) : '—' }}
+                {{
+                  job.last_started_at ? formatDateTime(job.last_started_at, auth.timezone) : '—'
+                }}
               </td>
               <td>{{ job.duration_ms?.toFixed(1) ?? '—' }}</td>
               <td>{{ job.last_error ?? '—' }}</td>

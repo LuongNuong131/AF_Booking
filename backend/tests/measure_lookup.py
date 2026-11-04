@@ -47,6 +47,9 @@ async def main():
         jwt_secret_key=private["signing_key"],
         db_pool_size=2,
         db_pool_timeout_seconds=0.2,
+        # This sequential microbenchmark deliberately exceeds human request cadence.
+        # Production limits and the separate 50-user load test keep their defaults.
+        search_max_requests=10000,
     )
     app = create_app(settings)
     async with app.router.lifespan_context(app):

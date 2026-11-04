@@ -2,7 +2,7 @@ from datetime import date, datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, Response
 from sqlalchemy.exc import IntegrityError
 
 from app.core.deps import get_current_user, require_roles
@@ -31,7 +31,12 @@ ReportDep = Annotated[CurrentUser, Depends(require_roles("admin", "qc"))]
 async def system_health(request: Request, user: AdminDep):
     state = request.app.state
     return state.telemetry.snapshot(
-        state.engine, state.ws_manager, state.scheduler, state.settings.app_version
+        state.engine,
+        state.ws_manager,
+        state.scheduler,
+        state.settings.app_version,
+        state.key_index,
+        state.snapshot_cache,
     )
 
 
@@ -39,7 +44,12 @@ async def system_health(request: Request, user: AdminDep):
 @timeout("export_timeout_seconds")
 async def daily(request: Request, user: ReportDep, date: date | None = None):
     day = date or datetime.now(ZoneInfo(request.app.state.settings.business_timezone)).date()
-    return await request.app.state.daily_reports.get(day)
+    compressed = "gzip" in request.headers.get("accept-encoding", "")
+    body = await request.app.state.daily_reports.wire(day, compressed)
+    headers = {"Vary": "Accept-Encoding"}
+    if compressed:
+        headers["Content-Encoding"] = "gzip"
+    return Response(body, media_type="application/json", headers=headers)
 
 
 @router.get("/reports/daily/export")

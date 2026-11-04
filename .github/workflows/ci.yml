@@ -28,6 +28,20 @@ jobs:
       - run: python ../scripts/generate_contract_types.py --check
       - run: pip-audit --disable-pip --no-deps -r requirements-dev.txt
       - run: python -m pytest -q
+      - name: Service coverage on real TLS MySQL
+        run: |
+          mkdir -p /tmp/coverage-data
+          python tests/run_schema_checks.py --engine mysql --suite coverage --report /tmp/service-coverage.xml
+        env:
+          COVERAGE_FILE: /tmp/coverage-data/.coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: service-coverage
+          path: |
+            /tmp/service-coverage.xml
+            /tmp/service-coverage.coverage.xml
+            /tmp/service-coverage.coverage.json
   frontend:
     runs-on: ubuntu-latest
     defaults:
@@ -35,7 +49,6 @@ jobs:
         working-directory: frontend
     env:
       VITE_API_URL: https://api.example.com/api/v1
-      VERCEL: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -72,6 +85,8 @@ jobs:
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite tasks --report /tmp/tasks-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite admin --report /tmp/admin-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite operations --report /tmp/operations-report.xml
+      - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite backup --report /tmp/backup-report.xml
+      - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite observability --report /tmp/observability-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite security --report /tmp/security-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite invoices --report /tmp/invoices-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite collaboration --report /tmp/collaboration-report.xml
@@ -93,6 +108,8 @@ jobs:
             /tmp/collaboration-report.xml
             /tmp/operations-report.xml
             /tmp/security-report.xml
+            /tmp/backup-report.xml
+            /tmp/observability-report.xml
             /tmp/invoices-report.xml
             /tmp/invoices-report.plans.json
             /tmp/integrity-performance.json

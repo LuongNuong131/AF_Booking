@@ -118,11 +118,11 @@ Broader recovery tools and later-prompt features. Do not describe this as the co
 - Explicit additive FolderCard.stale_count, calculated in the same page-wide aggregate with status thresholds and no N+1. No migration; head remains 0003. First 20 months with virtual scrolling above 50.
 - Vitest classification/card/breadcrumb/keyboard/validation/cache/cancellation coverage, two-engine folder regressions/performance and a fourth Chromium flow. Read docs/smart-search.md and docs/testing.md.
 
-## Next implementation steps
+## Remaining operator configuration
 
-1. Confirm the provisional Position labels when the business mapping is available.
-2. Add Admin APIs using the provided role checks and session-invalidation helpers when requested.
-3. Continue Prompt 8 and later prompts for the remaining workflows.
+Confirm the provisional business Position labels. Provision Vercel, Render and TiDB
+Cloud, then configure real origins, TLS database credentials and signing secrets.
+Optional Sentry, VAPID and scheduled backup credentials remain operator settings.
 
 ## Deployment status
 
@@ -196,3 +196,23 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 - CSP deployment configuration script and Vercel mismatch guard; external theme script, no unsafe script inline/eval, style-only inline exception documented.
 - Whole-frontend vue/no-v-html lint and negative probe, exact dependency pins/hash locks, pip-audit/npm audit gates, automated security regression tests and report in docs/security-report.md.
 - Hosting is still prepared configuration only. Actual Render URL/CORS/CSP and TiDB credentials are entered when provisioning providers; no live deployment is claimed.
+
+## Implemented: Prompt 10 testing, CI, observability and recovery
+
+- Hash-locked pytest-cov/Locust/Sentry dependencies; real verified-TLS MySQL/TiDB
+  service coverage, shared factories and fresh schema migrations. CI gates service
+  coverage at 80%, alongside security audits, FE lint/types/tests/build and browser jobs.
+- Browser deadline/slow/retry, delayed-acknowledgment UUID replay, all note shortcuts,
+  retained Done/Parking history and held simultaneous-save conflict cases.
+- Reproducible synthetic 50k booking/250k note/2k folder/40 station load harness,
+  50 concurrent actors, 100 WS peers, four key groups and real delayed-DB recovery.
+  Raw measured evidence is documented. Current mixed REST/key p95 targets remain
+  unmet on this shared runner; the strict manual load gate reports failure.
+- JSON request identity/timing, fingerprint-only slow SQL, bounded 503/504 alert
+  counters, index/cache metrics, throttled public DB probe and optional scrubbed Sentry.
+- Independent bounded retention with additive migration 0009; report/search/lookup
+  query and event-loop optimizations preserve the API contract and private data rules.
+- Typed all-table consistent backups, AES-GCM/checksums, safe empty-target recovery,
+  actual CLI round-trip tests and opt-in scheduled encrypted GitHub artifacts.
+- Provider deployment, external monitoring delivery and production backup scheduling
+  have not been activated. See docs/testing.md for the current verification record.

@@ -3,13 +3,17 @@
 import asyncio
 import hashlib
 import heapq
+import logging
 import math
 import re
+import sys
 import time
-from collections import deque
+from collections import OrderedDict, deque
 from datetime import UTC, datetime
 
 from app.core.db import ping_database
+
+logger = logging.getLogger(__name__)
 
 BOUNDS = (1, 2, 5, 10, 20, 50, 100, 200, 300, 500, 750, 1000, 2000, 5000, 10000, 30000, math.inf)
 GROUPS = {
@@ -50,7 +54,7 @@ def fingerprint(statement):
 
 
 class Telemetry:
-    def __init__(self, slow_ms=200):
+    def __init__(self, slow_ms=200, *, error_threshold=10, error_window=60, error_cooldown=60):
         self.clock = time.time
         self.started = self.clock()
         self.groups = {}
@@ -61,6 +65,22 @@ class Telemetry:
         self.db_latency_ms = None
         self.db_error = None
         self.degraded_since = None
+        self.error_threshold, self.error_window, self.error_cooldown = (
+            error_threshold,
+            error_window,
+            error_cooldown,
+        )
+        self.error_buckets = {"REQUEST_TIMEOUT": deque(), "SERVICE_BUSY": deque()}
+        self.error_totals = {"REQUEST_TIMEOUT": 0, "SERVICE_BUSY": 0}
+        self.last_alert = {}
+        self.slow_warnings = OrderedDict()
+
+    def error_counts(self):
+        cutoff = self.clock() - self.error_window
+        for code, buckets in self.error_buckets.items():
+            while buckets and buckets[0][0] <= cutoff:
+                self.error_totals[code] -= buckets.popleft()[1]
+        return dict(self.error_totals)
 
     def record(self, path, status, milliseconds):
         parts = path.removeprefix("/api/v1/").strip("/").split("/")
@@ -77,6 +97,31 @@ class Telemetry:
         bucket[2] += int(status >= 500)
         bucket[3][bisect.bisect_left(BOUNDS, milliseconds)] += 1
         bucket[4] = max(bucket[4], milliseconds)
+        code = {503: "SERVICE_BUSY", 504: "REQUEST_TIMEOUT"}.get(status)
+        if code is not None:
+            self.error_counts()
+            moment = self.clock()
+            second = int(moment)
+            bins = self.error_buckets[code]
+            if bins and bins[-1][0] == second:
+                bins[-1][1] += 1
+            else:
+                bins.append([second, 1])
+            self.error_totals[code] += 1
+            if (
+                self.error_totals[code] >= self.error_threshold
+                and moment - self.last_alert.get(code, -math.inf) >= self.error_cooldown
+            ):
+                self.last_alert[code] = moment
+                logger.warning(
+                    "Operational error threshold exceeded",
+                    extra={
+                        "event": "system.error_spike",
+                        "error_code": code,
+                        "count": self.error_totals[code],
+                        "window_seconds": self.error_window,
+                    },
+                )
 
     def query(self, statement, milliseconds):
         if milliseconds < self.slow_ms:
@@ -87,7 +132,21 @@ class Telemetry:
         if entry is None or entry[0] != minute:
             entry = (minute, [])
             self.slow[minute % 60] = entry
-        value = (milliseconds, moment, fingerprint(statement))
+        digest = fingerprint(statement)
+        if moment - self.slow_warnings.get(digest, -math.inf) >= 30:
+            self.slow_warnings[digest] = moment
+            self.slow_warnings.move_to_end(digest)
+            if len(self.slow_warnings) > 128:
+                self.slow_warnings.popitem(last=False)
+            logger.warning(
+                "Slow database query",
+                extra={
+                    "event": "sql.slow",
+                    "fingerprint": digest,
+                    "duration_ms": round(milliseconds, 3),
+                },
+            )
+        value = (milliseconds, moment, digest)
         if len(entry[1]) < 20:
             heapq.heappush(entry[1], value)
         elif value > entry[1][0]:
@@ -155,7 +214,7 @@ class Telemetry:
     def degraded(self):
         return self.degraded_since is not None and self.clock() - self.degraded_since >= 300
 
-    def snapshot(self, engine, ws, scheduler, version):
+    def snapshot(self, engine, ws, scheduler, version, index=None, cache=None):
         moment = self.clock()
         pool = engine.pool if engine is not None else None
         slow = sorted(
@@ -199,4 +258,27 @@ class Telemetry:
                 >= moment - 3600
             ],
             "degraded": self.degraded(),
+            "operational_errors": {
+                "window_seconds": self.error_window,
+                "counts": self.error_counts(),
+                "threshold": self.error_threshold,
+            },
+            "key_index": {
+                "ready": index.usable if index is not None else False,
+                "keys": len(index.keys) if index is not None else 0,
+                "folders": len(index.groups) if index is not None else 0,
+                "container_bytes": sum(
+                    sys.getsizeof(v) for v in (index.keys, index.partial, index.groups)
+                )
+                if index is not None
+                else 0,
+            },
+            "snapshot_cache": {
+                "entries": len(cache.items) if cache is not None else 0,
+                "hits": cache.hits if cache is not None else 0,
+                "misses": cache.misses if cache is not None else 0,
+                "hit_ratio": cache.hits / (cache.hits + cache.misses)
+                if cache is not None and cache.hits + cache.misses
+                else None,
+            },
         }

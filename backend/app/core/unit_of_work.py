@@ -59,8 +59,13 @@ async def transaction(
             await session.begin()
             # A locking read may see a just-committed row after waiting. Subsequent snapshot
             # reads must see the same row, rather than an earlier REPEATABLE READ snapshot.
+            # The owned pool already uses READ COMMITTED. Avoid setting/resetting the
+            # same session isolation on every request; explicit snapshot reads still override it.
+            default = getattr(engine.sync_engine, "_booking_default_isolation", None)
             connection = await session.connection(
-                execution_options={"isolation_level": isolation_level}
+                execution_options={}
+                if default == isolation_level
+                else {"isolation_level": isolation_level}
             )
             yield session
             await session.commit()

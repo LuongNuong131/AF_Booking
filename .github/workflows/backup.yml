@@ -1,0 +1,46 @@
+name: Encrypted database backup
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 19 * * *' # 02:30 ICT
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if: vars.BACKUP_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      DB_SSL: 'true'
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install --require-hashes -r backend/requirements.txt
+      - name: Check secure settings without printing their values
+        run: |
+          python - <<'PY'
+          import os
+          for name in ('DATABASE_URL', 'BACKUP_ENCRYPTION_KEY'):
+              if not os.environ.get(name):
+                  raise SystemExit('Missing repository secret: ' + name)
+          PY
+      - run: python scripts/export_backup.py --encrypt --output /tmp/booking-backup/snapshot.enc
+      - uses: actions/upload-artifact@v4
+        with:
+          name: booking-db-${{ github.run_id }}-${{ github.run_attempt }}
+          path: /tmp/booking-backup/snapshot.enc
+          retention-days: 14
+          if-no-files-found: error

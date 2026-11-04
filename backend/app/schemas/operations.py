@@ -52,6 +52,26 @@ class JobMetrics(ContractModel):
     last_error: str | None
 
 
+class KeyIndexMetrics(ContractModel):
+    ready: bool = False
+    keys: int = 0
+    folders: int = 0
+    container_bytes: int = 0
+
+
+class SnapshotMetrics(ContractModel):
+    entries: int = 0
+    hits: int = 0
+    misses: int = 0
+    hit_ratio: float | None = None
+
+
+class OperationalErrors(ContractModel):
+    window_seconds: int = 60
+    counts: dict[str, int] = Field(default_factory=dict)
+    threshold: int = 10
+
+
 class SystemHealth(ContractModel):
     generated_at: UtcTimestamp
     uptime_seconds: float
@@ -69,6 +89,9 @@ class SystemHealth(ContractModel):
     slow_queries: list[SlowQuery]
     points: list[MetricPoint]
     degraded: bool
+    key_index: KeyIndexMetrics = Field(default_factory=KeyIndexMetrics)
+    snapshot_cache: SnapshotMetrics = Field(default_factory=SnapshotMetrics)
+    operational_errors: OperationalErrors = Field(default_factory=OperationalErrors)
 
 
 class DailyStatusCount(ContractModel):

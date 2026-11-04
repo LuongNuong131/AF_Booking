@@ -1,0 +1,669 @@
+{
+  "label": "baseline",
+  "dataset": {
+    "bookings": 50000,
+    "notes": 250000,
+    "users": 50,
+    "folders": 2000,
+    "stations": 40,
+    "initial_version": 5
+  },
+  "seed_seconds": 12.903,
+  "users": 50,
+  "observer_accounts": 50,
+  "websockets": 100,
+  "duration_seconds_per_phase": 60,
+  "think_time_seconds": [
+    0.4,
+    0.8
+  ],
+  "network": "Loopback HTTP; SQL end-to-end verified TLS through a byte-forwarding proxy; load generator and API in separate processes.",
+  "scheduler_enabled": false,
+  "results": {
+    "mixed": {
+      "mode": "mixed",
+      "warmup_seconds": 10.0,
+      "rest": {
+        "count": 3695,
+        "p50_ms": 32.815,
+        "p95_ms": 328.285,
+        "p99_ms": 1579.22
+      },
+      "errors": 0,
+      "groups": {
+        "list/mine": {
+          "client": {
+            "count": 583,
+            "p50_ms": 37.34,
+            "p95_ms": 381.398,
+            "p99_ms": 1943.128
+          },
+          "server": {
+            "count": 583,
+            "p50_ms": 33.48,
+            "p95_ms": 261.27,
+            "p99_ms": 1910.95
+          }
+        },
+        "lookup/formatted": {
+          "client": {
+            "count": 600,
+            "p50_ms": 30.97,
+            "p95_ms": 289.902,
+            "p99_ms": 527.067
+          },
+          "server": {
+            "count": 600,
+            "p50_ms": 27.09,
+            "p95_ms": 173.44,
+            "p99_ms": 355.75
+          }
+        },
+        "lookup/full": {
+          "client": {
+            "count": 604,
+            "p50_ms": 28.427,
+            "p95_ms": 248.451,
+            "p99_ms": 1242.923
+          },
+          "server": {
+            "count": 604,
+            "p50_ms": 24.45,
+            "p95_ms": 187.16,
+            "p99_ms": 1227.31
+          }
+        },
+        "lookup/missing": {
+          "client": {
+            "count": 601,
+            "p50_ms": 7.75,
+            "p95_ms": 49.016,
+            "p99_ms": 282.872
+          },
+          "server": {
+            "count": 601,
+            "p50_ms": 4.77,
+            "p95_ms": 31.38,
+            "p99_ms": 53.85
+          }
+        },
+        "lookup/partial": {
+          "client": {
+            "count": 604,
+            "p50_ms": 30.502,
+            "p95_ms": 396.254,
+            "p99_ms": 1265.464
+          },
+          "server": {
+            "count": 604,
+            "p50_ms": 26.54,
+            "p95_ms": 218.54,
+            "p99_ms": 1254.17
+          }
+        },
+        "notes/save": {
+          "client": {
+            "count": 518,
+            "p50_ms": 72.955,
+            "p95_ms": 583.69,
+            "p99_ms": 2067.245
+          },
+          "server": {
+            "count": 518,
+            "p50_ms": 69.69,
+            "p95_ms": 452.53,
+            "p99_ms": 2049.98
+          }
+        },
+        "reports/daily": {
+          "client": {
+            "count": 6,
+            "p50_ms": 49.648,
+            "p95_ms": 5493.698,
+            "p99_ms": 5493.698
+          },
+          "server": {
+            "count": 6,
+            "p50_ms": 3.13,
+            "p95_ms": 5425.7,
+            "p99_ms": 5425.7
+          }
+        },
+        "search/notes": {
+          "client": {
+            "count": 179,
+            "p50_ms": 46.001,
+            "p95_ms": 449.461,
+            "p99_ms": 1846.395
+          },
+          "server": {
+            "count": 179,
+            "p50_ms": 42.04,
+            "p95_ms": 303.95,
+            "p99_ms": 1716.26
+          }
+        }
+      }
+    },
+    "keys": {
+      "mode": "keys",
+      "warmup_seconds": 10.0,
+      "rest": {
+        "count": 3967,
+        "p50_ms": 16.148,
+        "p95_ms": 51.615,
+        "p99_ms": 450.035
+      },
+      "errors": 0,
+      "groups": {
+        "lookup/formatted": {
+          "client": {
+            "count": 983,
+            "p50_ms": 18.884,
+            "p95_ms": 49.326,
+            "p99_ms": 386.345
+          },
+          "server": {
+            "count": 983,
+            "p50_ms": 16.47,
+            "p95_ms": 44.26,
+            "p99_ms": 168.92
+          }
+        },
+        "lookup/full": {
+          "client": {
+            "count": 999,
+            "p50_ms": 18.569,
+            "p95_ms": 50.846,
+            "p99_ms": 394.373
+          },
+          "server": {
+            "count": 999,
+            "p50_ms": 16.42,
+            "p95_ms": 44.37,
+            "p99_ms": 158.62
+          }
+        },
+        "lookup/missing": {
+          "client": {
+            "count": 999,
+            "p50_ms": 4.489,
+            "p95_ms": 23.078,
+            "p99_ms": 472.301
+          },
+          "server": {
+            "count": 999,
+            "p50_ms": 2.36,
+            "p95_ms": 15.83,
+            "p99_ms": 38.81
+          }
+        },
+        "lookup/partial": {
+          "client": {
+            "count": 986,
+            "p50_ms": 18.436,
+            "p95_ms": 61.264,
+            "p99_ms": 556.955
+          },
+          "server": {
+            "count": 986,
+            "p50_ms": 15.95,
+            "p95_ms": 54.59,
+            "p99_ms": 213.32
+          }
+        }
+      }
+    }
+  },
+  "exit_codes": {
+    "mixed": 0,
+    "keys": 0
+  },
+  "broadcast": {
+    "count": 63700,
+    "p50_ms": 121.062,
+    "p95_ms": 224.681,
+    "p99_ms": 531.828,
+    "probe_receivers": 100
+  },
+  "fault": {
+    "latency_seconds_per_direction": 2,
+    "statuses": [
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504,
+      504
+    ],
+    "codes": [
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT",
+      "REQUEST_TIMEOUT"
+    ],
+    "elapsed_seconds": 7.081,
+    "recovered": true
+  },
+  "cache": {
+    "entries": 2000,
+    "hits": 116,
+    "misses": 5582,
+    "hit_ratio": 0.020358020358020357
+  },
+  "index": {
+    "ready": true,
+    "keys": 50000,
+    "folders": 2000,
+    "container_bytes": 4595976
+  },
+  "slow_queries": [
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 1218.967,
+      "at": "2026-11-04T14:09:19.725Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 759.652,
+      "at": "2026-11-04T14:09:19.017Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 708.398,
+      "at": "2026-11-04T14:09:19.185Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 681.036,
+      "at": "2026-11-04T14:09:19.825Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 605.55,
+      "at": "2026-11-04T14:09:18.851Z"
+    },
+    {
+      "fingerprint": "f93e0f43f18ec52e68d6a9182fee038f320612168c5fedb47c61d19cf27ea22b",
+      "duration_ms": 578.42,
+      "at": "2026-11-04T14:09:16.126Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 559.904,
+      "at": "2026-11-04T14:09:17.765Z"
+    },
+    {
+      "fingerprint": "ce39a362b629e46fb427f247a3e5fa6ed6b831fde33626e6bbb5abd21791fabb",
+      "duration_ms": 517.205,
+      "at": "2026-11-04T14:10:30.179Z"
+    },
+    {
+      "fingerprint": "bf02e1d7a66c93f6422642466beff54f72df07d31f7ca70d246f8506424ec95c",
+      "duration_ms": 508.32,
+      "at": "2026-11-04T14:09:51.383Z"
+    },
+    {
+      "fingerprint": "bf02e1d7a66c93f6422642466beff54f72df07d31f7ca70d246f8506424ec95c",
+      "duration_ms": 507.155,
+      "at": "2026-11-04T14:09:51.379Z"
+    },
+    {
+      "fingerprint": "b66cbf1c624ecba9d668084b6aef3f8f8f7a5d333cb972f7268e3981dfa4ab7c",
+      "duration_ms": 504.815,
+      "at": "2026-11-04T14:09:51.381Z"
+    },
+    {
+      "fingerprint": "d0de452d7a46fc0940f189e0dacc44865422ad4e2a224d145b4f0644f6315dcc",
+      "duration_ms": 498.944,
+      "at": "2026-11-04T14:09:51.378Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 443.618,
+      "at": "2026-11-04T14:09:17.608Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 341.208,
+      "at": "2026-11-04T14:09:18.284Z"
+    },
+    {
+      "fingerprint": "d0de452d7a46fc0940f189e0dacc44865422ad4e2a224d145b4f0644f6315dcc",
+      "duration_ms": 324.196,
+      "at": "2026-11-04T14:09:19.665Z"
+    },
+    {
+      "fingerprint": "b66cbf1c624ecba9d668084b6aef3f8f8f7a5d333cb972f7268e3981dfa4ab7c",
+      "duration_ms": 323.075,
+      "at": "2026-11-04T14:09:19.671Z"
+    },
+    {
+      "fingerprint": "0a307d4964e7813cdb336186f006f0ab52cfa1b6154f0dce61128049ec004e02",
+      "duration_ms": 317.211,
+      "at": "2026-11-04T14:09:19.663Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 284.623,
+      "at": "2026-11-04T14:09:16.854Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 263.975,
+      "at": "2026-11-04T14:09:41.902Z"
+    },
+    {
+      "fingerprint": "c83aad8d275185d754df30ba8febd13055a93dafd1ac233931737915cd05154e",
+      "duration_ms": 250.922,
+      "at": "2026-11-04T14:09:20.552Z"
+    }
+  ],
+  "explain_note_search": [
+    {
+      "fingerprint": "b612182d9b47bed11ce1c1b767a945f1c864fde6781c84645cc99a925bf09d72",
+      "plan": [
+        {
+          "id": 1,
+          "select_type": "PRIMARY",
+          "table": "<derived2>",
+          "partitions": null,
+          "type": "ALL",
+          "possible_keys": null,
+          "key": null,
+          "key_len": null,
+          "ref": null,
+          "rows": 22,
+          "filtered": 100.0,
+          "Extra": null
+        },
+        {
+          "id": 2,
+          "select_type": "DERIVED",
+          "table": "booking_notes",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "ix_booking_notes_created_at",
+          "key": "ix_booking_notes_created_at",
+          "key_len": "7",
+          "ref": null,
+          "rows": 2027,
+          "filtered": 1.11,
+          "Extra": "Using index condition; Using where; Using temporary"
+        }
+      ]
+    },
+    {
+      "fingerprint": "bf02e1d7a66c93f6422642466beff54f72df07d31f7ca70d246f8506424ec95c",
+      "plan": [
+        {
+          "id": 1,
+          "select_type": "PRIMARY",
+          "table": "<derived2>",
+          "partitions": null,
+          "type": "ALL",
+          "possible_keys": null,
+          "key": null,
+          "key_len": null,
+          "ref": null,
+          "rows": 20,
+          "filtered": 100.0,
+          "Extra": null
+        },
+        {
+          "id": 2,
+          "select_type": "DERIVED",
+          "table": "<derived3>",
+          "partitions": null,
+          "type": "ALL",
+          "possible_keys": null,
+          "key": null,
+          "key_len": null,
+          "ref": null,
+          "rows": 22,
+          "filtered": 100.0,
+          "Extra": "Using where; Using temporary; Using filesort"
+        },
+        {
+          "id": 2,
+          "select_type": "DERIVED",
+          "table": "booking_notes",
+          "partitions": null,
+          "type": "eq_ref",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "8",
+          "ref": "anon_1.note_id",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": null
+        },
+        {
+          "id": 3,
+          "select_type": "DERIVED",
+          "table": "booking_notes",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "ix_booking_notes_created_at",
+          "key": "ix_booking_notes_created_at",
+          "key_len": "7",
+          "ref": null,
+          "rows": 2027,
+          "filtered": 1.11,
+          "Extra": "Using index condition; Using where; Using temporary"
+        }
+      ]
+    },
+    {
+      "fingerprint": "a8ec3cb732651a14ecf1b0a5dfe0b43e9236a1587e87cb628894c716fe3fd996",
+      "plan": [
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "booking_notes",
+          "partitions": null,
+          "type": "range",
+          "possible_keys": "PRIMARY,ix_booking_notes_agent_created,ix_booking_notes_booking_created,ix_booking_notes_status_id",
+          "key": "PRIMARY",
+          "key_len": "8",
+          "ref": null,
+          "rows": 20,
+          "filtered": 100.0,
+          "Extra": "Using where; Using filesort"
+        },
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "statuses",
+          "partitions": null,
+          "type": "eq_ref",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "8",
+          "ref": "booking_schema_7658123bf964_test.booking_notes.status_id",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": null
+        },
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "users",
+          "partitions": null,
+          "type": "eq_ref",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "8",
+          "ref": "booking_schema_7658123bf964_test.booking_notes.agent_id",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": null
+        },
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "bookings",
+          "partitions": null,
+          "type": "eq_ref",
+          "possible_keys": "PRIMARY,ix_bookings_group_period",
+          "key": "PRIMARY",
+          "key_len": "8",
+          "ref": "booking_schema_7658123bf964_test.booking_notes.booking_id",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": null
+        },
+        {
+          "id": 1,
+          "select_type": "SIMPLE",
+          "table": "booking_groups",
+          "partitions": null,
+          "type": "eq_ref",
+          "possible_keys": "PRIMARY",
+          "key": "PRIMARY",
+          "key_len": "8",
+          "ref": "booking_schema_7658123bf964_test.bookings.group_id",
+          "rows": 1,
+          "filtered": 100.0,
+          "Extra": null
+        }
+      ]
+    }
+  ],
+  "explain": {
+    "lookup": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "const",
+        "possible_keys": "booking_key",
+        "key": "booking_key",
+        "key_len": "34",
+        "ref": "const",
+        "rows": 1,
+        "filtered": 100.0,
+        "Extra": null
+      }
+    ],
+    "mine": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "bookings",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_bookings_agent_updated",
+        "key": "ix_bookings_agent_updated",
+        "key_len": "9",
+        "ref": "const",
+        "rows": 1000,
+        "filtered": 100.0,
+        "Extra": "Backward index scan"
+      }
+    ],
+    "latest_before": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_notes",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_booking_notes_booking_created,ix_booking_notes_created_at,ix_booking_notes_deleted_at",
+        "key": "ix_booking_notes_deleted_at",
+        "key_len": "8",
+        "ref": "const",
+        "rows": 124638,
+        "filtered": 50.0,
+        "Extra": "Using index condition; Using where; Using temporary"
+      }
+    ],
+    "latest_after": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_notes",
+        "partitions": null,
+        "type": "ref",
+        "possible_keys": "ix_booking_notes_booking_created,ix_booking_notes_created_at,ix_booking_notes_deleted_at,ix_booking_notes_live_booking_created",
+        "key": "ix_booking_notes_live_booking_created",
+        "key_len": "8",
+        "ref": "const",
+        "rows": 124638,
+        "filtered": 50.0,
+        "Extra": "Using where; Using index"
+      }
+    ],
+    "note_window": [
+      {
+        "id": 1,
+        "select_type": "SIMPLE",
+        "table": "booking_notes",
+        "partitions": null,
+        "type": "range",
+        "possible_keys": "ix_booking_notes_booking_created,ix_booking_notes_created_at,ix_booking_notes_live_booking_created",
+        "key": "ix_booking_notes_created_at",
+        "key_len": "7",
+        "ref": null,
+        "rows": 2027,
+        "filtered": 11.11,
+        "Extra": "Using index condition; Using where; Using temporary"
+      }
+    ]
+  },
+  "thresholds": {
+    "rest_p50": {
+      "actual_ms": 32.815,
+      "limit_ms": 100,
+      "met": true
+    },
+    "rest_p95": {
+      "actual_ms": 328.285,
+      "limit_ms": 300,
+      "met": false
+    },
+    "key_p95_server": {
+      "actual_ms": 54.59,
+      "limit_ms": 50,
+      "met": false
+    },
+    "broadcast_p95": {
+      "actual_ms": 224.681,
+      "limit_ms": 500,
+      "met": true
+    },
+    "unexpected_rest_errors": {
+      "actual": 0,
+      "met": true
+    },
+    "broadcast_receivers": {
+      "actual": 100,
+      "met": true
+    },
+    "db_recovered": {
+      "met": true
+    }
+  },
+  "hardware": {
+    "logical_cpus": 5,
+    "cpu_max": "400000 100000",
+    "memory_max_bytes": 34359738368,
+    "api_workers": 1,
+    "db_pool_size": 5
+  }
+}

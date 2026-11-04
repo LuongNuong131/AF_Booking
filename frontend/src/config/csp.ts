@@ -1,4 +1,5 @@
-export function buildCsp(apiUrl: string, wsUrl: string): string {
+import { sentryOrigin } from './sentry.ts'
+export function buildCsp(apiUrl: string, wsUrl: string, sentryDsn?: string): string {
   const api = new URL(apiUrl),
     ws = new URL(wsUrl)
   if (
@@ -16,7 +17,7 @@ export function buildCsp(apiUrl: string, wsUrl: string): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data:",
     "font-src 'self'",
-    `connect-src 'self' ${api.origin} ${ws.origin}`,
+    `connect-src 'self' ${api.origin} ${ws.origin}${sentryOrigin(sentryDsn) ? ' ' + sentryOrigin(sentryDsn) : ''}`,
     "object-src 'none'",
     "base-uri 'none'",
     "form-action 'self'",

@@ -54,6 +54,17 @@ class Settings(BaseSettings):
     integrity_run_time: str = Field(default="02:00", pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
     integrity_timeout_seconds: float = Field(default=600, gt=0, le=3600)
     app_version: str = Field(default="0.2.0", min_length=1, max_length=64)
+    sentry_dsn: SecretStr | None = None
+    error_alert_threshold: int = Field(default=10, ge=1, le=100000)
+    error_alert_window_seconds: int = Field(default=60, ge=10, le=900)
+    error_alert_cooldown_seconds: int = Field(default=60, ge=1, le=3600)
+    retention_enabled: bool = True
+    audit_retention_days: int = Field(default=180, ge=1, le=3650)
+    notification_retention_days: int = Field(default=60, ge=1, le=3650)
+    task_retention_days: int = Field(default=90, ge=1, le=3650)
+    retention_interval_seconds: int = Field(default=86400, ge=60, le=604800)
+    retention_batch_size: int = Field(default=1000, ge=1, le=5000)
+    retention_max_batches: int = Field(default=100, ge=1, le=1000)
     daily_report_time: str = Field(default="18:30", pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
     note_search_strategy: Literal["like", "fulltext"] = "like"
     slow_query_threshold_ms: float = Field(default=200, ge=0, le=30000)
@@ -97,6 +108,7 @@ class Settings(BaseSettings):
         "database_url",
         "database_ssl_ca",
         "jwt_secret_key",
+        "sentry_dsn",
         "vapid_public_key",
         "vapid_private_key",
         "vapid_subject",
@@ -105,6 +117,22 @@ class Settings(BaseSettings):
     @classmethod
     def blank_to_none(cls, value: object) -> object:
         return None if value == "" else value
+
+    @field_validator("sentry_dsn")
+    @classmethod
+    def valid_sentry_dsn(cls, value):
+        if value is not None:
+            url = urlsplit(value.get_secret_value())
+            if (
+                url.scheme != "https"
+                or not url.hostname
+                or not url.username
+                or not url.path.strip("/").isdigit()
+                or url.query
+                or url.fragment
+            ):
+                raise ValueError("SENTRY_DSN must be a valid HTTPS project DSN")
+        return value
 
     @field_validator("jwt_secret_key")
     @classmethod

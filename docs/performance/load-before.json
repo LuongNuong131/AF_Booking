@@ -1,0 +1,145 @@
+{
+  "label": "before optimization",
+  "dataset": {
+    "bookings": 50000,
+    "notes": 250000,
+    "users": 50,
+    "folders": 2000,
+    "stations": 40
+  },
+  "acting_users": 50,
+  "observation_accounts": 50,
+  "connected_websockets": 100,
+  "duration_seconds": 60,
+  "warmup_seconds": 10,
+  "think_time_seconds": [
+    0.4,
+    0.8
+  ],
+  "mixed": {
+    "mode": "mixed",
+    "warmup_seconds": 10.0,
+    "rest": {
+      "count": 2882,
+      "p50_ms": 37.034,
+      "p95_ms": 2314.468,
+      "p99_ms": 4866.944
+    },
+    "errors": 2,
+    "groups": {
+      "list/mine": {
+        "client": {
+          "count": 447,
+          "p50_ms": 32.958,
+          "p95_ms": 2266.508,
+          "p99_ms": 4102.064
+        },
+        "server": {
+          "count": 447,
+          "p50_ms": 30.3,
+          "p95_ms": 247.68,
+          "p99_ms": 2373.12
+        }
+      },
+      "lookup/formatted": {
+        "client": {
+          "count": 476,
+          "p50_ms": 44.724,
+          "p95_ms": 2541.431,
+          "p99_ms": 5061.712
+        },
+        "server": {
+          "count": 476,
+          "p50_ms": 42.02,
+          "p95_ms": 399.3,
+          "p99_ms": 5052.1
+        }
+      },
+      "lookup/full": {
+        "client": {
+          "count": 473,
+          "p50_ms": 41.978,
+          "p95_ms": 2472.237,
+          "p99_ms": 5079.428
+        },
+        "server": {
+          "count": 473,
+          "p50_ms": 38.26,
+          "p95_ms": 451.86,
+          "p99_ms": 5045.07
+        }
+      },
+      "lookup/missing": {
+        "client": {
+          "count": 470,
+          "p50_ms": 6.319,
+          "p95_ms": 1868.046,
+          "p99_ms": 2525.262
+        },
+        "server": {
+          "count": 470,
+          "p50_ms": 3.52,
+          "p95_ms": 39.32,
+          "p99_ms": 310.64
+        }
+      },
+      "lookup/partial": {
+        "client": {
+          "count": 472,
+          "p50_ms": 40.658,
+          "p95_ms": 2505.293,
+          "p99_ms": 4957.595
+        },
+        "server": {
+          "count": 472,
+          "p50_ms": 37.15,
+          "p95_ms": 437.16,
+          "p99_ms": 4944.04
+        }
+      },
+      "notes/save": {
+        "client": {
+          "count": 395,
+          "p50_ms": 56.902,
+          "p95_ms": 930.127,
+          "p99_ms": 2688.407
+        },
+        "server": {
+          "count": 395,
+          "p50_ms": 54.3,
+          "p95_ms": 314.15,
+          "p99_ms": 2686.73
+        }
+      },
+      "reports/daily": {
+        "client": {
+          "count": 5,
+          "p50_ms": 3155.45,
+          "p95_ms": 6525.458,
+          "p99_ms": 6525.458
+        },
+        "server": {
+          "count": 5,
+          "p50_ms": 3109.57,
+          "p95_ms": 6472.9,
+          "p99_ms": 6472.9
+        }
+      },
+      "search/notes": {
+        "client": {
+          "count": 144,
+          "p50_ms": 40.754,
+          "p95_ms": 590.193,
+          "p99_ms": 4119.995
+        },
+        "server": {
+          "count": 144,
+          "p50_ms": 38.1,
+          "p95_ms": 255.36,
+          "p99_ms": 582.91
+        }
+      }
+    }
+  },
+  "scope": "Measured mixed baseline. Two unexpected 504 responses stopped the initial runner before key-only and injected-latency phases. Those phases are measured in the optimized run; no missing baseline values are invented."
+}

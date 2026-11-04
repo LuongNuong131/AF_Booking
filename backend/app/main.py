@@ -10,7 +10,7 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.bookings import router as bookings_router
 from app.api.v1.collaboration import router as collaboration_router
 from app.api.v1.folders import router as folders_router
-from app.api.v1.health import HealthResponse, health
+from app.api.v1.health import HealthResponse, database_health, health
 from app.api.v1.health import router as health_router
 from app.api.v1.invoices import router as invoices_router
 from app.api.v1.notifications import router as notifications_router
@@ -21,6 +21,8 @@ from app.core.config import Settings
 from app.core.db import create_database_engine
 from app.core.errors import ApiCORSMiddleware, ApiErrorMiddleware, register_error_handlers
 from app.core.http_security import BodyLimitMiddleware, SecurityHeadersMiddleware
+from app.core.logging import configure_json_logging
+from app.core.monitoring import initialize_monitoring
 from app.core.request_context import RequestContextMiddleware, install_websocket_log_redaction
 from app.core.timeouts import RequestTimeoutMiddleware
 from app.schemas.contracts import ApiError
@@ -38,6 +40,7 @@ from app.services.key_index import KeyIndex
 from app.services.note_search import create_note_search
 from app.services.push import PushService
 from app.services.reports import ReportService
+from app.services.retention import RetentionService
 from app.services.scheduler import Scheduler
 from app.services.search_limiter import SearchLimiter
 from app.services.session_events import CombinedSessionEvents, SessionEvents
@@ -60,7 +63,14 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(application: FastAPI) -> AsyncIterator[None]:
-        application.state.telemetry = Telemetry(config.slow_query_threshold_ms)
+        configure_json_logging()
+        monitor = initialize_monitoring(config)
+        application.state.telemetry = Telemetry(
+            config.slow_query_threshold_ms,
+            error_threshold=config.error_alert_threshold,
+            error_window=config.error_alert_window_seconds,
+            error_cooldown=config.error_alert_cooldown_seconds,
+        )
         application.state.engine = create_database_engine(config)
         if application.state.engine is not None and hasattr(
             application.state.engine, "sync_engine"
@@ -86,6 +96,7 @@ def create_app(
             config.search_rate_max_entries,
         )
         application.state.warm_limiter = SearchLimiter(limit=10)
+        application.state.db_health_limiter = SearchLimiter(limit=10)
         application.state.snapshot_cache = cache
         application.state.key_index = index
         application.state.ws_manager = ws_manager
@@ -170,6 +181,14 @@ def create_app(
         )
         stale_reminders = StaleReminders(application.state.engine, config, ws_manager)
         application.state.scheduler = scheduler
+        application.state.retention = RetentionService(application.state.engine, config)
+        if config.retention_enabled:
+            scheduler.add_job(
+                "data.retention",
+                application.state.retention.run,
+                interval=config.retention_interval_seconds,
+                timeout=config.scheduler_job_timeout_seconds,
+            )
         application.state.stale_reminders = stale_reminders
         scheduler.add_job(
             "locks.expire", ws_manager.locks.sweep, interval=config.lock_sweep_interval_seconds
@@ -199,6 +218,10 @@ def create_app(
             await index.stop()
             if application.state.engine is not None:
                 await application.state.engine.dispose()
+            if monitor is not None:
+                import asyncio
+
+                await asyncio.to_thread(monitor.close, timeout=2)
 
     application = FastAPI(
         title="Booking Tracker API",
@@ -232,6 +255,7 @@ def create_app(
     application.add_api_route(
         "/health", health, methods=["GET"], response_model=HealthResponse, tags=["health"]
     )
+    application.add_api_route("/health/db", database_health, methods=["GET"], tags=["health"])
     application.include_router(auth_router, prefix="/api/v1")
     application.include_router(health_router, prefix="/api/v1")
     application.include_router(bookings_router, prefix="/api/v1")

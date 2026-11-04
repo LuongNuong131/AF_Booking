@@ -4,6 +4,7 @@ import time
 from datetime import UTC, datetime
 
 from sqlalchemy import and_, func, or_, select, text
+from sqlalchemy.orm import aliased
 
 from app.core.errors import ApiException
 from app.core.unit_of_work import transaction
@@ -22,6 +23,7 @@ from app.schemas.bookings import BookingItem, BookingLookup, GroupInfo
 from app.schemas.contracts import (
     CursorPage,
     ErrorCode,
+    Invoice,
     KeyCandidate,
     KeyResolution,
     Note,
@@ -173,33 +175,38 @@ async def note_history(
                 and_(BookingNote.created_at == created, BookingNote.id < identifier),
             )
         )
+    page = (
+        query.order_by(BookingNote.created_at.desc(), BookingNote.id.desc())
+        .limit(limit + 1)
+        .subquery("history_page")
+    )
     rows = (
         await session.execute(
-            query.order_by(BookingNote.created_at.desc(), BookingNote.id.desc()).limit(limit + 1)
+            select(
+                page,
+                Attachment.id.label("file_id"),
+                Attachment.file_name,
+                Attachment.mime_type,
+                Attachment.size_bytes,
+            )
+            .outerjoin(Attachment, Attachment.note_id == page.c.id)
+            .order_by(page.c.created_at.desc(), page.c.id.desc(), Attachment.id)
         )
     ).all()
+    notes = {}
     attachments = {}
-    if rows:
-        files = (
-            await session.execute(
-                select(
-                    Attachment.note_id,
-                    Attachment.id,
-                    Attachment.file_name,
-                    Attachment.mime_type,
-                    Attachment.size_bytes,
-                ).where(Attachment.note_id.in_([row.id for row in rows[:limit]]))
-            )
-        ).all()
-        for file in files:
-            attachments.setdefault(file.note_id, []).append(
+    for row in rows:
+        notes.setdefault(row.id, row)
+        if row.file_id is not None:
+            attachments.setdefault(row.id, []).append(
                 {
-                    "id": file.id,
-                    "file_name": file.file_name,
-                    "mime_type": file.mime_type,
-                    "size_bytes": file.size_bytes,
+                    "id": row.file_id,
+                    "file_name": row.file_name,
+                    "mime_type": row.mime_type,
+                    "size_bytes": row.size_bytes,
                 }
             )
+    rows = list(notes.values())
     items = [
         Note(
             id=row.id,
@@ -421,24 +428,53 @@ class BookingReads:
         )
         return resolution, entry, group, warning
 
-    async def snapshot(self, identifier: int) -> BookingItem:
+    async def lookup_base(self, identifier: int, session):
+        from app.services.invoice_service import invoice_items
+
         cached = self.cache.get(identifier)
         if cached:
-            return cached
+            return cached, await invoice_items(session, identifier)
         generation = self.cache.generation
-        async with self.tx() as session:
-            row = (await session.execute(snapshot_query().where(Booking.id == identifier))).first()
-            if row is None:
-                raise ApiException(ErrorCode.NOT_FOUND)
-            previews = await invoice_previews(session, [identifier]) if row.invoice_count else {}
-            snapshot = snapshot_from_row(row, self.settings, previews.get(identifier))
+        added_by = aliased(User)
+        query = (
+            snapshot_query()
+            .add_columns(
+                BookingInvoice.id.label("invoice_id"),
+                BookingInvoice.invoice_number,
+                BookingInvoice.created_at.label("invoice_at"),
+                BookingInvoice.added_by,
+                added_by.full_name.label("invoice_author"),
+            )
+            .outerjoin(BookingInvoice, BookingInvoice.booking_id == Booking.id)
+            .outerjoin(added_by, added_by.id == BookingInvoice.added_by)
+            .where(Booking.id == identifier)
+            .order_by(BookingInvoice.id.desc())
+        )
+        rows = (await session.execute(query)).all()
+        if not rows:
+            raise ApiException(ErrorCode.NOT_FOUND)
+        invoices = [
+            Invoice(
+                id=r.invoice_id,
+                invoice_number=r.invoice_number,
+                added_by={"id": r.added_by, "full_name": r.invoice_author},
+                created_at=r.invoice_at,
+            )
+            for r in rows
+            if r.invoice_id is not None and r.invoice_author is not None
+        ]
+        row = rows[0]
+        previews = [
+            invoice.invoice_number for invoice in sorted(invoices, key=lambda value: value.id)[:3]
+        ]
+        snapshot = snapshot_from_row(row, self.settings, previews)
         hours = (
             row.stale_after_hours
             if row.stale_after_hours is not None
             else self.settings.stale_hours_default
         )
         self.cache.put(identifier, snapshot, row.group_id, hours, generation)
-        return snapshot
+        return snapshot, invoices
 
     async def lookup(self, raw: str, user_id: int) -> tuple[BookingLookup, str]:
         start = time.perf_counter()
@@ -459,35 +495,43 @@ class BookingReads:
             group_exists=group is not None,
             history=CursorPage(items=[], next_cursor=None),
         )
-        if entry:
-            result.snapshot = await self.snapshot(entry.id)
-            result.version = result.snapshot.version
-        elif resolution.key:
+        snapped = resolved
+        if not entry and resolution.key:
             result.suggestions = await self.suggestions.find(resolution.key)
-        snapped = time.perf_counter()
+            snapped = time.perf_counter()
         if entry:
             async with self.tx() as session:
-                result.snapshot = result.snapshot.model_copy(
-                    update={
-                        "my_watching": await session.get(BookingWatcher, (entry.id, user_id))
-                        is not None
-                    }
-                )
-                from app.services.invoice_service import invoice_items
-
-                result.invoices = await invoice_items(session, entry.id)
-                result.history = await note_history(session, entry.id)
-                tasks = (
-                    await session.scalars(
-                        select(BookingTask)
-                        .where(
-                            BookingTask.booking_id == entry.id,
-                            BookingTask.user_id == user_id,
-                            BookingTask.status == "pending",
+                result.snapshot, result.invoices = await self.lookup_base(entry.id, session)
+                result.version = result.snapshot.version
+                snapped = time.perf_counter()
+                private = (
+                    await session.execute(
+                        select(BookingTask, BookingWatcher.user_id.label("watcher"))
+                        .select_from(Booking)
+                        .outerjoin(
+                            BookingTask,
+                            and_(
+                                BookingTask.booking_id == Booking.id,
+                                BookingTask.user_id == user_id,
+                                BookingTask.status == "pending",
+                            ),
                         )
+                        .outerjoin(
+                            BookingWatcher,
+                            and_(
+                                BookingWatcher.booking_id == Booking.id,
+                                BookingWatcher.user_id == user_id,
+                            ),
+                        )
+                        .where(Booking.id == entry.id)
                         .order_by(BookingTask.remind_at, BookingTask.id)
                     )
                 ).all()
+                result.snapshot = result.snapshot.model_copy(
+                    update={"my_watching": any(row.watcher is not None for row in private)}
+                )
+                tasks = [row.BookingTask for row in private if row.BookingTask is not None]
+                result.history = await note_history(session, entry.id)
             now = datetime.now(UTC)
             snap = result.snapshot
             result.my_tasks = [
