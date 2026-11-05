@@ -37,6 +37,7 @@ it('waits for explicit confirmation before repairing and releases its progress t
     global: {
       plugins: [i18n],
       stubs: {
+        RouterLink: true,
         ElDialog: defineComponent({
           props: { modelValue: Boolean },
           template: '<div v-if="modelValue"><slot/><slot name="footer"/></div>',

@@ -333,8 +333,9 @@ backend/.venv/bin/python backend/tests/run_schema_checks.py --engine tidb --suit
 BOOKING_CHROMIUM_PATH=/usr/bin/chromium BOOKING_E2E_ARTIFACTS=/tmp/booking-browser backend/.venv/bin/python backend/tests/run_schema_checks.py --engine tidb --suite frontend --report /tmp/browser.xml
 ```
 
-No migration or dependency change is required; head remains 0003. Manual checks and
-implementation boundaries: [smart-search.md](smart-search.md).
+No migration or dependency change was required for Prompt 7C. The current release
+head is **0009**; Prompt 7C's historical note is retained here only to explain the
+original test scope. Manual checks and implementation boundaries: [smart-search.md](smart-search.md).
 
 ## Prompts 8 and 8B
 
@@ -375,7 +376,8 @@ runner owns port 5173; do not run two browser suites simultaneously.
 
 For key/index measurements and raw before/after JSON/EXPLAIN use
 [performance-8b.md](performance-8b.md). Benchmarks use isolated local databases, not
-hosted provider latency. Current schema remains 0003; no new migration was needed.
+hosted provider latency. The current schema head is **0009**; this historical section
+did not add a migration for the Prompt 8B changes.
 
 
 ## Prompt 8C

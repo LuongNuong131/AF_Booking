@@ -216,3 +216,20 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
   actual CLI round-trip tests and opt-in scheduled encrypted GitHub artifacts.
 - Provider deployment, external monitoring delivery and production backup scheduling
   have not been activated. See docs/testing.md for the current verification record.
+
+## Audit: 05 Nov 2026
+
+- Current Alembic head is **0009**. Deployment/security documentation now points to
+  0009; older per-prompt migration numbers in historical sections are not release
+  prerequisites by themselves.
+- Backend local gates pass with an isolated test environment: Ruff check, format check,
+  generated contract check, and **180 unit tests passed**. **162 database/browser tests
+  are skipped** unless the disposable MySQL/TiDB runner is configured; skips are not
+  counted as integration passes.
+- Frontend lint, strict typecheck, security probe, npm audit and **245 Vitest tests
+  pass**. Production build requires an explicit `VITE_API_URL`; CI supplies the public
+  fixture URL and local validation must do the same.
+- Fixed CI/test environment leakage from `SENTRY_DSN`, and corrected scope/deployment
+  documentation. Remaining known limitations are real attachment storage (currently
+  `NullStorage`/501), Redis coordination for multi-instance deployment, external
+  Telegram/email notifications, and unmet mixed-load p95 targets on the shared runner.

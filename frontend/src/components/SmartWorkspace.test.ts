@@ -45,7 +45,10 @@ function render() {
         return () => h(Child)
       },
     }),
-    { attachTo: document.body, global: { plugins: [i18n] } },
+    {
+      attachTo: document.body,
+      global: { plugins: [i18n], stubs: { RouterLink: true } },
+    },
   )
   return wrapper
 }

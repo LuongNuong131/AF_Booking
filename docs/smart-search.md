@@ -86,7 +86,8 @@ is filled by Refresh, returning to a stale search, or ordinary page navigation.
 [api-contract.md](api-contract.md). It counts open months using the same status-specific
 or default stale threshold as month rows. It is computed in the existing page-wide
 GROUP BY query with a status join, without per-folder/per-month queries. No migration
-is needed; Alembic head remains **0003**.
+was needed for the Prompt 7C change; the current Alembic head is maintained in
+`backend/alembic/versions/` and is **0009**.
 
 Recent folders retain at most ten supplier cards in per-user local storage. Memory and
 pending reads clear on logout/session replacement; one user's history is not loaded for
