@@ -21,6 +21,7 @@ from app.schemas.integrity import INTEGRITY_MODELS  # noqa: E402
 from app.schemas.invoices import INVOICE_MODELS  # noqa: E402
 from app.schemas.operations import OPERATIONS_MODELS  # noqa: E402
 from app.schemas.realtime import REALTIME_MODELS, ClientFrame, ServerFrame  # noqa: E402
+from app.schemas.snippets import SNIPPET_MODELS  # noqa: E402
 from app.schemas.tasks import TASK_MODELS  # noqa: E402
 
 OUTPUT = ROOT / "frontend/src/types/api.generated.ts"
@@ -77,6 +78,7 @@ def generate() -> str:
         *BOOKING_MODELS,
         *FOLDER_MODELS,
         *REALTIME_MODELS,
+        *SNIPPET_MODELS,
         *TASK_MODELS,
     ):
         schema = model.model_json_schema(mode="serialization")

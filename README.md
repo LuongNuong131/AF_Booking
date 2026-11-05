@@ -2,7 +2,7 @@
 
 An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
 
-**Current scope: Prompts 1–10 are implemented in code; Prompt 12 optional modules remain pending.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin/QC/Profile workflows, collaboration, daily reports, invoices, observability, retention and encrypted backup tooling. See [Testing](docs/testing.md) for evidence-backed verification status. Attachment storage remains an intentional `501` placeholder until an S3-compatible provider is configured; Redis multi-instance coordination and external Telegram/email notifications are not implemented. The mixed-load p95 target is currently a goal rather than a passing production guarantee.
+**Current scope: Prompts 1–10 are implemented in code, plus Prompt 12.1 Note snippets.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin/QC/Profile workflows, collaboration, daily reports, invoices, observability, retention, encrypted backup tooling and user-private note snippets with `Ctrl+J` quick insert. See [Testing](docs/testing.md) for evidence-backed verification status. Attachment storage remains an intentional `501` placeholder until an S3-compatible provider is configured; Redis multi-instance coordination and external Telegram/email notifications are not implemented. The mixed-load p95 target is currently a goal rather than a passing production guarantee.
 
 ## Stack and hosting
 
@@ -90,7 +90,7 @@ Prompt 9 adds mandatory initial-password rotation, independent account/IP login 
 1 MB request bounds, strict WebSocket Origin/message limits, exact-origin CSP,
 shared localStorage sessions with expiry and cross-tab WebSocket coordination, and
 security lint/audit gates. Read the [security report](docs/security-report.md) and
-[deployment steps](docs/deploy.md). Apply migration **0009** before starting the API; `0009` is the current Alembic head.
+[deployment steps](docs/deploy.md). Apply migration **0010** before starting the API; `0010` is the current Alembic head.
 No provider URL or live deployment is assumed; configure CSP once Render assigns its URL.
 
 Prompt 10 adds real MySQL service coverage, multi-user browser deadline/replay

@@ -183,6 +183,21 @@ class BookingNote(CreatedAt, Base):
     )
 
 
+class NoteSnippet(Timestamps, Base):
+    __tablename__ = "note_snippets"
+    __table_args__ = (
+        UniqueConstraint("user_id", "title", name="uq_note_snippets_user_title"),
+        Index("ix_note_snippets_user_usage", "user_id", "use_count", "updated_at"),
+        TABLE_OPTIONS,
+    )
+
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    user_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    title: Mapped[str] = mapped_column(mysql.VARCHAR(80), nullable=False)
+    text: Mapped[str] = mapped_column(mysql.VARCHAR(1000), nullable=False)
+    use_count: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), server_default="0")
+
+
 class Attachment(CreatedAt, Base):
     __tablename__ = "attachments"
     __table_args__ = (Index("ix_attachments_note_id", "note_id"), TABLE_OPTIONS)

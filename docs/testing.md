@@ -334,7 +334,7 @@ BOOKING_CHROMIUM_PATH=/usr/bin/chromium BOOKING_E2E_ARTIFACTS=/tmp/booking-brows
 ```
 
 No migration or dependency change was required for Prompt 7C. The current release
-head is **0009**; Prompt 7C's historical note is retained here only to explain the
+head is **0010**; Prompt 7C's historical note is retained here only to explain the
 original test scope. Manual checks and implementation boundaries: [smart-search.md](smart-search.md).
 
 ## Prompts 8 and 8B
@@ -376,7 +376,7 @@ runner owns port 5173; do not run two browser suites simultaneously.
 
 For key/index measurements and raw before/after JSON/EXPLAIN use
 [performance-8b.md](performance-8b.md). Benchmarks use isolated local databases, not
-hosted provider latency. The current schema head is **0009**; this historical section
+hosted provider latency. The current schema head is **0010**; this historical section
 did not add a migration for the Prompt 8B changes.
 
 

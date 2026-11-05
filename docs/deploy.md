@@ -70,7 +70,7 @@ Expected responses:
 
 A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
-Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. Current head is **`0009`**, which adds bounded-retention indexes on top of the application tables, durable note/task replay, collaboration, daily reports, push subscriptions and password rotation; deploy the latest `head` before starting the API. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
+Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. Current head is **`0010`**, which adds user-private note snippets on top of the retention indexes, application tables, durable note/task replay, collaboration, daily reports, push subscriptions and password rotation; deploy the latest `head` before starting the API. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for provisional status rules, CHECK compatibility, and destructive rollback semantics.
 
 ## 3. Vercel frontend
 
@@ -188,7 +188,7 @@ for storage tradeoffs, dependency audit evidence and verification commands.
 
 ## Prompt 10 optional production settings
 
-Migrate through **0009** before this version starts. Keep one API worker/instance.
+Migrate through **0010** before this version starts. Keep one API worker/instance.
 Backend `SENTRY_DSN` and frontend `VITE_SENTRY_DSN` are optional; leave blank to
 disable them. When enabling frontend Sentry, rerun `npm run configure:csp` with
 the same API/WS/DSN values as the Vercel build, and commit the resulting header.

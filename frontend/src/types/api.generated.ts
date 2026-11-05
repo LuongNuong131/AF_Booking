@@ -161,6 +161,12 @@ export type NoteSearchHit = { "booking_key": string; "display_key": string; "not
 
 export type NoteSearchPage = { "items": Array<NoteSearchHit>; "total": number; "page": number; "size": number; "date_from": string; "date_to": string; "timezone": string; "strategy": string }
 
+export type NoteSnippet = { "id": number; "title": string; "text": string; "use_count": number; "created_at": string; "updated_at": string }
+
+export type NoteSnippetCreate = { "title": string; "text": string }
+
+export type NoteSnippetPatch = { "title"?: string | null; "text"?: string | null }
+
 export type NotificationItem = { "booking_key": string; "display_key": string; "id": number; "type": NotificationType; "merged_count"?: number; "by_agent": AgentSummary | null; "note_id": number | null; "task_id": number | null; "created_at": string; "read_at": string | null }
 
 export type NotificationList = { "items": Array<NotificationItem>; "unread_count": number }

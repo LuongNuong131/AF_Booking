@@ -219,8 +219,8 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 
 ## Audit: 05 Nov 2026
 
-- Current Alembic head is **0009**. Deployment/security documentation now points to
-  0009; older per-prompt migration numbers in historical sections are not release
+- Current Alembic head is **0010**. Deployment/security documentation now points to
+  0010; older per-prompt migration numbers in historical sections are not release
   prerequisites by themselves.
 - Backend local gates pass with an isolated test environment: Ruff check, format check,
   generated contract check, and **180 unit tests passed**. **162 database/browser tests
@@ -233,3 +233,15 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
   documentation. Remaining known limitations are real attachment storage (currently
   `NullStorage`/501), Redis coordination for multi-instance deployment, external
   Telegram/email notifications, and unmet mixed-load p95 targets on the shared runner.
+
+## Implemented: Prompt 12.1 note snippets
+
+- Additive migration **0010** adds user-private snippets with per-user title
+  uniqueness, usage ranking and updated timestamps.
+- CRUD/search/use endpoints are owner-scoped, audited and bounded; other users receive
+  404 rather than data. Contract types are generated from the Pydantic schemas.
+- NoteForm now supports `Ctrl+J`, search, one-click insertion, saving the current note
+  as a snippet and deleting snippets. Snippets load only when the picker opens, so the
+  booking lookup path does not gain an extra request on mount.
+- Verification after the change: backend Ruff/contract/unit gate passed (**180 passed,
+  162 skipped**); frontend lint/typecheck/Vitest/build passed (**245 tests passed**).

@@ -16,6 +16,7 @@ from app.api.v1.invoices import router as invoices_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.operations import router as operations_router
 from app.api.v1.realtime import router as realtime_router
+from app.api.v1.snippets import router as snippets_router
 from app.api.v1.tasks import router as tasks_router
 from app.core.config import Settings
 from app.core.db import create_database_engine
@@ -45,6 +46,7 @@ from app.services.scheduler import Scheduler
 from app.services.search_limiter import SearchLimiter
 from app.services.session_events import CombinedSessionEvents, SessionEvents
 from app.services.snapshot_cache import SnapshotCache
+from app.services.snippets import SnippetService
 from app.services.stale_reminders import StaleReminders
 from app.services.stations import StationService
 from app.services.storage import NullStorage
@@ -121,6 +123,7 @@ def create_app(
         application.state.tasks = TaskService(
             application.state.engine, config, application.state.auth, ws_manager
         )
+        application.state.snippets = SnippetService(application.state.engine, config)
         scheduler = Scheduler()
         application.state.note_search = create_note_search(application.state.engine, config)
         application.state.push = PushService(
@@ -263,6 +266,7 @@ def create_app(
     application.include_router(folders_router, prefix="/api/v1")
     application.include_router(realtime_router, prefix="/api/v1")
     application.include_router(tasks_router, prefix="/api/v1")
+    application.include_router(snippets_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
     application.include_router(operations_router, prefix="/api/v1")
     application.include_router(invoices_router, prefix="/api/v1")
