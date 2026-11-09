@@ -1,34 +1,179 @@
-# Booking Tracker
+# AF Booking
 
-An internal workspace for recording booking statuses and notes. Actual booking processing remains in the company's existing system.
+> A focused operations workspace for tracking booking status, notes, ownership, invoices, and team activity — without trying to replace the system that actually processes bookings.
 
-**Current scope: Prompts 1–10 are implemented in code, plus Prompt 12.1 Note snippets.** The application includes booking lookup/notes/history, smart Supplier folders, reminder tasks, realtime locks/notifications, Admin/QC/Profile workflows, collaboration, daily reports, invoices, observability, retention, encrypted backup tooling and user-private note snippets with `Ctrl+J` quick insert. See [Testing](docs/testing.md) for evidence-backed verification status. Attachment storage remains an intentional `501` placeholder until an S3-compatible provider is configured; Redis multi-instance coordination and external Telegram/email notifications are not implemented. The mixed-load p95 target is currently a goal rather than a passing production guarantee.
+[![CI](https://github.com/LuongNuong131/AF_Booking/actions/workflows/ci.yml/badge.svg)](https://github.com/LuongNuong131/AF_Booking/actions/workflows/ci.yml)
+[![Frontend](https://img.shields.io/badge/frontend-Vue%203%20%2B%20TypeScript-42b883?logo=vuedotjs&logoColor=white)](frontend)
+[![Backend](https://img.shields.io/badge/backend-FastAPI-009688?logo=fastapi&logoColor=white)](backend)
+[![Database](https://img.shields.io/badge/database-TiDB%20%2F%20MySQL%20compatible-4479A1?logo=mysql&logoColor=white)](docs/database-schema.md)
+[![License](https://img.shields.io/badge/license-private%20project-15232B)](#project-status)
 
-## Stack and hosting
+AF Booking is an internal, multi-role booking operations console for teams that need a reliable answer to three questions:
 
-| Component | Stack | Hosting |
+- What is the current state of this booking?
+- Who owns the next action?
+- What changed, when, and by whom?
+
+The application is intentionally narrow. Booking creation and the underlying business transaction remain in the company’s existing system. AF Booking provides the operational layer around that workflow: fast lookup, structured notes, history, collaboration, reminders, invoices, reporting, and auditable administration.
+
+---
+
+## Contents
+
+- [Product overview](#product-overview)
+- [What is included](#what-is-included)
+- [Architecture](#architecture)
+- [Repository layout](#repository-layout)
+- [Local development](#local-development)
+- [Configuration](#configuration)
+- [Testing and quality gates](#testing-and-quality-gates)
+- [Deployment](#deployment)
+- [Security model](#security-model)
+- [Operational boundaries](#operational-boundaries)
+- [Documentation map](#documentation-map)
+- [Project status](#project-status)
+
+## Product overview
+
+### Built for operational clarity
+
+AF Booking keeps the main workflow deliberately compact:
+
+1. Search by booking key, CW number, station, period, or supplier.
+2. Open the canonical booking workspace.
+3. Review the latest snapshot and append a note with the correct status.
+4. See history, ownership, tasks, invoices, and realtime activity in context.
+5. Hand off work without losing the audit trail.
+
+### Designed for real team usage
+
+The product supports Agent, QC, and Admin roles, with authorization enforced on the backend. It is designed for teams of roughly 20–100 staff and data sets containing tens of thousands of bookings. Lists are paginated, routes are lazy-loaded, realtime messages are incremental, and the UI avoids full-page blocking states during ordinary requests.
+
+## What is included
+
+### Booking workspace
+
+- Canonical booking-key normalization and validation.
+- Exact, partial, ambiguous, and station-assisted lookup.
+- Smart search across booking keys, CW numbers, stations, periods, and supplier names.
+- Supplier folders with station and monthly booking navigation.
+- Append-only notes with status, position, ownership, and optimistic version checks.
+- Activity timeline with cursor pagination.
+- Draft persistence, conflict review, duplicate-note protection, and offline outbox recovery.
+- My bookings, stale bookings, summary filters, and live list updates.
+
+### Collaboration and productivity
+
+- Advisory booking locks with realtime presence signals.
+- Booking watches, assignments, takeover notifications, and private notifications.
+- Private reminder tasks with due alerts, snooze, and booking navigation.
+- Command palette and scoped keyboard shortcuts.
+- Light, dark, and system theme modes.
+- Responsive workspace shell for desktop and smaller screens.
+
+### Administration and operations
+
+- Role-aware Admin, QC, Reports, Profile, and system-health screens.
+- User, session, supplier, station, status, audit, trash, and integrity workflows.
+- Invoice declarations, validation, search, reconciliation, exports, and repair tooling.
+- Daily CSV/XLSX reports with business-timezone boundaries.
+- Bounded request, database, WebSocket, and scheduler deadlines.
+- Optional Sentry integration, retention controls, encrypted backup tooling, and PWA/Web Push support.
+
+> Attachment storage is intentionally left behind a `501` interface until an S3-compatible provider is configured. Redis-backed multi-instance coordination and external Telegram/email notifications are not part of the current deployment model.
+
+## Architecture
+
+```text
+┌──────────────────────────────┐
+│  Vue 3 / TypeScript / Vite   │
+│  Pinia · Router · Element Plus│
+│  Vercel static frontend       │
+└──────────────┬───────────────┘
+               │ HTTPS / WSS
+┌──────────────▼───────────────┐
+│  FastAPI / Python 3.12       │
+│  Auth · bookings · realtime  │
+│  tasks · reports · admin      │
+│  Render web service           │
+└──────────────┬───────────────┘
+               │ TLS MySQL protocol
+┌──────────────▼───────────────┐
+│  TiDB Cloud                   │
+│  MySQL-compatible persistence │
+└──────────────────────────────┘
+```
+
+| Layer | Technologies | Responsibility |
 | --- | --- | --- |
-| Frontend | Vue 3, TypeScript, Vite, Pinia, Vue Router, Element Plus, VueUse, Axios, date-fns, vue-i18n | Vercel |
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2 async, aiomysql, Alembic, Pydantic 2 | Render |
-| Database | MySQL-compatible TiDB, verified TLS | TiDB Cloud |
+| Frontend | Vue 3, TypeScript, Vite, Pinia, Vue Router, Element Plus, VueUse, Axios, date-fns, vue-i18n | Workspace UI, guarded navigation, drafts, optimistic interactions, realtime client |
+| Backend | Python 3.12, FastAPI, SQLAlchemy 2 async, aiomysql, Alembic, Pydantic 2 | Auth, authorization, booking workflows, reports, tasks, audit, WebSocket transport |
+| Database | TiDB Cloud, MySQL-compatible protocol | Durable booking snapshots, notes, users, tasks, invoices, audit and operational data |
+| Delivery | Vercel, Render, GitHub Actions | Static frontend, API service, CI, schema checks, browser checks, optional backups |
+
+### Data and consistency principles
+
+- Booking keys are stored canonically as `CW{number}-{STATION}-{YYMM}`.
+- Notes are append-only; booking snapshots are updated in the same transaction.
+- `expected_version` protects against stale writes, while `client_request_id` makes retries replay-safe.
+- Realtime is an acceleration and collaboration layer, never the source of truth.
+- The current production shape is one backend instance and one worker while process-local auth, cache, scheduler, lock, and event state remain in memory.
+
+## Repository layout
+
+```text
+.
+├── backend/                 # FastAPI application, Alembic, tests, locked requirements
+│   ├── app/                 # API, services, models, auth, realtime, jobs
+│   ├── alembic/             # Database migrations
+│   └── tests/               # Unit, database, realtime, security and performance suites
+├── frontend/                # Vue application and Vite configuration
+│   ├── src/components/      # Shared UI and booking components
+│   ├── src/views/           # Routed screens
+│   ├── src/stores/          # Auth, bookings, tasks, realtime, UI and caches
+│   ├── src/composables/     # Requests, shortcuts, refresh and navigation helpers
+│   └── src/locales/         # User-facing copy
+├── docs/                    # Contracts, workflows, deployment and operations guides
+├── fixtures/                # Shared booking, invoice and search fixtures
+├── scripts/                 # Contract generation, backup and utility scripts
+├── render.yaml              # Render backend blueprint
+└── PROJECT_STATE.md         # Evidence-backed implementation status and boundaries
+```
 
 ## Local development
 
-Prerequisites: Node.js 24, npm, and Python 3.12. Run commands from this checkout; do not create another worktree for cloud tasks.
+### Prerequisites
 
-Backend, in one terminal:
+- Node.js 24.x and npm.
+- Python 3.12.
+- A MySQL-compatible database for authenticated flows and integration tests.
+- TLS database settings for TiDB Cloud or another compatible provider.
+
+The health endpoint can run without database credentials. Authenticated application flows require a configured database and `JWT_SECRET_KEY`.
+
+### 1. Start the backend
 
 ```sh
 cd backend
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --require-hashes -r requirements-dev.txt
 test -f .env || cp .env.example .env
-.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 --workers 1 --no-access-log --ws websockets-sansio --ws-max-size 4096
+
+.venv/bin/python -m uvicorn app.main:app \
+  --reload \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --workers 1 \
+  --no-access-log \
+  --ws websockets-sansio \
+  --ws-max-size 4096
 ```
 
-The API can start without database/auth credentials: `/health` (also `/api/v1/health`) returns 200 without DB access, while `/api/v1/ready` returns 503 until a database is configured. Auth fails closed until `JWT_SECRET_KEY` and the database are configured. To enable login, configure the ignored `backend/.env`, migrate, and seed an Admin using protected environment values; follow [auth.md](docs/auth.md) for startup and curl examples. Never commit real credentials.
+The liveness endpoint is available at `http://localhost:8000/health`. Readiness remains unavailable until the database is configured. For migrations and an operator-provisioned Admin account, follow [docs/auth.md](docs/auth.md) and [docs/database-schema.md](docs/database-schema.md).
 
-Frontend, in a second terminal:
+### 2. Start the frontend
+
+In a second terminal:
 
 ```sh
 cd frontend
@@ -37,66 +182,144 @@ test -f .env || cp .env.example .env
 npm run dev
 ```
 
-The development app uses the backend at port 8000. Sign in with an operator-provisioned account. Protected routes restore the session after reload; navigation follows the current role. See [frontend.md](docs/frontend.md) for setup/API/WSS configuration and [booking-workspace.md](docs/booking-workspace.md) for Home/Summary workflows and two-browser checks. All UI copy is in `frontend/src/locales/en.json`.
+Open `http://localhost:5173`. The default local API and WebSocket endpoints are:
 
-## Validation
+```dotenv
+VITE_API_URL=http://localhost:8000/api/v1
+VITE_WS_URL=ws://localhost:8000/api/v1/ws
+```
+
+There is no public registration flow and no default password. Sign in with an account provisioned by an operator.
+
+## Configuration
+
+### Frontend variables
+
+| Variable | Description |
+| --- | --- |
+| `VITE_API_URL` | API base URL ending in `/api/v1`; required for production |
+| `VITE_WS_URL` | WebSocket URL ending in `/api/v1/ws`; derived from the API URL when omitted |
+| `VITE_TIMEOUT_SCALE` | Positive multiplier for client request deadlines; defaults to `1` |
+| `VITE_SENTRY_DSN` | Optional public Sentry DSN |
+
+Production frontend URLs must use HTTPS/WSS. `VITE_*` values are public bundle configuration; never place credentials, database URLs, JWT secrets, or private keys in them.
+
+### Backend essentials
+
+Configure these in the backend environment, Render, or your secret manager — never in Git:
+
+| Variable | Purpose |
+| --- | --- |
+| `APP_ENV` | Runtime mode, `production` for hosted deployment |
+| `JWT_SECRET_KEY` | JWT signing secret |
+| `DATABASE_URL` | MySQL/TiDB connection URL |
+| `DB_SSL` | TLS verification switch |
+| `CORS_ORIGINS` | Exact allowed frontend origins |
+| `BUSINESS_TIMEZONE` | Business reporting timezone, normally `Asia/Ho_Chi_Minh` |
+
+See [backend/.env.example](backend/.env.example) and [docs/deploy.md](docs/deploy.md) for the complete configuration surface.
+
+## Testing and quality gates
+
+### Frontend
+
+```sh
+cd frontend
+npm run lint
+npm run test:security
+npm test
+
+VITE_API_URL=https://api.example.com/api/v1 \
+VITE_WS_URL=wss://api.example.com/api/v1/ws \
+npm run build
+```
+
+### Backend
 
 ```sh
 cd backend
 .venv/bin/ruff check .
 .venv/bin/ruff format --check .
+.venv/bin/python ../scripts/generate_contract_types.py --check
 .venv/bin/python -m pytest -q
 ```
 
-```sh
-cd frontend
-npm test
-VITE_API_URL=https://YOUR-API.onrender.com/api/v1 npm run build
-```
+GitHub Actions also runs dependency audit checks, contract drift checks, disposable MySQL/TiDB schema suites, security suites, frontend tests, and browser coverage. The full evidence and environment requirements are documented in [docs/testing.md](docs/testing.md).
 
-The production API URL must use HTTPS and end in `/api/v1`; `VITE_WS_URL` must use WSS and end in `/api/v1/ws`, or is derived when unset. Missing or invalid production configuration fails the build. Optional hosted read-only probes use `TEST_DATABASE_URL`; disposable database/browser suites use the runner documented in [testing](docs/testing.md). GitHub Actions runs the unit tests, lint, type checking, and production build.
+## Deployment
 
-Shared contracts: [API](docs/api-contract.md) and [WebSocket](docs/ws-protocol.md). Frontend types are generated from Pydantic schemas with `backend/.venv/bin/python scripts/generate_contract_types.py`; run the same command with `--check` to detect drift. Auth, booking and Prompt 4B search/folder/station endpoints are implemented; see [booking curl examples](docs/bookings.md) and [search/folder documentation](docs/folder-search.md).
+The reference deployment uses:
 
-Database migrate/seed/rollback commands, provisional status rules, index rationale, and real EXPLAIN reports: [docs/database-schema.md](docs/database-schema.md).
+- **Vercel** for the Vite frontend.
+- **Render** for the FastAPI service.
+- **TiDB Cloud** for the MySQL-compatible database.
 
-Deployment instructions: [docs/deploy.md](docs/deploy.md). Implementation boundaries and next steps: [PROJECT_STATE.md](PROJECT_STATE.md). Product constraints: [docs/product-context.md](docs/product-context.md).
+High-level release flow:
 
+1. Provision the TiDB database and store credentials securely.
+2. Connect the repository to Render using [render.yaml](render.yaml).
+3. Run the latest Alembic migrations and provision the first Admin account.
+4. Deploy the frontend from the `frontend` directory with Node 24.x.
+5. Configure the real API and WebSocket origins.
+6. Generate and commit the exact CSP origins with `npm run configure:csp`.
+7. Verify `/health`, `/api/v1/ready`, sign-in, role navigation, SPA fallback, and realtime status.
 
-Prompt 8C adds typo suggestions/new-booking confirmation, duplicate-note review,
-status reminder defaults and nightly/Admin snapshot integrity checks. Upgrade to
-migrations through **0005** before starting this version; read
-[safeguards and integrity](docs/safeguards-integrity.md) for defaults and repair scope.
+Read the complete provider-specific procedure in [docs/deploy.md](docs/deploy.md). A Git push or a successful local build does not, by itself, establish a live production deployment.
 
+## Security model
 
-Prompt 8D adds booking watches, merged update notifications, atomic assignments,
-Ctrl+K command palette and scoped accessible list shortcuts. Apply migration **0005**
-and see [collaboration](docs/collaboration.md) for API, workflow and checks.
+AF Booking is designed to fail closed around identity and sensitive operations:
 
+- Admin-created accounts; no self-registration.
+- Argon2 password hashing and HS256 JWT sessions.
+- One active session per user with immediate same-process invalidation.
+- Role enforcement on the backend for Agent, QC, and Admin workflows.
+- Bounded request bodies, query deadlines, WebSocket message sizes, send timeouts, and rate limits.
+- Exact-origin CORS and CSP configuration for hosted deployments.
+- No `v-html`; user notes and booking text are rendered as plain text.
+- Audit coverage for authentication, administration, notes, statuses, exports, deletion, and restoration.
+- Spreadsheet formula-injection safeguards for generated exports.
 
-Prompt 8E adds Admin system health, QC daily reports/frozen multi-sheet Excel, safe
-note search and a static-only PWA shell with opt-in offline Web Push. Apply migration
-**0006**. TiDB uses NOTE_SEARCH_STRATEGY=like; VAPID configuration is required only
-when enabling push. See [operations and PWA](docs/operations-pwa.md).
+See [docs/security-report.md](docs/security-report.md) for threat boundaries, storage trade-offs, and verification details.
 
+## Operational boundaries
 
-Prompt 8F adds invoice chips/owner controls, standalone and offline invoice edits,
-exact invoice search, monthly reconciliation, invoice Excel/CSV and invoice integrity
-repair. **Upgrade through migration 0009 before starting the latest version.**
-Existing explicit declarations are preserved; unset bookings remain unknown.
-See [invoice management](docs/invoices.md) for contracts, exports and verification.
+The following constraints are intentional and should remain visible when extending the system:
 
-Prompt 9 adds mandatory initial-password rotation, independent account/IP login limits,
-1 MB request bounds, strict WebSocket Origin/message limits, exact-origin CSP,
-shared localStorage sessions with expiry and cross-tab WebSocket coordination, and
-security lint/audit gates. Read the [security report](docs/security-report.md) and
-[deployment steps](docs/deploy.md). Apply migration **0010** before starting the API; `0010` is the current Alembic head.
-No provider URL or live deployment is assumed; configure CSP once Render assigns its URL.
+- Keep one backend instance and one worker until shared coordination is introduced.
+- Do not treat performance targets as measured production guarantees.
+- Do not add external notification providers without a clear delivery, retry, and audit design.
+- Do not bypass generated API contracts or edit `frontend/src/types/api.generated.ts` manually.
+- Do not commit credentials, provider URLs containing secrets, or local `.env` files.
+- Apply migrations explicitly before starting a version that depends on them.
 
-Prompt 10 adds real MySQL service coverage, multi-user browser deadline/replay
-checks, reproducible 50-user/100-WebSocket load tests, JSON request/SQL alerts,
-optional Sentry, bounded retention and encrypted all-table backups with tested
-empty-database recovery. Apply migration **0009**. Read [testing](docs/testing.md),
-[load testing](docs/performance/load-testing.md), [observability](docs/observability.md)
-and [backup/recovery](docs/backup.md). Scheduled production backups remain disabled
-until repository secrets and `BACKUP_ENABLED` are configured.
+## Documentation map
+
+| Topic | Guide |
+| --- | --- |
+| API request/response contracts | [docs/api-contract.md](docs/api-contract.md) |
+| Authentication and account provisioning | [docs/auth.md](docs/auth.md) |
+| Booking lookup, notes and saves | [docs/bookings.md](docs/bookings.md) |
+| Home, Summary and detail workflow | [docs/booking-workspace.md](docs/booking-workspace.md) |
+| Smart search and supplier folders | [docs/smart-search.md](docs/smart-search.md) |
+| Realtime protocol and locks | [docs/ws-protocol.md](docs/ws-protocol.md) |
+| Tasks and reminders | [docs/tasks.md](docs/tasks.md) |
+| Admin, QC and Profile | [docs/admin-qc-profile.md](docs/admin-qc-profile.md) |
+| Invoice management | [docs/invoices.md](docs/invoices.md) |
+| Deployment | [docs/deploy.md](docs/deploy.md) |
+| Testing and browser verification | [docs/testing.md](docs/testing.md) |
+| Observability and retention | [docs/observability.md](docs/observability.md) |
+| Backup and recovery | [docs/backup.md](docs/backup.md) |
+| Current implementation boundaries | [PROJECT_STATE.md](PROJECT_STATE.md) |
+
+## Project status
+
+AF Booking is an actively developed internal application. The core booking workspace, collaboration, tasks, administration, reporting, invoices, security hardening, realtime transport, and operational tooling are implemented in the repository.
+
+Hosted resources, provider credentials, production origins, optional Sentry/VAPID settings, and scheduled backup secrets remain operator configuration. Review [PROJECT_STATE.md](PROJECT_STATE.md) before planning new work; it records what is implemented, what remains intentionally out of scope, and which deployment assumptions are still required.
+
+---
+
+<p align="center">
+  Built for teams that need every booking update to be clear, accountable, and easy to act on.
+</p>
