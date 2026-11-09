@@ -35,11 +35,24 @@ def supplier_identity(value: str) -> str:
 
 
 def import_rows(data: str, statistics: dict | None = None) -> tuple[list[ImportRow], int]:
+    try:
+        return _import_rows(data, statistics)
+    except csv.Error:
+        raise ApiException(
+            ErrorCode.VALIDATION_ERROR,
+            message="Could not read CSV/TSV. Check the column separators and quoted fields.",
+            details={"reason": "invalid_delimited_text"},
+        ) from None
+
+
+def _import_rows(data: str, statistics: dict | None) -> tuple[list[ImportRow], int]:
     data = data.lstrip("\ufeff")
     if not data.strip():
         raise ApiException(ErrorCode.VALIDATION_ERROR, message="No booking rows supplied.")
     delimiter = "\t" if "\t" in data.splitlines()[0] else ","
-    reader = csv.DictReader(io.StringIO(data), delimiter=delimiter)
+    # Match files opened with newline='': clipboard text can use bare CR, and
+    # quoted supplier cells may contain embedded CR/LF characters.
+    reader = csv.DictReader(io.StringIO(data, newline=""), delimiter=delimiter, strict=True)
     if not {"Booking Number", "Suppliers", "Station Code"}.issubset(reader.fieldnames or []):
         raise ApiException(
             ErrorCode.VALIDATION_ERROR,

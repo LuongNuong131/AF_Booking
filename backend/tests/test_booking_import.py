@@ -6,6 +6,31 @@ from app.services.booking_import import import_rows
 HEADER = "Booking Number\tSuppliers\tStation Code\n"
 
 
+@pytest.mark.parametrize("newline", ["\n", "\r\n", "\r"])
+def test_clipboard_line_endings_and_quoted_multiline_cells(newline):
+    data = (
+        "Booking Number\tSuppliers\tStation Code"
+        + newline
+        + 'CW2143505-JFK-2609\t"Marriott'
+        + newline
+        + 'Hotel - JFK"\tJFK'
+        + newline
+        + "CWXXXX-LAS-2609\tCrew Transport - LAS\tLAS"
+        + newline
+    )
+    rows, count = import_rows(data)
+    assert count == 2 and len(rows) == 2
+    assert rows[0].supplier == "Marriott" + newline + "Hotel - JFK"
+    assert rows[1].key.key == "CWXXXX-LAS-2609"
+
+
+def test_malformed_delimited_text_becomes_validation_error():
+    with pytest.raises(ApiException) as error:
+        import_rows(HEADER + 'CW2143505-JFK-2609\t"unterminated supplier\tJFK')
+    assert error.value.code == "VALIDATION_ERROR"
+    assert error.value.details == {"reason": "invalid_delimited_text"}
+
+
 def test_import_deduplicates_and_keeps_stations_without_inventing_type():
     rows, count = import_rows(
         HEADER + "CW2143505-JFK-2609\tMarriott Hotel\tJFK\n"

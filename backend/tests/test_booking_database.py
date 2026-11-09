@@ -106,7 +106,9 @@ async def test_operator_dataset_when_supplied(rig):
     path = os.environ.get("IMPORT_CHECK_FILE")
     if not path:
         pytest.skip("No operator-provided dataset for this run")
-    data = await asyncio.to_thread(Path(path).read_text, encoding="utf-8-sig")
+    # Browser File.text() preserves CR/LF; Path.read_text() would hide clipboard
+    # newline bugs by translating them before the import request is made.
+    data = (await asyncio.to_thread(Path(path).read_bytes)).decode("utf-8-sig")
     response = await rig.client.post(
         "/api/v1/admin/bookings/import",
         headers=rig.headers["admin"],
@@ -115,6 +117,15 @@ async def test_operator_dataset_when_supplied(rig):
     assert response.status_code == 200, response.text
     assert response.json()["unique_bookings"] == 239
     assert response.json()["duplicate_rows"] == 3
+    clipboard = data.replace("\r\n", "\n").replace("\n", "\r")
+    repeated = await rig.client.post(
+        "/api/v1/admin/bookings/import",
+        headers=rig.headers["admin"],
+        json={"data": clipboard, "apply": True},
+    )
+    assert repeated.status_code == 200, repeated.text
+    assert repeated.json()["new_bookings"] == 0
+    assert repeated.json()["existing_bookings"] == 239
     for key in [
         "CWXXXXXXX1-PTP-2609",
         "CWXXXX-LAS-2609",
