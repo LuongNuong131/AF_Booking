@@ -42,7 +42,7 @@ async def folders(
     page: PageNumber = 1,
     size: Annotated[int, Query(ge=1, le=100)] = 20,
     station_code: Annotated[str | None, Query(max_length=4)] = None,
-    supplier_type: Literal["hotel", "transportation"] | None = None,
+    supplier_type: Literal["hotel", "transportation", "unclassified"] | None = None,
     q: SearchText = "",
 ):
     return await request.app.state.folders.listing(

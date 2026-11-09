@@ -16,6 +16,7 @@ import { formatDateTime } from '../utils/dateTime'
 import UserAvatar from '../components/UserAvatar.vue'
 import RequestStatus from '../components/RequestStatus.vue'
 import BackgroundPushSettings from '../components/BackgroundPushSettings.vue'
+import LanguageSelect from '../components/LanguageSelect.vue'
 const { t } = useI18n(),
   auth = useAuthStore(),
   ui = useUiStore()
@@ -189,6 +190,7 @@ async function save() {
           </option>
         </select></label
       >
+      <LanguageSelect />
       <BackgroundPushSettings />
       <form
         class="reminder-preferences"

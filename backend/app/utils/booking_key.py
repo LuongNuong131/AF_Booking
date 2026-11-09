@@ -3,6 +3,7 @@ import unicodedata
 from dataclasses import dataclass
 
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+CW_PATTERN = r"CW(?:[0-9]{5,10}|(?=[A-Z0-9]*[A-Z])[A-Z0-9]{4,10})"
 MAX_RAW_KEY_LENGTH = 100
 DASHES = str.maketrans({c: "-" for c in "–—−‐‑"})
 
@@ -31,7 +32,7 @@ def normalize(raw: str) -> str:
     cleaned = "".join(c for c in raw if unicodedata.category(c) not in {"Cc", "Cf"})
     cleaned = cleaned.translate(DASHES).strip().upper()
     cleaned = re.sub(r"\s*-\s*", "-", cleaned)
-    cleaned = re.sub(r"^CW\s+(?=\d)", "CW", cleaned)
+    cleaned = re.sub(r"^CW\s+(?=[A-Z0-9])", "CW", cleaned)
     return re.sub(r"\s+", "-", cleaned)
 
 
@@ -40,7 +41,7 @@ def period_label(period: str) -> str:
 
 
 def to_display(key: str) -> str:
-    return re.sub(r"^CW\s*(?=\d)", "CW ", key)
+    return re.sub(r"^CW\s*(?=[A-Z0-9])", "CW ", key)
 
 
 def parse(raw: str, station_pattern: str = r"[A-Z]{3}") -> ParsedKey | PartialKey | None:
@@ -48,11 +49,13 @@ def parse(raw: str, station_pattern: str = r"[A-Z]{3}") -> ParsedKey | PartialKe
     if len(raw) > MAX_RAW_KEY_LENGTH or any(unicodedata.category(c) == "Cc" for c in raw):
         return None
     key = normalize(raw)
-    partial = re.fullmatch(r"(CW\d{5,10})-(\d{2}(?:0[1-9]|1[0-2]))", key, re.ASCII)
+    partial = re.fullmatch(rf"({CW_PATTERN})-" + r"(\d{2}(?:0[1-9]|1[0-2]))", key, re.ASCII)
     if partial:
         cw, period = partial.groups()
         return PartialKey(cw, period, period_label(period), key)
-    full = re.fullmatch(r"(CW\d{5,10})-([A-Z]{1,4})-(\d{2}(?:0[1-9]|1[0-2]))", key, re.ASCII)
+    full = re.fullmatch(
+        rf"({CW_PATTERN})-" + r"([A-Z]{1,4})-(\d{2}(?:0[1-9]|1[0-2]))", key, re.ASCII
+    )
     if full:
         cw, station, period = full.groups()
         if re.fullmatch(station_pattern, station, re.ASCII):

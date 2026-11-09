@@ -46,7 +46,7 @@ self.addEventListener('fetch', (event) => {
   }
 })
 const canonical = (value) =>
-  typeof value === 'string' && /^CW[0-9]{5,10}-[A-Z]{3}-[0-9]{2}(?:0[1-9]|1[0-2])$/.test(value)
+  typeof value === 'string' && /^CW(?:[0-9]{5,10}|(?=[A-Z0-9]*[A-Z])[A-Z0-9]{4,10})-[A-Z]{3}-[0-9]{2}(?:0[1-9]|1[0-2])$/.test(value)
 self.addEventListener('push', (event) => {
   let data
   try {

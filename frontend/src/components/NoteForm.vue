@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { statusLabel } from '../utils/statusLabel'
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { NoteSnippet, Status } from '../types/api.generated'
@@ -117,7 +118,7 @@ function selectStatus(code: string) {
           :class="{ selected: statusCode === status.code }"
           @click="selectStatus(status.code)"
         >
-          <span>{{ status.label }}</span
+          <span>{{ statusLabel(status) }}</span
           ><kbd v-if="index < 5" aria-hidden="true">{{ index + 1 }}</kbd>
         </button>
       </div>

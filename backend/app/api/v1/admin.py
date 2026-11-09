@@ -13,6 +13,8 @@ from app.schemas.admin import (
     AdminStatus,
     AdminUser,
     AuditEntry,
+    BookingImportRequest,
+    BookingImportResult,
     DeleteNote,
     PerformanceReport,
     ProfileStats,
@@ -36,6 +38,14 @@ Actor = Annotated[CurrentUser, Depends(get_current_user)]
 PageNumber = Annotated[int, Query(ge=1, le=100000)]
 Size = Annotated[int, Query(ge=1, le=100)]
 Search = Annotated[str, Query(max_length=100)]
+
+
+@router.post("/admin/bookings/import", response_model=BookingImportResult)
+@timeout(60)
+async def import_bookings(body: BookingImportRequest, request: Request, user: Admin):
+    from app.services.booking_import import run_import
+
+    return await run_import(request.app.state, body, user, AuditContext.from_request(request))
 
 
 @router.get("/admin/users", response_model=Page[AdminUser])

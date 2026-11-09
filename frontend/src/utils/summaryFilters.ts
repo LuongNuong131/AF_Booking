@@ -154,7 +154,7 @@ export function summaryReturn(value: unknown): string {
     !/[\\\p{Cc}\p{Cf}]/u.test(value) &&
     (value === '/summary' ||
       value.startsWith('/summary?') ||
-      /^\/summary\/folders\/CW\d{5,10}(?:\?[^#]*)?$/.test(value))
+      /^\/summary\/folders\/CW[A-Z0-9]{4,10}(?:-[A-Z]{3})?(?:\?[^#]*)?$/.test(value))
     ? value
     : '/summary'
 }

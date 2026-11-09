@@ -74,6 +74,7 @@ class ApiError(ContractModel):
 class SupplierType(StrEnum):
     HOTEL = "hotel"
     TRANSPORTATION = "transportation"
+    UNCLASSIFIED = "unclassified"
 
 
 class InvoiceState(StrEnum):

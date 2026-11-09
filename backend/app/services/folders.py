@@ -186,11 +186,13 @@ class FolderService:
         )
 
     async def detail(self, cw: str, station_code: str | None = None) -> FolderDetail:
-        if not re.fullmatch(r"CW[0-9]{5,10}", cw, re.ASCII):
-            raise ApiException(ErrorCode.INVALID_BOOKING_KEY)
+        from app.utils.folder_key import folder_parts
+
+        cw, embedded_station = folder_parts(cw)
+        station_code = station_code or embedded_station
         async with self.tx() as session:
             if self.index.usable:
-                entry = self.index.groups.get(cw)
+                entry = self.index.group(cw, station_code)
                 identifier = (
                     entry.id
                     if entry and (station_code is None or entry.info.station_code == station_code)
@@ -200,7 +202,14 @@ class FolderService:
                 conditions = [BookingGroup.cw_number == cw]
                 if station_code is not None:
                     conditions.append(BookingGroup.station_code == station_code)
-                identifier = await session.scalar(select(BookingGroup.id).where(*conditions))
+                identifiers = list(
+                    (await session.scalars(select(BookingGroup.id).where(*conditions))).all()
+                )
+                if len(identifiers) > 1:
+                    raise ApiException(
+                        ErrorCode.VALIDATION_ERROR, message="Choose a station folder."
+                    )
+                identifier = identifiers[0] if identifiers else None
             if identifier is None:
                 raise ApiException(ErrorCode.NOT_FOUND)
             cards = await folder_cards(session, [identifier], self.settings.stale_hours_default)
@@ -410,8 +419,16 @@ class FolderService:
                     try:
                         folder = await self.detail(classified.cw_number, classified.station_code)
                     except ApiException as exc:
-                        if exc.code != ErrorCode.NOT_FOUND:
+                        if exc.code not in {ErrorCode.NOT_FOUND, ErrorCode.VALIDATION_ERROR}:
                             raise
+                        choices = await self.page(
+                            page=page,
+                            size=size,
+                            exact_cw=classified.cw_number,
+                            station_code=classified.station_code,
+                        )
+                        if choices.total:
+                            return SearchFolders(query=classified.query, **choices.model_dump())
                         return SearchNone(query=classified.query)
                     return SearchFolder(query=classified.query, **folder.model_dump())
                 case QueryKind.CW_PREFIX | QueryKind.TEXT:
@@ -446,7 +463,7 @@ class FolderService:
                             type=kind,
                             items=[item for item in result.items if item.supplier_type == kind],
                         )
-                        for kind in ("hotel", "transportation")
+                        for kind in ("hotel", "transportation", "unclassified")
                     ]
                     return SearchStation(
                         query=classified.query,

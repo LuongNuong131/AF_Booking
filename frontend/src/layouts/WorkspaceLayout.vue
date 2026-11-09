@@ -11,6 +11,7 @@ import BaseIcon from '../components/BaseIcon.vue'
 import UserAvatar from '../components/UserAvatar.vue'
 import NotificationBell from '../components/NotificationBell.vue'
 import ThemeMenu from '../components/ThemeMenu.vue'
+import LanguageSelect from '../components/LanguageSelect.vue'
 import ShortcutHelp from '../components/ShortcutHelp.vue'
 import TaskOverlays from '../components/TaskOverlays.vue'
 import OutboxPanel from '../components/OutboxPanel.vue'
@@ -111,7 +112,7 @@ async function logout() {
         <div class="header-actions">
           <button type="button" class="button palette-trigger" @click="ui.paletteOpen = true">
             {{ t('collabUi.palette') }} <kbd>Ctrl+K</kbd></button
-          ><OutboxPanel /><ThemeMenu /><button
+          ><OutboxPanel /><LanguageSelect /><ThemeMenu /><button
             type="button"
             class="icon-button desktop-help"
             :aria-label="t('shortcuts.open')"

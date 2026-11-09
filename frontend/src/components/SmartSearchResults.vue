@@ -24,7 +24,7 @@ const pagination = computed(() =>
       ><div class="folder-card-grid">
         <FolderCard
           v-for="folder in result.items"
-          :key="folder.cw_number"
+          :key="folder.cw_number + folder.station_code"
           :folder="folder"
           @open="emit('folder', $event)"
         /></div></template
@@ -38,7 +38,7 @@ const pagination = computed(() =>
         <div class="folder-card-grid">
           <FolderCard
             v-for="folder in section.items"
-            :key="folder.cw_number"
+            :key="folder.cw_number + folder.station_code"
             :folder="folder"
             @open="emit('folder', $event)"
           />

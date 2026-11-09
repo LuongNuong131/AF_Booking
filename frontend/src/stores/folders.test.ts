@@ -6,6 +6,7 @@ import { useAuthStore } from './auth'
 import { useBookingsStore } from './bookings'
 import { user, statuses } from '../test/bookingFixtures'
 import { CW, folderDetail, folderResult, folderEvent } from '../test/folderFixtures'
+const FCW = `${CW}-YUL`
 const ctx = () => ({ signal: new AbortController().signal, timeoutMs: 8000 })
 beforeEach(() => {
   vi.useFakeTimers()
@@ -24,12 +25,12 @@ it('uses a shared 50-entry LRU for search and folders and revalidates stale resu
   const get = vi.spyOn(api, 'get').mockResolvedValue({ data: folderResult() }),
     store = useFoldersStore()
   await store.readSearch(ctx(), CW)
-  await store.readDetail(ctx(), CW)
+  await store.readDetail(ctx(), FCW)
   expect(get).toHaveBeenCalledTimes(1)
   await vi.advanceTimersByTimeAsync(30001)
-  expect(store.detail(CW)?.months).toHaveLength(3)
+  expect(store.detail(FCW)?.months).toHaveLength(3)
   get.mockResolvedValue({ data: folderDetail() })
-  await store.readDetail(ctx(), CW)
+  await store.readDetail(ctx(), FCW)
   expect(get).toHaveBeenCalledTimes(2)
   get.mockImplementation(async (_url, config) => ({
     data: {
@@ -50,17 +51,17 @@ it('patches displayed months immediately and fetches only the changed folder for
   const get = vi.spyOn(api, 'get').mockResolvedValue({ data: folderResult() }),
     store = useFoldersStore()
   await store.readSearch(ctx(), CW)
-  const stop = store.watchFolder(CW)
+  const stop = store.watchFolder(FCW)
   const updated = folderDetail()
   updated.folder.open_count = 1
   updated.folder.stale_count = 0
   updated.folder.last_activity_at = folderEvent().updated_at
   get.mockResolvedValue({ data: updated })
   store.observe(folderEvent())
-  expect(store.detail(CW)?.months[0]?.is_done).toBe(true)
-  expect(store.detail(CW)?.folder.open_count).toBe(1)
+  expect(store.detail(FCW)?.months[0]?.is_done).toBe(true)
+  expect(store.detail(FCW)?.folder.open_count).toBe(1)
   await vi.advanceTimersByTimeAsync(250)
-  expect(get.mock.calls.map((c) => c[0])).toEqual(['/search', `/folders/${CW}`])
+  expect(get.mock.calls.map((c) => c[0])).toEqual(['/search', `/folders/${FCW}`])
   stop()
 })
 it('does not retain a late response or private recent folders across sessions', async () => {
@@ -85,7 +86,7 @@ it('updates supplier text immediately and invalidates search after an allowed ed
   const store = useFoldersStore()
   store.reset(3)
   await store.readSearch(ctx(), CW)
-  store.remember(CW)
+  store.remember(FCW)
   vi.spyOn(api, 'patch').mockResolvedValue({
     data: {
       cw_number: CW,
@@ -94,11 +95,11 @@ it('updates supplier text immediately and invalidates search after an allowed ed
       supplier_type: 'transportation',
     },
   })
-  await store.rename(ctx(), CW, {
+  await store.rename(ctx(), FCW, {
     supplier_name: 'Renamed Supplier',
     supplier_type: 'transportation',
   })
-  expect(store.detail(CW)?.folder.supplier_name).toBe('Renamed Supplier')
+  expect(store.detail(FCW)?.folder.supplier_name).toBe('Renamed Supplier')
   expect(store.recent[0]?.supplier_type).toBe('transportation')
   expect(store.cache.values().next().value?.at).toBe(0)
 })

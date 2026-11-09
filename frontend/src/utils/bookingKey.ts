@@ -1,3 +1,4 @@
+export const CW_PATTERN = 'CW(?:[0-9]{5,10}|(?=[A-Z0-9]*[A-Z])[A-Z0-9]{4,10})'
 export interface ParsedKey {
   key: string
   display_key: string
@@ -23,11 +24,11 @@ export function normalize(raw: string): string {
     .trim()
     .toUpperCase()
     .replace(/\s*-\s*/g, '-')
-    .replace(/^CW\s+(?=[0-9])/, 'CW')
+    .replace(/^CW\s+(?=[A-Z0-9])/, 'CW')
     .replace(/\s+/g, '-')
 }
 export function to_display(key: string): string {
-  return key.replace(/^CW\s*(?=[0-9])/, 'CW ')
+  return key.replace(/^CW\s*(?=[A-Z0-9])/, 'CW ')
 }
 function label(period: string): string {
   return `${months[Number(period.slice(2)) - 1]} ${2000 + Number(period.slice(0, 2))}`
@@ -35,7 +36,7 @@ function label(period: string): string {
 export function parse(raw: string, stationPattern = '[A-Z]{3}'): ParsedKey | PartialKey | null {
   if (raw.length > maxLength || /\p{Cc}/u.test(raw)) return null
   const key = normalize(raw)
-  const partial = /^(CW[0-9]{5,10})-([0-9]{2}(?:0[1-9]|1[0-2]))$/.exec(key)
+  const partial = new RegExp(`^(${CW_PATTERN})-([0-9]{2}(?:0[1-9]|1[0-2]))$`).exec(key)
   if (partial)
     return {
       cw_number: partial[1]!,
@@ -43,7 +44,7 @@ export function parse(raw: string, stationPattern = '[A-Z]{3}'): ParsedKey | Par
       period_label: label(partial[2]!),
       normalized: key,
     }
-  const full = /^(CW[0-9]{5,10})-([A-Z]{1,4})-([0-9]{2}(?:0[1-9]|1[0-2]))$/.exec(key)
+  const full = new RegExp(`^(${CW_PATTERN})-([A-Z]{1,4})-([0-9]{2}(?:0[1-9]|1[0-2]))$`).exec(key)
   if (!full || !new RegExp(`^(?:${stationPattern})$`).test(full[2]!)) return null
   return {
     key,

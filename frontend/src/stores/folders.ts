@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { folderKey, isFolderKey } from '../utils/folderKey'
 import { defineStore } from 'pinia'
 import { api } from '../api/client'
 import { useRequest, type RequestContext } from '../composables/useRequest'
@@ -80,7 +81,7 @@ export const useFoldersStore = defineStore('folders', () => {
       }
       put(key, value)
       if ('kind' in value && value.kind === 'folder')
-        put(folderId(value.folder.cw_number), {
+        put(folderId(folderKey(value.folder)), {
           folder: value.folder,
           months: value.months,
         })
@@ -110,7 +111,7 @@ export const useFoldersStore = defineStore('folders', () => {
   function remember(cw: string) {
     const value = detail(cw)?.folder
     if (!value) return
-    recent.value = [copy(value), ...recent.value.filter((f) => f.cw_number !== cw)].slice(0, 10)
+    recent.value = [copy(value), ...recent.value.filter((f) => folderKey(f) !== cw)].slice(0, 10)
     persistRecent()
   }
   function persistRecent() {
@@ -149,7 +150,9 @@ export const useFoldersStore = defineStore('folders', () => {
   }
   function observe(event: BookingUpdatedData) {
     revision++
-    const old = detail(event.cw_number)?.months.find((r) => r.booking_key === event.booking_key)
+    const parsed = parseBookingKey(event.booking_key)
+    const reference = parsed && 'station_code' in parsed ? `${event.cw_number}-${parsed.station_code}` : event.cw_number
+    const old = (detail(reference) ?? detail(event.cw_number))?.months.find((r) => r.booking_key === event.booking_key)
     const wasDone = old?.is_done,
       wasStale = old?.is_stale
     for (const entry of cache.value.values()) {
@@ -158,10 +161,9 @@ export const useFoldersStore = defineStore('folders', () => {
       else if ('kind' in entry.value && entry.value.kind === 'station_period')
         entry.value.items.forEach((r) => patchMonth(r, event))
     }
-    const parsed = parseBookingKey(event.booking_key)
     eachCard((card) => {
       if (event.change_kind === 'invoice') return
-      if (card.cw_number !== event.cw_number || card.last_activity_at > event.updated_at) return
+      if (card.cw_number !== event.cw_number || (parsed && 'station_code' in parsed && card.station_code !== parsed.station_code) || card.last_activity_at > event.updated_at) return
       if (wasDone !== undefined && wasDone !== event.is_done)
         card.open_count = Math.max(0, card.open_count + (event.is_done ? -1 : 1))
       if (wasStale) card.stale_count = Math.max(0, (card.stale_count ?? 0) - 1)
@@ -189,6 +191,8 @@ export const useFoldersStore = defineStore('folders', () => {
               : null,
         }
     })
+    const stationKey = parsed && 'station_code' in parsed ? `${event.cw_number}-${parsed.station_code}` : event.cw_number
+    if (interests.has(stationKey)) schedule(stationKey)
     if (interests.has(event.cw_number)) schedule(event.cw_number)
   }
   function schedule(cw: string) {
@@ -220,7 +224,7 @@ export const useFoldersStore = defineStore('folders', () => {
           if (generation !== epoch) return
           if (result) {
             eachCard((card) => {
-              if (card.cw_number === cw) Object.assign(card, result.folder)
+              if (folderKey(card) === cw || (!cw.includes('-') && card.cw_number === cw)) Object.assign(card, result.folder)
             })
             persistRecent()
             listeners.forEach((listener) => listener(cw, result.folder))
@@ -262,7 +266,7 @@ export const useFoldersStore = defineStore('folders', () => {
     revision++
     for (const entry of cache.value.values()) entry.at = 0
     eachCard((card) => {
-      if (card.cw_number === cw) {
+      if (folderKey(card) === cw || (!cw.includes('-') && card.cw_number === cw)) {
         card.supplier_name = group.supplier_name
         card.supplier_type = group.supplier_type
       }
@@ -296,11 +300,11 @@ export const useFoldersStore = defineStore('folders', () => {
               (r): r is FolderCard =>
                 !!r &&
                 typeof r === 'object' &&
-                /^CW\d{5,10}$/.test(r.cw_number) &&
+                isFolderKey(r.cw_number) &&
                 typeof r.supplier_name === 'string' &&
                 r.supplier_name.length <= 255 &&
                 /^[A-Z]{3}$/.test(r.station_code) &&
-                ['hotel', 'transportation'].includes(r.supplier_type) &&
+                ['hotel', 'transportation', 'unclassified'].includes(r.supplier_type) &&
                 Number.isSafeInteger(r.booking_count) &&
                 Number.isSafeInteger(r.open_count) &&
                 typeof r.last_activity_at === 'string',

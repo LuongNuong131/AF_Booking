@@ -122,7 +122,8 @@ onScopeDispose(() => {
             @change="changed"
           >
             <option value="">{{ t('bookingUi.allTypes') }}</option>
-            <option value="hotel">{{ t('supplier_types.hotel') }}</option>
+            <option value="unclassified">{{ t('supplier_types.unclassified') }}</option>
+          <option value="hotel">{{ t('supplier_types.hotel') }}</option>
             <option value="transportation">
               {{ t('supplier_types.transportation') }}
             </option>
@@ -140,7 +141,7 @@ onScopeDispose(() => {
       <div v-for="n in 6" :key="n" class="skeleton-line" />
     </div>
     <div v-else-if="cards.length" class="folder-card-grid summary-folder-grid">
-      <FolderCard v-for="folder in cards" :key="folder.cw_number" :folder="folder" @open="open" />
+      <FolderCard v-for="folder in cards" :key="folder.cw_number + folder.station_code" :folder="folder" @open="open" />
     </div>
     <p v-else-if="result" class="smart-empty">{{ t('empty_search') }}</p>
     <PageControls

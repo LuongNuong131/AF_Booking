@@ -1,6 +1,5 @@
 import hashlib
 import json
-import re
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -28,7 +27,8 @@ from app.services.booking_reads import invoice_previews, snapshot_from_row, snap
 from app.services.invoice_service import invoice_items
 from app.services.key_index import GroupEntry, KeyEntry
 from app.services.suggestions import Suggestions
-from app.utils.booking_key import ParsedKey, PartialKey, build_key, parse, to_display
+from app.utils.booking_key import ParsedKey, PartialKey, build_key, parse
+from app.utils.folder_key import folder_parts
 from app.utils.text import clean_note
 
 
@@ -62,11 +62,16 @@ class BookingWrites:
         parsed = parse(raw, self.settings.station_code_pattern)
         if isinstance(parsed, PartialKey):
             async with transaction(self.engine, self.settings) as session:
-                station = await session.scalar(
-                    select(BookingGroup.station_code).where(
-                        BookingGroup.cw_number == parsed.cw_number
-                    )
+                stations = list(
+                    (
+                        await session.scalars(
+                            select(BookingGroup.station_code).where(
+                                BookingGroup.cw_number == parsed.cw_number
+                            )
+                        )
+                    ).all()
                 )
+                station = stations[0] if len(stations) == 1 else None
             details = (
                 {
                     "suggested_key": build_key(
@@ -194,20 +199,23 @@ class BookingWrites:
                             raise ApiException(ErrorCode.NOTE_REQUIRED)
                         group = await session.scalar(
                             select(BookingGroup)
-                            .where(BookingGroup.cw_number == parsed.cw_number)
+                            .where(
+                                BookingGroup.cw_number == parsed.cw_number,
+                                BookingGroup.station_code == parsed.station_code,
+                            )
                             .with_for_update()
                         )
                         now = datetime.now(UTC)
                         now = now.replace(microsecond=now.microsecond // 1000 * 1000)
                         if group is None:
                             name = supplier_name(body.supplier_name)
-                            if body.supplier_type is None:
-                                raise ApiException(ErrorCode.SUPPLIER_REQUIRED)
                             group = BookingGroup(
                                 cw_number=parsed.cw_number,
                                 station_code=parsed.station_code,
                                 supplier_name=name,
-                                supplier_type=body.supplier_type.value,
+                                supplier_type=body.supplier_type.value
+                                if body.supplier_type
+                                else "unclassified",
                                 created_by=user.id,
                                 booking_count=0,
                                 last_activity_at=now,
@@ -219,21 +227,6 @@ class BookingWrites:
                                 station_insert.on_duplicate_key_update(
                                     code=station_insert.inserted.code
                                 )
-                            )
-                        elif group.station_code != parsed.station_code:
-                            suggested = build_key(
-                                parsed.cw_number,
-                                group.station_code,
-                                parsed.period,
-                                self.settings.station_code_pattern,
-                            )
-                            raise ApiException(
-                                ErrorCode.STATION_MISMATCH,
-                                details={
-                                    "expected_station": group.station_code,
-                                    "suggested_key": suggested,
-                                    "display_key": to_display(suggested),
-                                },
                             )
                         booking = await session.scalar(
                             select(Booking)
@@ -458,8 +451,7 @@ class BookingWrites:
             return result
 
     async def patch_folder(self, cw: str, body, user, context) -> GroupInfo:
-        if not re.fullmatch(r"CW[0-9]{5,10}", cw, re.ASCII):
-            raise ApiException(ErrorCode.INVALID_BOOKING_KEY)
+        cw, station = folder_parts(cw)
         if not body.model_fields_set or (
             body.supplier_type is None and "supplier_type" in body.model_fields_set
         ):
@@ -478,9 +470,21 @@ class BookingWrites:
                 AuthService.require_live_row(live, user)
                 if live.role not in {"admin", "qc"}:
                     raise ApiException(ErrorCode.FORBIDDEN)
-                group = await session.scalar(
-                    select(BookingGroup).where(BookingGroup.cw_number == cw).with_for_update()
+                conditions = [BookingGroup.cw_number == cw]
+                if station:
+                    conditions.append(BookingGroup.station_code == station)
+                groups = list(
+                    (
+                        await session.scalars(
+                            select(BookingGroup).where(*conditions).with_for_update()
+                        )
+                    ).all()
                 )
+                if len(groups) > 1:
+                    raise ApiException(
+                        ErrorCode.VALIDATION_ERROR, message="Choose a station folder."
+                    )
+                group = groups[0] if groups else None
                 if group is None:
                     raise ApiException(ErrorCode.NOT_FOUND)
                 group_id = group.id

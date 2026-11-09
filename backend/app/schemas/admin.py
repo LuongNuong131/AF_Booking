@@ -208,7 +208,25 @@ class PerformanceReport(ContractModel):
     overdue_tasks_by_user: list[AgentCount]
 
 
+class BookingImportRequest(ContractModel):
+    data: str = Field(min_length=1, max_length=500000)
+    apply: bool = False
+
+
+class BookingImportResult(ContractModel):
+    source_rows: int
+    unique_bookings: int
+    duplicate_rows: int
+    new_bookings: int
+    existing_bookings: int
+    new_folders: int
+    applied: bool
+    sample_keys: list[str]
+
+
 ADMIN_MODELS = (
+    BookingImportRequest,
+    BookingImportResult,
     AdminUser,
     UserCreate,
     UserUpdate,

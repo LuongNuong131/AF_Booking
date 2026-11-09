@@ -539,7 +539,8 @@ defineExpose({
                   t('bookingUi.type')
                 }}</label
                 ><select id="new-supplier-type" v-model="w.supplierType">
-                  <option value="hotel">{{ t('supplier_types.hotel') }}</option>
+                  <option value="unclassified">{{ t('supplier_types.unclassified') }}</option>
+          <option value="hotel">{{ t('supplier_types.hotel') }}</option>
                   <option value="transportation">
                     {{ t('supplier_types.transportation') }}
                   </option>

@@ -312,7 +312,8 @@ function refreshPage() {
               @change="changed"
             >
               <option value="">{{ t('bookingUi.allTypes') }}</option>
-              <option value="hotel">{{ t('supplier_types.hotel') }}</option>
+              <option value="unclassified">{{ t('supplier_types.unclassified') }}</option>
+          <option value="hotel">{{ t('supplier_types.hotel') }}</option>
               <option value="transportation">
                 {{ t('supplier_types.transportation') }}
               </option>

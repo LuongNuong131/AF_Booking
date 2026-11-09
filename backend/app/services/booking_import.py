@@ -1,0 +1,223 @@
+"""Atomic, insert-only import. No notes, statuses or historical updates are invented."""
+
+import csv
+import io
+import re
+from dataclasses import dataclass
+from datetime import UTC, datetime
+
+from sqlalchemy import select, tuple_
+from sqlalchemy.dialects.mysql import insert
+
+from app.core.errors import ApiException
+from app.core.unit_of_work import transaction
+from app.models import Booking, BookingGroup, Station, User
+from app.schemas.admin import BookingImportResult
+from app.schemas.contracts import ErrorCode, SupplierType
+from app.services.audit import record_audit
+from app.services.auth import AuthService
+from app.services.booking_writes import group_entry
+from app.services.key_index import KeyEntry
+from app.utils.booking_key import ParsedKey, PartialKey, parse
+from app.utils.supplier import normalize_supplier_name
+
+
+@dataclass(frozen=True)
+class ImportRow:
+    key: ParsedKey
+    supplier: str
+    kind: str
+
+
+def supplier_identity(value: str) -> str:
+    # Station tags are stored separately. Preserve the first original display name.
+    return normalize_supplier_name(re.sub(r"(?:\s+-\s+[A-Z]{3})+$", "", value))
+
+
+def import_rows(data: str, statistics: dict | None = None) -> tuple[list[ImportRow], int]:
+    data = data.lstrip("\ufeff")
+    if not data.strip():
+        raise ApiException(ErrorCode.VALIDATION_ERROR, message="No booking rows supplied.")
+    delimiter = "\t" if "\t" in data.splitlines()[0] else ","
+    reader = csv.DictReader(io.StringIO(data), delimiter=delimiter)
+    if not {"Booking Number", "Suppliers", "Station Code"}.issubset(reader.fieldnames or []):
+        raise ApiException(
+            ErrorCode.VALIDATION_ERROR,
+            message="Required columns: Booking Number, Suppliers, Station Code.",
+        )
+    unique, folders = {}, {}
+    source_rows, duplicates = 0, 0
+    for number, row in enumerate(reader, 2):
+        if not any(value.strip() for value in row.values() if isinstance(value, str)):
+            continue
+        source_rows += 1
+        parsed = parse((row.get("Booking Number") or "").strip())
+        supplier = (row.get("Suppliers") or "").strip()
+        station = (row.get("Station Code") or "").strip().upper()
+        kind = (row.get("Supplier Type") or "").strip().lower() or "unclassified"
+        if isinstance(parsed, PartialKey) and re.fullmatch(
+            r"[A-Z]{3}(?:\s*-\s*[A-Z]{3})+", station
+        ):
+            stations = list(dict.fromkeys(re.split(r"\s*-\s*", station)))
+            keys = [parse(f"{parsed.cw_number}-{code}-{parsed.period}") for code in stations]
+        else:
+            keys = (
+                [parsed] if isinstance(parsed, ParsedKey) and parsed.station_code == station else []
+            )
+        if (
+            None in row
+            or not keys
+            or not 3 <= len(supplier) <= 255
+            or kind not in set(SupplierType)
+            or source_rows > 1000
+        ):
+            raise ApiException(
+                ErrorCode.VALIDATION_ERROR,
+                message=f"Invalid import row {number}.",
+                details={"row": number},
+            )
+        for key in keys:
+            value = ImportRow(key, supplier, kind)
+            if key.key in unique:
+                prior = unique[key.key]
+                if prior.kind != kind or supplier_identity(prior.supplier) != supplier_identity(
+                    supplier
+                ):
+                    raise ApiException(
+                        ErrorCode.VALIDATION_ERROR,
+                        message=f"Conflicting duplicate booking at row {number}.",
+                        details={"row": number, "booking_key": key.key},
+                    )
+                duplicates += 1
+                continue
+            identity = (key.cw_number, key.station_code)
+            if identity in folders and (
+                supplier_identity(folders[identity][0]) != supplier_identity(supplier)
+                or folders[identity][1] != kind
+            ):
+                raise ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    message=f"Conflicting supplier for the same CW/station at row {number}.",
+                    details={"row": number},
+                )
+            folders[identity] = (supplier, kind)
+            unique[key.key] = value
+    if not unique:
+        raise ApiException(ErrorCode.VALIDATION_ERROR, message="No booking rows supplied.")
+    if statistics is not None:
+        statistics["duplicate_rows"] = duplicates
+    return list(unique.values()), source_rows
+
+
+async def run_import(state, body, user, context) -> BookingImportResult:
+    statistics = {}
+    rows, count = import_rows(body.data, statistics)
+    identities = {(r.key.cw_number, r.key.station_code) for r in rows}
+    created = []
+    changed_groups = []
+
+    def committed():
+        if body.apply:
+            for book in created:
+                group = next(g for g in changed_groups if g.id == book.group_id)
+                state.key_index.update(
+                    KeyEntry(
+                        book.id,
+                        book.group_id,
+                        book.booking_key,
+                        book.cw_number,
+                        book.period,
+                        book.station_code,
+                    ),
+                    group_entry(group),
+                )
+            state.stations.invalidate()
+
+    async with transaction(
+        state.engine, state.settings, seconds=55, after_commit=committed
+    ) as session:
+        live = await session.scalar(select(User).where(User.id == user.id).with_for_update())
+        AuthService.require_live_row(live, user)
+        if live.role != "admin":
+            raise ApiException(ErrorCode.FORBIDDEN)
+        existing = set(
+            (
+                await session.scalars(
+                    select(Booking.booking_key).where(
+                        Booking.booking_key.in_([r.key.key for r in rows])
+                    )
+                )
+            ).all()
+        )
+        groups = {
+            (g.cw_number, g.station_code): g
+            for g in (
+                await session.scalars(
+                    select(BookingGroup)
+                    .where(
+                        tuple_(BookingGroup.cw_number, BookingGroup.station_code).in_(identities)
+                    )
+                    .with_for_update()
+                )
+            ).all()
+        }
+        new_folders = identities - groups.keys()
+        result = BookingImportResult(
+            source_rows=count,
+            unique_bookings=len(rows),
+            duplicate_rows=statistics["duplicate_rows"],
+            new_bookings=len(rows) - len(existing),
+            existing_bookings=len(existing),
+            new_folders=len(new_folders),
+            applied=body.apply,
+            sample_keys=[r.key.key for r in rows[:10]],
+        )
+        if not body.apply:
+            return result
+        for row in rows:
+            identity = (row.key.cw_number, row.key.station_code)
+            if identity not in groups:
+                group = BookingGroup(
+                    cw_number=row.key.cw_number,
+                    station_code=row.key.station_code,
+                    supplier_name=row.supplier,
+                    supplier_type=row.kind,
+                    created_by=user.id,
+                    booking_count=0,
+                    last_activity_at=datetime.now(UTC),
+                )
+                session.add(group)
+                groups[identity] = group
+        await session.flush()
+        station_insert = insert(Station).values(
+            [{"code": code} for code in sorted({r.key.station_code for r in rows})]
+        )
+        await session.execute(
+            station_insert.on_duplicate_key_update(code=station_insert.inserted.code)
+        )
+        for row in rows:
+            if row.key.key in existing:
+                continue
+            group = groups[(row.key.cw_number, row.key.station_code)]
+            group.booking_count += 1
+            booking = Booking(
+                booking_key=row.key.key,
+                group_id=group.id,
+                cw_number=row.key.cw_number,
+                station_code=row.key.station_code,
+                period=row.key.period,
+            )
+            session.add(booking)
+            created.append(booking)
+        await session.flush()
+        changed_groups.extend(groups.values())
+        record_audit(
+            session,
+            "bookings_imported",
+            actor_id=user.id,
+            entity_type="booking_import",
+            entity_id=None,
+            context=context,
+            meta={"source_rows": count, "created": len(created), "skipped": len(existing)},
+        )
+    return result

@@ -50,6 +50,92 @@ KEY = "CW2154654-RDU-2609"
 ALEMBIC_CONFIG = Path(__file__).resolve().parents[1] / "alembic.ini"
 
 
+async def test_import_preview_apply_rerun_and_station_month_inheritance(rig):
+    data = (
+        "Booking Number\tSuppliers\tStation Code\n"
+        "CW2143505-JFK-2609\tNew York Marriott Marquis - JFK\tJFK\n"
+        "CW2143505-EWR-2609\tNew York Marriott Marquis - EWR\tEWR\n"
+    )
+
+    async def send(apply=False, actor="admin"):
+        return await rig.client.post(
+            "/api/v1/admin/bookings/import",
+            headers=rig.headers[actor],
+            json={"data": data, "apply": apply},
+        )
+
+    assert (await send(actor="agent")).status_code == 403
+    preview = await send()
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["new_bookings"] == 2
+    assert not (await rig.get("/bookings/lookup", key="CW2143505-JFK-2609")).json()["exists"]
+    imported = await send(True)
+    assert imported.status_code == 200, imported.text
+    assert imported.json()["new_bookings"] == 2
+    for indexed in (True, False):
+        rig.app.state.key_index.ready = indexed
+        for station in ("JFK", "EWR"):
+            found = await rig.get("/bookings/lookup", key=f"CW2143505-{station}-2609")
+            assert found.status_code == 200, found.text
+            item = found.json()
+            assert item["exists"] and item["group"]["station_code"] == station
+            assert item["snapshot"]["last_status"] is None
+            assert item["snapshot"]["supplier_type"] == "unclassified"
+            assert item["history"]["items"] == []
+        ambiguous = await rig.get("/bookings/lookup", key="CW2143505-2609")
+        assert ambiguous.json()["resolution"]["status"] == "ambiguous"
+        assert len(ambiguous.json()["resolution"]["candidates"]) == 2
+    classified = await rig.client.patch(
+        "/api/v1/folders/CW2143505-JFK",
+        headers=rig.headers["admin"],
+        json={"supplier_type": "hotel"},
+    )
+    assert classified.status_code == 200, classified.text
+    again = await send(True)
+    assert again.status_code == 200, again.text
+    assert again.json()["new_bookings"] == 0
+    assert again.json()["existing_bookings"] == 2
+    month = await rig.get("/bookings/lookup", key="CW2143505-JFK-2610")
+    assert month.json()["group"]["supplier_type"] == "hotel"
+    assert not month.json()["exists"]
+    ewr = await rig.get("/bookings/lookup", key="CW2143505-EWR-2609")
+    assert ewr.json()["group"]["supplier_type"] == "unclassified"
+
+
+async def test_operator_dataset_when_supplied(rig):
+    path = os.environ.get("IMPORT_CHECK_FILE")
+    if not path:
+        pytest.skip("No operator-provided dataset for this run")
+    data = await asyncio.to_thread(Path(path).read_text, encoding="utf-8-sig")
+    response = await rig.client.post(
+        "/api/v1/admin/bookings/import",
+        headers=rig.headers["admin"],
+        json={"data": data, "apply": True},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["unique_bookings"] == 239
+    assert response.json()["duplicate_rows"] == 3
+    for key in [
+        "CWXXXXXXX1-PTP-2609",
+        "CWXXXX-LAS-2609",
+        "CW2137352-CPT-2609",
+        "CW2137352-JNB-2609",
+        "CW2124898-CMN-2609",
+        "CW2124898-RAK-2609",
+    ]:
+        found = await rig.get("/bookings/lookup", key=key)
+        assert found.status_code == 200 and found.json()["exists"], found.text
+    async with rig.app.state.engine.connect() as connection:
+        books = (
+            await connection.execute(
+                select(Booking.last_status_id, Booking.last_note_id, Booking.is_done)
+            )
+        ).all()
+        assert len(books) == 239 and all(
+            r.last_status_id is None and r.last_note_id is None and not r.is_done for r in books
+        )
+
+
 @dataclass
 class Rig:
     app: object
@@ -255,16 +341,18 @@ async def test_supplier_reuse_and_station_write_rules(rig):
         result.status_code == 200
         and result.json()["snapshot"]["supplier"]["name"] == "Example Hotel"
     )
-    mismatch = await rig.save(key=KEY.replace("RDU", "YUL"))
-    assert (
-        mismatch.json()["code"] == "STATION_MISMATCH"
-        and mismatch.json()["details"]["suggested_key"] == KEY
-    )
     missing = await rig.save(key="CW2154654-2609")
     assert (
         missing.json()["code"] == "STATION_REQUIRED"
         and missing.json()["details"]["suggested_key"] == KEY
     )
+    other_station = await rig.save(key=KEY.replace("RDU", "YUL"))
+    assert other_station.status_code == 200, other_station.text
+    assert other_station.json()["snapshot"]["station_code"] == "YUL"
+    ambiguous_write = await rig.save(key="CW2154654-2609")
+    assert ambiguous_write.json()["code"] == "STATION_REQUIRED"
+    assert not ambiguous_write.json().get("details")
+
     assert (await rig.save(key="CW9999999-2609")).json()["code"] == "STATION_REQUIRED"
     assert (await rig.save(key="cw2154654-rdu-2609")).json()["code"] == "INVALID_BOOKING_KEY"
     async with rig.app.state.engine.connect() as connection:
@@ -461,7 +549,7 @@ async def test_missing_hot_key_zero_queries_and_folder_edit_invalidates(rig):
         json={"supplier_name": "Updated Supplier", "supplier_type": "transportation"},
     )
     assert result.status_code == 200, result.text
-    assert rig.app.state.key_index.groups["CW2154654"].info.supplier_name == "Updated Supplier"
+    assert rig.app.state.key_index.groups["CW2154654-RDU"].info.supplier_name == "Updated Supplier"
     assert (await rig.get("/bookings/lookup", key=KEY)).json()["snapshot"][
         "supplier_name"
     ] == "Updated Supplier"

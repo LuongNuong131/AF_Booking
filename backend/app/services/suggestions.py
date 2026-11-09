@@ -43,17 +43,16 @@ class Suggestions:
 
     async def find(self, raw, session=None):
         parsed = parse(raw, self.settings.station_code_pattern)
-        if not isinstance(parsed, ParsedKey):
+        if not isinstance(parsed, ParsedKey) or not parsed.cw_number[2:].isdigit():
             return []  # New partial CWs must acquire an explicit station first.
         variants = candidates(parsed)
         if self.index.usable:
             keys = []
             for cw, period in variants:
-                folder = self.index.groups.get(cw)
-                station = folder.info.station_code if folder else parsed.station_code
-                key = f"{cw}-{station}-{period}"
-                if key in self.index.keys:
-                    keys.append(key)
+                for folder in self.index.cw_groups.get(cw, {}).values():
+                    key = f"{cw}-{folder.info.station_code}-{period}"
+                    if key in self.index.keys:
+                        keys.append(key)
             if not keys:
                 return []
         else:

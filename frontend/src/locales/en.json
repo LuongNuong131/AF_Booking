@@ -1,4 +1,7 @@
 {
+  "language": {
+    "title": "Language"
+  },
   "search_placeholder": "Search booking, CW number, station code or supplier…",
   "empty_search": "No results. Try a booking number, CW number, station code or supplier name.",
   "invalid_key": "Invalid booking number. Expected format: CW 1234567-YUL-2608.",
@@ -53,7 +56,8 @@
   "network_offline": "You appear to be offline. Changes will be sent when you reconnect.",
   "supplier_types": {
     "hotel": "Hotel",
-    "transportation": "Transportation"
+    "transportation": "Transportation",
+    "unclassified": "Unclassified"
   },
   "status_labels": {
     "done": "Done",
@@ -565,7 +569,8 @@
     "confirmPassword": "Confirm new password",
     "passwordMismatch": "The new passwords do not match.",
     "invalidDates": "Choose a valid ordered date range in your profile timezone.",
-    "integrity": "Data integrity"
+    "integrity": "Data integrity",
+    "import": "Import bookings"
   },
   "outboxUi": {
     "cannotQueue": "The outbox is full or browser storage is unavailable. Keep this form open and try again.",
@@ -776,5 +781,17 @@
     "confirmPassword": "Confirm new password",
     "savePassword": "Change password",
     "signOut": "Sign out"
+  },
+  "importUi": {
+    "title": "Import bookings without status",
+    "hint": "Paste CSV/TSV with columns Booking Number, Suppliers, Station Code. Optional: Supplier Type (hotel, transportation, unclassified). Existing bookings and supplier details are preserved. No notes, statuses or invoice declarations are created. Multiple stations on a partial CW/period row are expanded into separate bookings; equivalent duplicate names keep the first spelling.",
+    "data": "Booking data",
+    "preview": "Preview import",
+    "counts": "{rows} rows · {unique} unique bookings · {duplicates} duplicates",
+    "plan": "Create {created} bookings and {folders} folders · keep {existing} existing bookings",
+    "apply": "Import these bookings",
+    "done": "Import completed. Refresh Summary to see the bookings.",
+    "file": "Choose CSV/TSV/text file",
+    "fileError": "Could not read the file. Use a UTF-8 text file up to 500 KB."
   }
 }

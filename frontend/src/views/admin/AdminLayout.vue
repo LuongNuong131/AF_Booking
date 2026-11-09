@@ -7,6 +7,7 @@ const sections = [
   'users',
   'audit',
   'bookings',
+  'import',
   'trash',
   'statuses',
   'suppliers',

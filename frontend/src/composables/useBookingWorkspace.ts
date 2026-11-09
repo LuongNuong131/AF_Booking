@@ -47,7 +47,7 @@ export function useBookingWorkspace() {
   const statusCode = ref(''),
     note = ref(''),
     supplierName = ref(''),
-    supplierType = ref<SupplierType>('hotel')
+    supplierType = ref<SupplierType>('unclassified')
   const validation = ref(''),
     draftRestored = ref(false),
     hasDraft = ref(false),
@@ -328,7 +328,7 @@ export function useBookingWorkspace() {
     notes.value = result.history.items
     cursor.value = result.history.next_cursor
     supplierName.value = result.group?.supplier_name ?? ''
-    supplierType.value = result.group?.supplier_type ?? 'hotel'
+    supplierType.value = result.group?.supplier_type ?? 'unclassified'
     hasUpdate.value = newerRemote(value, result.version)
     restoreDraft(value)
     engage()
@@ -511,7 +511,7 @@ export function useBookingWorkspace() {
     invoiceRemoveIds.value = entry.payload.invoices?.remove_ids ?? []
     supplierName.value = entry.payload.supplier_name ?? entry.base.group?.supplier_name ?? ''
     supplierType.value =
-      entry.payload.supplier_type ?? entry.base.group?.supplier_type ?? 'hotel'
+      entry.payload.supplier_type ?? entry.base.group?.supplier_type ?? 'unclassified'
     saveRequest.error.value = entry.error
     saveRequest.state.value = 'error'
     outbox.take(entry.id)

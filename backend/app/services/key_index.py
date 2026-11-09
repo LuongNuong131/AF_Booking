@@ -12,6 +12,7 @@ from app.core.config import Settings
 from app.core.unit_of_work import transaction
 from app.models import Booking, BookingGroup
 from app.schemas.bookings import GroupInfo
+from app.utils.folder_key import folder_key
 from app.utils.supplier import normalize_supplier_name
 
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ class KeyIndex:
         self.keys: dict[str, KeyEntry] = {}
         self.partial: dict[tuple[str, str], dict[str, KeyEntry]] = {}
         self.groups: dict[str, GroupEntry] = {}
+        self.cw_groups: dict[str, dict[str, GroupEntry]] = {}
         self._pending_keys: dict[str, KeyEntry] = {}
         self._pending_groups: dict[str, GroupEntry] = {}
         self._loading = False
@@ -64,18 +66,28 @@ class KeyIndex:
         return self.settings.key_index_enabled and self.ready
 
     def update(self, entry: KeyEntry | None, group: GroupEntry) -> None:
-        if group.info.cw_number not in self.groups and self.on_group_created is not None:
+        identity = folder_key(group.info.cw_number, group.info.station_code)
+        if identity not in self.groups and self.on_group_created is not None:
             self.on_group_created()
         if not self.settings.key_index_enabled:
             return
         if entry:
             self.keys[entry.key] = entry
             self.partial.setdefault((entry.cw_number, entry.period), {})[entry.key] = entry
-        self.groups[group.info.cw_number] = group
+        self.groups[identity] = group
+        self.cw_groups.setdefault(group.info.cw_number, {})[group.info.station_code] = group
         if self._loading:
             if entry:
                 self._pending_keys[entry.key] = entry
-            self._pending_groups[group.info.cw_number] = group
+            self._pending_groups[identity] = group
+
+    def group(self, cw: str, station: str | None = None) -> GroupEntry | None:
+        if station:
+            exact = self.groups.get(folder_key(cw, station))
+            if exact:
+                return exact
+        matches = list(self.cw_groups.get(cw, {}).values())
+        return matches[0] if len(matches) == 1 else None
 
     def matching_groups(
         self,
@@ -151,7 +163,7 @@ class KeyIndex:
                 if not rows:
                     break
                 for row in rows:
-                    groups[row.cw_number] = GroupEntry(
+                    groups[folder_key(row.cw_number, row.station_code)] = GroupEntry(
                         row.id,
                         GroupInfo(
                             **{
@@ -205,6 +217,9 @@ class KeyIndex:
             for entry in keys.values():
                 partial.setdefault((entry.cw_number, entry.period), {})[entry.key] = entry
             self.keys, self.groups, self.partial = keys, groups, partial
+            self.cw_groups = {}
+            for group in groups.values():
+                self.cw_groups.setdefault(group.info.cw_number, {})[group.info.station_code] = group
             self._signature = signature
             self.cache.clear()
             self.ready = True

@@ -102,6 +102,7 @@ async function closeFolder() {
         >{{ t('bookingUi.type')
         }}<select :aria-label="t('bookingUi.type')" v-model="type">
           <option value="">{{ t('bookingUi.allTypes') }}</option>
+          <option value="unclassified">{{ t('supplier_types.unclassified') }}</option>
           <option value="hotel">{{ t('supplier_types.hotel') }}</option>
           <option value="transportation">
             {{ t('supplier_types.transportation') }}
@@ -117,7 +118,7 @@ async function closeFolder() {
       <div class="folder-card-grid summary-folder-grid">
         <FolderCard
           v-for="folder in list.items.value"
-          :key="folder.cw_number"
+          :key="folder.cw_number + folder.station_code"
           :folder="folder"
           @open="cw = $event"
         />

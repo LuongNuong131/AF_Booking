@@ -71,7 +71,7 @@ async def listing(
     station_code: Annotated[str | None, Query(max_length=4)] = None,
     period: Annotated[str | None, Query(pattern=r"^[0-9]{2}(0[1-9]|1[0-2])$")] = None,
     supplier: Annotated[str | None, Query(max_length=255)] = None,
-    supplier_type: Literal["hotel", "transportation"] | None = None,
+    supplier_type: Literal["hotel", "transportation", "unclassified"] | None = None,
     status_code: Annotated[str | None, Query(max_length=40)] = None,
     agent_id: Annotated[int | None, Query(gt=0)] = None,
     is_done: bool | None = None,

@@ -307,6 +307,8 @@ High-level release flow:
 6. Build with the real API URL; Vercel routes and exact CSP origins are generated automatically.
 7. Verify `/health`, `/api/v1/ready`, sign-in, role navigation, SPA fallback, and realtime status.
 
+For initial booking imports, English/Vietnamese switching, and a team acceptance checklist, see [docs/acceptance-test-vi.md](docs/acceptance-test-vi.md).
+
 Read the complete provider-specific procedure in [docs/deploy.md](docs/deploy.md), or the first-time Vietnamese walkthrough in [docs/deploy-vi.md](docs/deploy-vi.md). A Git push or a successful local build does not, by itself, establish a live production deployment.
 
 ## Security model

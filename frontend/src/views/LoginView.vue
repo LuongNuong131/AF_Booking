@@ -18,6 +18,7 @@ import { useUiStore } from '../stores/ui'
 import { safeRedirect } from '../utils/navigation'
 import BaseIcon from '../components/BaseIcon.vue'
 import ThemeMenu from '../components/ThemeMenu.vue'
+import LanguageSelect from '../components/LanguageSelect.vue'
 import { useWarmup } from '../composables/useWarmup'
 import RequestStatus from '../components/RequestStatus.vue'
 const { t } = useI18n()
@@ -88,7 +89,7 @@ onBeforeUnmount(() => {
       <p class="story-footer">{{ t('auth.security') }}</p>
     </aside>
     <main class="login-main">
-      <div class="login-toolbar"><ThemeMenu /></div>
+      <div class="login-toolbar"><LanguageSelect /><ThemeMenu /></div>
       <div class="login-form-wrap">
         <div class="mobile-brand brand">
           <span class="brand-mark" aria-hidden="true">{{ t('app.initial') }}</span

@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { provide } from 'vue'
+import { computed, onMounted, onBeforeUnmount, provide, watch } from 'vue'
+import { ElConfigProvider } from 'element-plus'
+import enLocale from 'element-plus/es/locale/lang/en'
+import viLocale from 'element-plus/es/locale/lang/vi'
+import { validLanguage } from './i18n'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './stores/auth'
@@ -8,7 +12,14 @@ import { createShortcutRegistry, shortcutRegistryKey } from './composables/useBo
 import BaseIcon from './components/BaseIcon.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
 import PwaUpdateBanner from './components/PwaUpdateBanner.vue'
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const componentLocale = computed(() => locale.value === 'vi' ? viLocale : enLocale)
+watch(locale, value => { document.documentElement.lang = value }, { immediate: true })
+function syncLanguage(event: StorageEvent) {
+  if (event.key === 'booking.language') locale.value = validLanguage(event.newValue)
+}
+onMounted(() => window.addEventListener('storage', syncLanguage))
+onBeforeUnmount(() => window.removeEventListener('storage', syncLanguage))
 const auth = useAuthStore(),
   ui = useUiStore(),
   route = useRoute(),
@@ -24,6 +35,7 @@ async function retryRoute() {
 }
 </script>
 <template>
+  <ElConfigProvider :locale="componentLocale">
   <PwaUpdateBanner />
   <div v-if="ui.routeFailed" class="route-retry global-route-retry" role="alert">
     <span>{{ t('route.slow') }}</span
@@ -57,4 +69,5 @@ async function retryRoute() {
       </button>
     </div>
   </div>
+  </ElConfigProvider>
 </template>

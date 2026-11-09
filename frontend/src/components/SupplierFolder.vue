@@ -41,7 +41,7 @@ function newMonth() {
   if (!value.value || !/^20\d{2}-(0[1-9]|1[0-2])$/.test(month.value)) return
   emit(
     'open',
-    build_key(props.cw, value.value.folder.station_code, month.value.slice(2).replace('-', '')),
+    build_key(value.value.folder.cw_number, value.value.folder.station_code, month.value.slice(2).replace('-', '')),
   )
 }
 </script>

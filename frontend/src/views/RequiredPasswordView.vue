@@ -7,6 +7,7 @@ import { useRequest } from '../composables/useRequest'
 import { api } from '../api/client'
 import { timeouts } from '../config/timeouts'
 import RequestStatus from '../components/RequestStatus.vue'
+import LanguageSelect from '../components/LanguageSelect.vue'
 const { t } = useI18n(),
   auth = useAuthStore(),
   router = useRouter()
@@ -60,6 +61,7 @@ async function signOut() {
 </script>
 <template>
   <main class="required-password-page">
+    <LanguageSelect />
     <form class="admin-panel" @submit.prevent="save">
       <h1>{{ t('securityUi.changePassword') }}</h1>
       <p>{{ t('securityUi.firstLogin') }}</p>

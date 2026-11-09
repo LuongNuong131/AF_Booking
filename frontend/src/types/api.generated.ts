@@ -21,6 +21,10 @@ export type Attachment = { "id": number; "file_name": string; "mime_type": strin
 
 export type AuditEntry = { "id": number; "user": AgentSummary | null; "action": string; "entity_type": string | null; "entity_id": string | null; "meta": { [key: string]: JsonValue } | null; "ip": string | null; "created_at": string }
 
+export type BookingImportRequest = { "data": string; "apply"?: boolean }
+
+export type BookingImportResult = { "source_rows": number; "unique_bookings": number; "duplicate_rows": number; "new_bookings": number; "existing_bookings": number; "new_folders": number; "applied": boolean; "sample_keys": Array<string> }
+
 export type BookingItem = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "period": string; "period_label": string; "supplier": SupplierSummary; "version": number; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "last_note_preview": string | null; "is_done": boolean; "done_at": string | null; "updated_at": string; "is_stale": boolean; "invoice_state": InvoiceState; "invoice_count": number; "invoices_preview": Array<string>; "supplier_name": string; "supplier_type": SupplierType; "my_pending_tasks"?: number; "my_watching"?: boolean; "stale_hours"?: number | null }
 
 export type BookingLookup = { "booking_key": string | null; "display_key": string | null; "exists": boolean; "version": number; "resolution": KeyResolution; "format_warning"?: string | null; "done_warning"?: string | null; "snapshot"?: BookingItem | null; "group"?: GroupInfo | null; "group_exists"?: boolean; "suggestions"?: Array<Suggestion>; "my_tasks"?: Array<Task>; "invoices"?: Array<Invoice>; "invoice_rules"?: { [key: string]: string | number }; "history": CursorPage_Note_ }
@@ -257,7 +261,7 @@ export type Suggestion = { "booking_key": string; "display_key": string; "last_s
 
 export type SupplierSummary = { "name": string; "type": SupplierType }
 
-export type SupplierType = "hotel" | "transportation"
+export type SupplierType = "hotel" | "transportation" | "unclassified"
 
 export type SystemHealth = { "generated_at": string; "uptime_seconds": number; "version": string; "window_seconds": number; "percentiles_approximate": boolean; "total": RequestMetrics; "groups": Array<EndpointMetrics>; "db_latency_ms": number | null; "db_error": string | null; "pool": PoolMetrics; "websocket_connections": number; "soft_locks": number; "jobs": Array<JobMetrics>; "slow_queries": Array<SlowQuery>; "points": Array<MetricPoint>; "degraded": boolean; "key_index"?: KeyIndexMetrics; "snapshot_cache"?: SnapshotMetrics; "operational_errors"?: OperationalErrors }
 

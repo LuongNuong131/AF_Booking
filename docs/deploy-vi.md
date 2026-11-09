@@ -110,7 +110,7 @@ chạy trong lúc service ngủ.
    python -m app.scripts.seed
    ```
 
-   Migration hiện tại là `0011`. Seed tạo status mặc định và admin còn thiếu;
+   Migration hiện tại là `0012`. Seed tạo status mặc định và admin còn thiếu;
    chạy lại không đặt lại password của tài khoản đã có. Không dùng seed làm lệnh
    reset mật khẩu. Sau khi seed xong, xóa `ADMIN_PASSWORD`/`ADMIN_USERNAME` khỏi
    environment Render và save/redeploy; tài khoản đã nằm trong database.
@@ -164,7 +164,7 @@ máy trong TiDB nếu cluster giới hạn network. Từ thư mục `backend`, c
 .venv/bin/python -m app.scripts.seed
 ```
 
-Kết quả cần có revision `0011` và lần seed đầu `admin created: True`. Nếu có lỗi,
+Kết quả cần có revision `0012` và lần seed đầu `admin created: True`. Nếu có lỗi,
 xử lý kết nối/TLS/allowlist trước; không dùng `alembic stamp head` để bỏ qua tạo bảng.
 
 ### 4.2 Tạo Web Service Free

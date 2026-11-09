@@ -71,7 +71,7 @@ Expected responses:
 
 A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
-The Blueprint runs `alembic upgrade head` as its pre-deploy command, using the protected database settings. For a manually created service, configure that command or run migrations explicitly before application startup. Free services do not support pre-deploy commands or Render Shell; use the local migration/seed procedure in [deploy-vi.md](deploy-vi.md), including before future schema upgrades. Current head is **`0011`**. Do not run concurrent schema changes in multiple workers. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) and [database-operations.md](database-operations.md).
+The Blueprint runs `alembic upgrade head` as its pre-deploy command, using the protected database settings. For a manually created service, configure that command or run migrations explicitly before application startup. Free services do not support pre-deploy commands or Render Shell; use the local migration/seed procedure in [deploy-vi.md](deploy-vi.md), including before future schema upgrades. Current head is **`0012`**. Do not run concurrent schema changes in multiple workers. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) and [database-operations.md](database-operations.md).
 
 ## 3. Vercel frontend
 
@@ -187,7 +187,7 @@ for storage tradeoffs, dependency audit evidence and verification commands.
 
 ## Prompt 10 optional production settings
 
-Migrate through **0011** before this version starts. Keep one API worker/instance.
+Migrate through **0012** before this version starts. Keep one API worker/instance.
 Backend `SENTRY_DSN` and frontend `VITE_SENTRY_DSN` are optional; leave blank to
 disable them. When enabling frontend Sentry, set `VITE_SENTRY_DSN` in Vercel and
 redeploy. The build adds only the configured Sentry origin to its generated CSP.

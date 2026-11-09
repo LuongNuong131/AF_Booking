@@ -2,10 +2,9 @@
 import { computed } from 'vue'
 import { ElTag } from 'element-plus'
 import 'element-plus/es/components/tag/style/css'
-import { useI18n } from 'vue-i18n'
 import type { StatusSummary } from '../types/api.generated'
+import { statusLabel } from '../utils/statusLabel'
 const props = defineProps<{ status?: StatusSummary | null }>()
-const { t } = useI18n()
 const colors: Record<string, 'success' | 'danger' | 'warning' | 'primary' | 'info'> = {
   DONE: 'success',
   REJECTION: 'danger',
@@ -16,5 +15,5 @@ const colors: Record<string, 'success' | 'danger' | 'warning' | 'primary' | 'inf
 const type = computed(() => colors[props.status?.code || ''] || 'info')
 </script>
 <template>
-  <ElTag :type="type" effect="light" size="small">{{ status?.label || t('common.unknown') }}</ElTag>
+  <ElTag :type="type" effect="light" size="small">{{ statusLabel(status) }}</ElTag>
 </template>

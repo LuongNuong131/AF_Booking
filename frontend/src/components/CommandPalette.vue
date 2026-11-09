@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { folderKey } from '../utils/folderKey'
 import { computed, ref, inject, watch, nextTick } from 'vue'
 import { ElDialog } from 'element-plus'
 import { useRouter } from 'vue-router'
@@ -119,12 +120,12 @@ const commands = computed<Command[]>(() => {
     })
   for (const folder of folders.recent)
     commands.push({
-      id: `folder:${folder.cw_number}`,
+      id: `folder:${folderKey(folder)}`,
       label: `${t('collabUi.recentFolders')} · ${folder.cw_number} — ${folder.supplier_name}`,
       action: () =>
         router.push({
           name: 'summary-folder',
-          params: { cw: folder.cw_number },
+          params: { cw: folderKey(folder) },
         }),
     })
   return commands

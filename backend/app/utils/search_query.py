@@ -6,7 +6,7 @@ from collections.abc import Collection
 from dataclasses import dataclass
 from enum import StrEnum
 
-from app.utils.booking_key import DASHES, ParsedKey, PartialKey, normalize, parse
+from app.utils.booking_key import CW_PATTERN, DASHES, ParsedKey, PartialKey, normalize, parse
 
 
 class QueryKind(StrEnum):
@@ -57,9 +57,13 @@ def classify_query(
             QueryKind.PARTIAL_KEY, parsed.normalized, parsed.cw_number, period=parsed.period
         )
     key_form = normalize(raw)
-    cw = re.fullmatch(r"(CW[0-9]{0,10})(?:-([A-Z]{1,4}))?", key_form, re.ASCII)
+    cw = re.fullmatch(rf"({CW_PATTERN}|CW[0-9]{{0,4}})(?:-([A-Z]{{1,4}}))?", key_form, re.ASCII)
     if cw and (cw[2] is None or re.fullmatch(station_pattern, cw[2], re.ASCII)):
-        kind = QueryKind.CW_NUMBER if len(cw[1]) >= 7 else QueryKind.CW_PREFIX
+        kind = (
+            QueryKind.CW_NUMBER
+            if re.fullmatch(CW_PATTERN, cw[1], re.ASCII)
+            else QueryKind.CW_PREFIX
+        )
         return ClassifiedQuery(kind, key_form, cw[1], cw[2])
     station_period = re.fullmatch(r"([A-Z]{1,4})-([0-9]{2}(?:0[1-9]|1[0-2]))", key_form, re.ASCII)
     if station_period and re.fullmatch(station_pattern, station_period[1], re.ASCII):

@@ -1,4 +1,4 @@
-import { normalizeBookingKey, parseBookingKey } from './bookingKey'
+import { CW_PATTERN, normalizeBookingKey, parseBookingKey } from './bookingKey'
 
 export type QueryKind =
   | 'invoice'
@@ -45,10 +45,10 @@ export function classifyQuery(
     }
   const key = normalizeBookingKey(raw),
     pattern = new RegExp(`^(?:${stationPattern})$`)
-  const cw = /^(CW[0-9]{0,10})(?:-([A-Z]{1,4}))?$/.exec(key)
+  const cw = new RegExp(`^(${CW_PATTERN}|CW[0-9]{0,4})(?:-([A-Z]{1,4}))?$`).exec(key)
   if (cw && (!cw[2] || pattern.test(cw[2])))
     return {
-      kind: cw[1]!.length >= 7 ? 'cw_number' : 'cw_prefix',
+      kind: new RegExp(`^${CW_PATTERN}$`).test(cw[1]!) ? 'cw_number' : 'cw_prefix',
       query: key,
       cw_number: cw[1],
       station_code: cw[2],

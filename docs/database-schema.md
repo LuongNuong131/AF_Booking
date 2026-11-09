@@ -202,3 +202,19 @@ Run `alembic upgrade head` once as a release step; never edit migrations 0001–
 Plan selection on synthetic fixtures is not a production latency guarantee. Compare
 provider-side rows examined/latency and write rate after rollout before concluding
 the indexes improved production performance.
+
+## Migration 0012: supplier classification and station folders
+
+A folder is unique on `(cw_number, station_code)`. The old CW-only unique index
+is replaced without changing existing IDs or booking references. Supplier type
+adds `unclassified` as an explicit default; existing hotel/transportation values
+are preserved. Bookings may still have no notes/status. Special CW identifiers
+with 4–10 uppercase alphanumeric characters (including at least one letter) are
+accepted in addition to the existing 5–10 digit identifiers.
+
+Admin import is preview-first and insert-only, accepts up to 1000 CSV/TSV source
+rows, expands explicit multi-station partial keys, and refuses conflicting
+duplicates atomically. It preserves existing metadata and snapshots. Supplier
+classification is retained across periods for the same CW/station. Downgrade
+refuses to remove unclassified values or multi-station folders; operators must
+resolve representability before returning to the previous schema.

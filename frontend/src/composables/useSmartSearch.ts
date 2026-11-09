@@ -1,3 +1,4 @@
+import { folderKey } from '../utils/folderKey'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useFoldersStore } from '../stores/folders'
 import { useRequest } from './useRequest'
@@ -44,7 +45,7 @@ export function useSmartSearch(w: Workspace, opened: (key: string) => void) {
   const folderName = computed(() =>
     cw.value
       ? (store.detail(cw.value)?.folder.supplier_name ??
-        (w.current?.group?.cw_number === cw.value ? w.current.group.supplier_name : ''))
+        (w.current?.group && folderKey(w.current.group) === cw.value ? w.current.group.supplier_name : ''))
       : '',
   )
   function stop() {
@@ -61,7 +62,7 @@ export function useSmartSearch(w: Workspace, opened: (key: string) => void) {
   }
   function markOpened() {
     if (w.key) {
-      if (w.current?.group_exists && w.current.group) cw.value = w.current.group.cw_number
+      if (w.current?.group_exists && w.current.group) cw.value = folderKey(w.current.group)
       opened(w.key)
     }
   }
@@ -152,7 +153,7 @@ export function useSmartSearch(w: Workspace, opened: (key: string) => void) {
       return
     }
     if (level.value === 'root' && result.value?.kind === 'folder' && !request.pending.value) {
-      openFolder(result.value.folder.cw_number)
+      openFolder(folderKey(result.value.folder))
       return
     }
     if (w.input.trim()) {

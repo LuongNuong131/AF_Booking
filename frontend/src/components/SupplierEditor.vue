@@ -59,6 +59,7 @@ async function save() {
       ><label
         >{{ t('bookingUi.type')
         }}<select v-model="type">
+          <option value="unclassified">{{ t('supplier_types.unclassified') }}</option>
           <option value="hotel">{{ t('supplier_types.hotel') }}</option>
           <option value="transportation">
             {{ t('supplier_types.transportation') }}

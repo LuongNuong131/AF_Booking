@@ -1,5 +1,6 @@
 import { zonedToday } from './summaryFilters'
-import { formatDateTime, validTimeZone } from './dateTime'
+import { validTimeZone } from './dateTime'
+import { i18n } from '../i18n'
 export interface ReminderPreferences {
   timezone: string
   default_remind_time: string
@@ -87,14 +88,14 @@ export function validateReminder(
 export function confirmation(day: string, clock: string, zone: string) {
   const instant = reminderInstant(day, clock, zone)
   if (!instant) return null
-  const text = formatDateTime(instant, zone)
+  const locale = i18n.global.locale.value === 'vi' ? 'vi-VN' : 'en-GB'
   return {
-    weekday: new Intl.DateTimeFormat('en-GB', {
+    weekday: new Intl.DateTimeFormat(locale, {
       weekday: 'short',
       timeZone: zone,
     }).format(new Date(instant)),
-    date: text.slice(0, 11),
-    time: text.slice(12),
+    date: new Intl.DateTimeFormat(locale, { day: '2-digit', month: 'short', year: 'numeric', timeZone: zone }).format(new Date(instant)),
+    time: new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23', timeZoneName: 'short', timeZone: zone }).format(new Date(instant)),
   }
 }
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { folderKey } from '../utils/folderKey'
 import { onScopeDispose, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
@@ -16,7 +17,7 @@ const { t } = useI18n(),
   store = useFoldersStore()
 let stop: (() => void) | undefined
 watch(
-  () => props.folder.cw_number,
+  () => folderKey(props.folder),
   (cw) => {
     stop?.()
     stop = store.watchFolder(cw)
@@ -32,7 +33,7 @@ onScopeDispose(() => stop?.())
     class="folder-card"
     :class="{ selectable }"
     :data-search-result="selectable ? '' : undefined"
-    @click="selectable && $emit('open', folder.cw_number)"
+    @click="selectable && $emit('open', folderKey(folder))"
   >
     <div class="folder-card-heading">
       <BaseIcon name="folder" />

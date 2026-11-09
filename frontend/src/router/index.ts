@@ -1,3 +1,4 @@
+import { isFolderKey } from '../utils/folderKey'
 import { createRouter, createWebHistory, type RouterHistory } from 'vue-router'
 import type { Pinia } from 'pinia'
 import { useAuthStore } from '../stores/auth'
@@ -108,6 +109,7 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
               roles: ['admin'],
             },
             children: [
+              { path: 'import', name: 'admin-import', component: () => import('../views/admin/AdminImport.vue') },
               { path: '', name: 'admin', redirect: { name: 'admin-users' } },
               {
                 path: 'users',
@@ -178,7 +180,7 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
           .trim()
           .toUpperCase()
           .replace(/^CW\s+/, 'CW')
-      if (!/^CW\d{5,10}$/.test(cw)) return { name: 'summary', query: { view: 'folders' } }
+      if (!isFolderKey(cw)) return { name: 'summary', query: { view: 'folders' } }
       if (raw !== cw)
         return {
           name: 'summary-folder',

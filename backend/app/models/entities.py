@@ -67,7 +67,7 @@ class Station(CreatedAt, Base):
 class BookingGroup(Timestamps, Base):
     __tablename__ = "booking_groups"
     __table_args__ = (
-        UniqueConstraint("cw_number", name="cw_number"),
+        UniqueConstraint("cw_number", "station_code", name="uq_booking_groups_cw_station"),
         Index(
             "ix_booking_groups_station_type_activity",
             "station_code",
@@ -86,8 +86,10 @@ class BookingGroup(Timestamps, Base):
     station_code: Mapped[str] = mapped_column(ascii_varchar(4), nullable=False)
     supplier_name: Mapped[str] = mapped_column(mysql.VARCHAR(255), nullable=False)
     supplier_name_normalized: Mapped[str] = mapped_column(mysql.VARCHAR(255), nullable=False)
-    supplier_type: Mapped[Literal["hotel", "transportation"]] = mapped_column(
-        mysql.ENUM("hotel", "transportation"), nullable=False
+    supplier_type: Mapped[Literal["hotel", "transportation", "unclassified"]] = mapped_column(
+        mysql.ENUM("hotel", "transportation", "unclassified"),
+        nullable=False,
+        server_default="unclassified",
     )
     booking_count: Mapped[int] = mapped_column(
         mysql.INTEGER(unsigned=True), server_default=text("0")

@@ -276,21 +276,20 @@ class BookingReads:
     async def resolve(self, raw: str):
         parsed = parse(raw, self.settings.station_code_pattern)
         key = parsed.key if isinstance(parsed, ParsedKey) else normalize(raw)
+        cw = parsed.cw_number if parsed else None
+        station = parsed.station_code if isinstance(parsed, ParsedKey) else None
         if self.index.usable:
             entry = self.index.keys.get(key)
-            group = (
-                self.index.groups.get(parsed.cw_number)
-                if parsed
-                else (self.index.groups.get(entry.cw_number) if entry else None)
-            )
+            group = self.index.group(cw, station) if cw else None
             matches = (
-                list(self.index.partial.get((parsed.cw_number, parsed.period), {}).values())
+                list(self.index.partial.get((cw, parsed.period), {}).values())
                 if isinstance(parsed, PartialKey)
                 else []
             )
-            # Candidates use their own folder, including legacy multi-station data.
             candidate_groups = self.index.groups
         else:
+            from app.utils.folder_key import folder_key
+
             async with self.tx() as session:
                 row = (
                     (
@@ -309,35 +308,30 @@ class BookingReads:
                     else None
                 )
                 entry = KeyEntry(*row) if row else None
-                cw = parsed.cw_number if parsed else (entry.cw_number if entry else None)
-                folder = (
+                folders = (
                     (
-                        await session.execute(
-                            select(
-                                BookingGroup.id,
-                                BookingGroup.cw_number,
-                                BookingGroup.station_code,
-                                BookingGroup.supplier_name,
-                                BookingGroup.supplier_type,
-                            ).where(BookingGroup.cw_number == cw)
+                        await session.scalars(
+                            select(BookingGroup).where(BookingGroup.cw_number == cw)
                         )
-                    ).first()
+                    ).all()
                     if cw
-                    else None
+                    else []
                 )
-                group = (
-                    GroupEntry(
-                        folder.id,
+                candidate_groups = {
+                    folder_key(f.cw_number, f.station_code): GroupEntry(
+                        f.id,
                         GroupInfo(
-                            cw_number=folder.cw_number,
-                            station_code=folder.station_code,
-                            supplier_name=folder.supplier_name,
-                            supplier_type=folder.supplier_type,
+                            cw_number=f.cw_number,
+                            station_code=f.station_code,
+                            supplier_name=f.supplier_name,
+                            supplier_type=f.supplier_type,
                         ),
                     )
-                    if folder
-                    else None
-                )
+                    for f in folders
+                }
+                group = candidate_groups.get(folder_key(cw, station)) if station else None
+                if group is None and len(candidate_groups) == 1:
+                    group = next(iter(candidate_groups.values()))
                 rows = (
                     (
                         await session.execute(
@@ -348,17 +342,13 @@ class BookingReads:
                                 Booking.cw_number,
                                 Booking.period,
                                 Booking.station_code,
-                            ).where(
-                                Booking.cw_number == parsed.cw_number,
-                                Booking.period == parsed.period,
-                            )
+                            ).where(Booking.cw_number == cw, Booking.period == parsed.period)
                         )
                     ).all()
                     if isinstance(parsed, PartialKey)
                     else []
                 )
                 matches = [KeyEntry(*row) for row in rows]
-                candidate_groups = {cw: group} if group else {}
         if isinstance(parsed, PartialKey):
             if len(matches) > 1:
                 candidates = [
@@ -366,8 +356,10 @@ class BookingReads:
                         key=e.key,
                         display_key=to_display(e.key),
                         station_code=e.station_code,
-                        supplier_name=candidate_groups[e.cw_number].info.supplier_name
-                        if e.cw_number in candidate_groups
+                        supplier_name=candidate_groups[
+                            f"{e.cw_number}-{e.station_code}"
+                        ].info.supplier_name
+                        if f"{e.cw_number}-{e.station_code}" in candidate_groups
                         else "",
                     )
                     for e in sorted(matches, key=lambda e: e.key)
@@ -387,6 +379,7 @@ class BookingReads:
             if matches:
                 entry = matches[0]
                 key = entry.key
+                group = candidate_groups.get(f"{entry.cw_number}-{entry.station_code}")
             elif group:
                 key = build_key(
                     parsed.cw_number,

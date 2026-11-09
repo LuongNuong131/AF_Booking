@@ -1,4 +1,5 @@
 import { isValid, parseISO } from 'date-fns'
+import { i18n } from '../i18n'
 
 export function validTimeZone(value: unknown, fallback = 'UTC'): string {
   if (typeof value === 'string') {
@@ -14,7 +15,7 @@ export function validTimeZone(value: unknown, fallback = 'UTC'): string {
 export function formatDateTime(value: string | Date, timeZone = 'UTC'): string {
   const date = typeof value === 'string' ? parseISO(value) : value
   if (!isValid(date)) return ''
-  const parts = new Intl.DateTimeFormat('en-GB', {
+  const parts = new Intl.DateTimeFormat(i18n.global.locale.value === 'vi' ? 'vi-VN' : 'en-GB', {
     timeZone: validTimeZone(timeZone),
     day: '2-digit',
     month: 'short',

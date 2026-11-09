@@ -67,10 +67,12 @@ async def test_station_sections_period_and_global_pagination(rig):
         assert result["total"] == 2 and [s["type"] for s in result["sections"]] == [
             "hotel",
             "transportation",
+            "unclassified",
         ]
         assert all(
             s["items"][0]["cw_number"] and s["items"][0]["supplier_name"]
             for s in result["sections"]
+            if s["items"]
         )
     first = (await rig.get("/search", q="YUL", size=1)).json()
     second = (await rig.get("/search", q="YUL", size=1, page=2)).json()
@@ -341,6 +343,7 @@ async def test_station_exists_without_folders_and_unknown_code_remains_supplier_
     assert station["sections"] == [
         {"type": "hotel", "items": []},
         {"type": "transportation", "items": []},
+        {"type": "unclassified", "items": []},
     ]
     assert (await rig.get("/search", q="ABC")).json()["items"][0]["cw_number"] == CW
     assert (await rig.get("/folders", q=CW + "-YUL")).json()["total"] == 1

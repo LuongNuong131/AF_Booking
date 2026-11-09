@@ -29,6 +29,6 @@ it('shows supplier identity, type, station, months, latest status and stale/open
   expect(wrapper.find('svg').exists()).toBe(true)
   expect(wrapper.get('time').attributes('datetime')).toBe(folder().last_activity_at)
   await wrapper.get('button').trigger('click')
-  expect(wrapper.emitted('open')?.[0]).toEqual([CW])
+  expect(wrapper.emitted('open')?.[0]).toEqual([`${CW}-YUL`])
   wrapper.unmount()
 })
