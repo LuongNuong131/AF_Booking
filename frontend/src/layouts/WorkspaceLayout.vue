@@ -82,6 +82,13 @@ async function logout() {
         </button>
       </div>
     </aside>
+    <button
+      v-if="mobileOpen"
+      type="button"
+      class="mobile-nav-backdrop"
+      :aria-label="t('nav.toggle')"
+      @click="mobileOpen = false"
+    />
     <div class="main-panel">
       <header class="topbar">
         <div class="topbar-context">
