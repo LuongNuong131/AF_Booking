@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, defineAsyncComponent } from 'vue'
+import { computed, ref, defineAsyncComponent, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useSystemHealthStore } from '../stores/systemHealth'
@@ -8,6 +8,7 @@ import { useUiStore } from '../stores/ui'
 import { useRealtimeStore } from '../stores/realtime'
 import { useWorkspaceShortcuts } from '../composables/useBookingShortcuts'
 import BaseIcon from '../components/BaseIcon.vue'
+import BrandMark from '../components/BrandMark.vue'
 import UserAvatar from '../components/UserAvatar.vue'
 import NotificationBell from '../components/NotificationBell.vue'
 import ThemeMenu from '../components/ThemeMenu.vue'
@@ -28,6 +29,13 @@ const auth = useAuthStore(),
 const route = useRoute(),
   router = useRouter()
 const mobileOpen = ref(false)
+const menuTrigger = ref<HTMLButtonElement | null>(null)
+const sidebar = ref<HTMLElement | null>(null)
+watch(mobileOpen, async open => {
+  await nextTick()
+  if (open) sidebar.value?.querySelector<HTMLElement>('.nav-item')?.focus()
+  else menuTrigger.value?.focus()
+})
 useWorkspaceShortcuts()
 const links = computed(() => [
   { name: 'home', icon: 'home' },
@@ -44,12 +52,12 @@ async function logout() {
 }
 </script>
 <template>
-  <div class="workspace" :class="{ 'mobile-nav-open': mobileOpen }">
+  <div class="workspace" :class="{ 'mobile-nav-open': mobileOpen }" @keydown.esc="mobileOpen = false">
     <a href="#main-content" class="skip-link">{{ t('nav.skip') }}</a>
-    <aside class="sidebar">
+    <aside ref="sidebar" class="sidebar">
       <RouterLink to="/" class="brand" @click="mobileOpen = false"
-        ><span class="brand-mark" aria-hidden="true">{{ t('app.initial') }}</span
-        ><span
+        ><BrandMark />
+        <span
           >{{ t('app.name') }}<small>{{ t('app.workspace') }}</small></span
         ></RouterLink
       >
@@ -95,13 +103,14 @@ async function logout() {
         <div class="topbar-context">
           <button
             type="button"
+            ref="menuTrigger"
             class="icon-button mobile-toggle"
             :aria-label="t('nav.toggle')"
             :aria-expanded="mobileOpen"
             @click="mobileOpen = !mobileOpen"
           >
             <BaseIcon name="menu" /></button
-          ><span class="workspace-label">{{ t('app.workspace') }}</span
+          ><RouterLink class="mobile-brand-title" to="/"><BrandMark /><span>{{ t('app.name') }}</span></RouterLink><span class="workspace-label">{{ t('app.workspace') }}</span
           ><span
             class="connection-status"
             :class="realtime.state"
@@ -110,8 +119,8 @@ async function logout() {
           >
         </div>
         <div class="header-actions">
-          <button type="button" class="button palette-trigger" @click="ui.paletteOpen = true">
-            {{ t('collabUi.palette') }} <kbd>Ctrl+K</kbd></button
+          <button type="button" class="button palette-trigger" :aria-label="t('collabUi.palette')" :title="t('collabUi.palette')" @click="ui.paletteOpen = true">
+            <BaseIcon name="search" /><span class="palette-label">{{ t('collabUi.palette') }}</span> <kbd>Ctrl+K</kbd></button
           ><OutboxPanel /><LanguageSelect /><ThemeMenu /><button
             type="button"
             class="icon-button desktop-help"

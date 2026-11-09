@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, toRef, onScopeDispose } from 'vue'
-import { useVirtualList } from '@vueuse/core'
+import { useVirtualList, useMediaQuery } from '@vueuse/core'
 import { useBookingsStore } from '../stores/bookings'
 import { useRequest } from '../composables/useRequest'
 import { timeouts } from '../config/timeouts'
@@ -17,6 +17,8 @@ import { useTasksStore } from '../stores/tasks'
 import InvoiceBadge from './InvoiceBadge.vue'
 import StatusTag from './StatusTag.vue'
 import EmptyState from './EmptyState.vue'
+const compact = useMediaQuery('(max-width: 640px)')
+const virtualized = computed(() => props.rows.length > 50 && !compact.value)
 const { t } = useI18n(),
   auth = useAuthStore()
 const props = defineProps<{
@@ -39,7 +41,7 @@ const nav = useListNavigation(
     watch: (i) => collaboration.toggle(props.rows[i]!.booking_key, props.rows[i]!.my_watching),
     task: (i) => tasks.openDialog(props.rows[i]!.booking_key),
     reveal: (i) => {
-      if (props.rows.length > 50) scrollTo(i)
+      if (virtualized.value) scrollTo(i)
     },
     page: (delta) => {
       const p = (props.page ?? 1) + delta
@@ -57,7 +59,7 @@ const { list, containerProps, scrollTo } = useVirtualList(toRef(props, 'rows'), 
   overscan: 3,
 })
 const shown = computed(() =>
-  props.rows.length > 50 ? list.value.map((v) => v.data) : props.rows,
+  virtualized.value ? list.value.map((v) => v.data) : props.rows,
 )
 const store = useBookingsStore()
 const prefetch = useRequest((ctx, key: string) => store.lookup(ctx, key), {
@@ -97,8 +99,8 @@ const columns = [
   <div
     ref="root"
     class="booking-table-wrap"
-    :class="{ 'table-virtual': rows.length > 50 }"
-    v-bind="rows.length > 50 ? containerProps : {}"
+    :class="{ 'table-virtual': virtualized }"
+    v-bind="virtualized ? containerProps : {}"
     :aria-busy="loading"
   >
     <div
@@ -124,7 +126,7 @@ const columns = [
       </thead>
       <tbody>
         <tr
-          v-if="rows.length > 50 && list[0]?.index"
+          v-if="virtualized && list[0]?.index"
           aria-hidden="true"
           :style="{ height: `${list[0]!.index * 100}px` }"
         >
@@ -141,7 +143,7 @@ const columns = [
           @focusout="leave"
           @click="$emit('open', row.booking_key)"
         >
-          <td>
+          <td :data-label="t(`bookingUi.${columns[0]}`)">
             <button
               type="button"
               class="table-booking-link"
@@ -158,11 +160,11 @@ const columns = [
               >{{ t('bookingUi.stale') }}</span
             >
           </td>
-          <td>{{ row.supplier.name }}</td>
-          <td>{{ row.station_code }}</td>
-          <td>{{ t(`supplier_types.${row.supplier.type}`) }}</td>
-          <td>{{ row.period_label }}</td>
-          <td>
+          <td :data-label="t(`bookingUi.${columns[1]}`)">{{ row.supplier.name }}</td>
+          <td :data-label="t(`bookingUi.${columns[2]}`)">{{ row.station_code }}</td>
+          <td :data-label="t(`bookingUi.${columns[3]}`)">{{ t(`supplier_types.${row.supplier.type}`) }}</td>
+          <td :data-label="t(`bookingUi.${columns[4]}`)">{{ row.period_label }}</td>
+          <td :data-label="t(`bookingUi.${columns[5]}`)">
             <InvoiceBadge
               :state="row.invoice_state"
               :count="row.invoice_count"
@@ -170,22 +172,22 @@ const columns = [
               :done="row.is_done"
             />
           </td>
-          <td><StatusTag :status="row.last_status" /></td>
-          <td>{{ row.last_position || t('common.unknown') }}</td>
-          <td>{{ row.last_agent?.full_name || t('common.unknown') }}</td>
-          <td class="table-note">
+          <td :data-label="t(`bookingUi.${columns[6]}`)"><StatusTag :status="row.last_status" /></td>
+          <td :data-label="t(`bookingUi.${columns[7]}`)">{{ row.last_position || t('common.unknown') }}</td>
+          <td :data-label="t(`bookingUi.${columns[8]}`)">{{ row.last_agent?.full_name || t('common.unknown') }}</td>
+          <td :data-label="t(`bookingUi.${columns[9]}`)" class="table-note">
             <span :title="row.last_note_preview || undefined">{{
               row.last_note_preview || t('bookingUi.noNote')
             }}</span>
           </td>
-          <td>
+          <td :data-label="t(`bookingUi.${columns[10]}`)">
             <time :datetime="row.updated_at">{{
               formatDateTime(row.updated_at, auth.timezone)
             }}</time>
           </td>
         </tr>
         <tr
-          v-if="rows.length > 50"
+          v-if="virtualized"
           aria-hidden="true"
           :style="{
             height: `${Math.max(0, rows.length - (list.at(-1)?.index ?? -1) - 1) * 100}px`,

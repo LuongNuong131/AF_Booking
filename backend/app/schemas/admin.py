@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 
@@ -211,6 +212,15 @@ class PerformanceReport(ContractModel):
 class BookingImportRequest(ContractModel):
     data: str = Field(min_length=1, max_length=500000)
     apply: bool = False
+    station_source: Literal["strict", "station_code", "booking_number"] = "strict"
+    fill_missing_supplier: bool = False
+
+
+class ImportAdjustment(ContractModel):
+    row: int
+    field: str
+    before: str
+    after: str
 
 
 class BookingImportResult(ContractModel):
@@ -222,9 +232,31 @@ class BookingImportResult(ContractModel):
     new_folders: int
     applied: bool
     sample_keys: list[str]
+    adjustments: list[ImportAdjustment] = []
+
+
+class MonthlyBookingResult(ContractModel):
+    period: str
+    created: int
+    processed_folders: int
+    enabled: bool
+
+
+class MonthlyBookingStatus(ContractModel):
+    enabled: bool
+    day: int
+    timezone: str
+    due_period: str
+    next_run_at: UtcTimestamp
+    active_folders: int
+    pending_folders: int
+    external_trigger_configured: bool
 
 
 ADMIN_MODELS = (
+    ImportAdjustment,
+    MonthlyBookingResult,
+    MonthlyBookingStatus,
     BookingImportRequest,
     BookingImportResult,
     AdminUser,

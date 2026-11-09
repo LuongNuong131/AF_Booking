@@ -50,6 +50,69 @@ KEY = "CW2154654-RDU-2609"
 ALEMBIC_CONFIG = Path(__file__).resolve().parents[1] / "alembic.ini"
 
 
+async def test_monthly_generation_cutoff_inheritance_pause_and_no_duplicates(rig):
+    data = (
+        "Booking Number,Suppliers,Station Code,Supplier Type,Recurring\n"
+        "CW2143505-JFK-2604,Example Hotel,JFK,hotel,true\n"
+        "CW2143505-JFK-2609,Example Hotel,JFK,hotel,true\n"
+        "CW2143505-EWR-2609,Example Hotel,EWR,hotel,false\n"
+    )
+    response = await rig.client.post(
+        "/api/v1/admin/bookings/import",
+        headers=rig.headers["admin"],
+        json={"data": data, "apply": True},
+    )
+    assert response.status_code == 200, response.text
+    saved = await rig.save(key="CW2143505-JFK-2609", version=1, note="September record")
+    assert saved.status_code == 200, saved.text
+    service = rig.app.state.monthly_bookings
+    before = await service.run(datetime(2026, 11, 24, 16, 59, tzinfo=UTC))
+    assert before.period == "2610" and before.created == 1
+    assert not (await rig.get("/bookings/lookup", key="CW2143505-JFK-2605")).json()["exists"]
+    after = await service.run(datetime(2026, 11, 24, 17, 0, tzinfo=UTC))
+    assert after.period == "2611" and after.created == 1
+    assert (await service.run(datetime(2026, 11, 25, tzinfo=UTC))).created == 0
+    found = (await rig.get("/bookings/lookup", key="CW2143505-JFK-2611")).json()
+    assert found["exists"] and found["group"]["supplier_type"] == "hotel"
+    assert found["snapshot"]["last_status"] is None and found["history"]["items"] == []
+    assert found["snapshot"]["invoice_state"] == "unknown"
+    assert not (await rig.get("/bookings/lookup", key="CW2143505-EWR-2611")).json()["exists"]
+    original = (await rig.get("/bookings/lookup", key="CW2143505-JFK-2609")).json()
+    assert original["history"]["items"][0]["note"] == "September record"
+    paused = await rig.client.patch(
+        "/api/v1/folders/CW2143505-JFK",
+        headers=rig.headers["admin"],
+        json={"recurring_enabled": False},
+    )
+    assert paused.status_code == 200 and not paused.json()["recurring_enabled"]
+    assert (await service.run(datetime(2026, 12, 25, tzinfo=UTC))).created == 0
+    rig.app.state.key_index.ready = False
+    assert not (await rig.get("/bookings/lookup", key="CW2143505-JFK-2612")).json()["group"][
+        "recurring_enabled"
+    ]
+
+
+async def test_monthly_external_trigger_needs_its_own_secret(rig):
+    from pydantic import SecretStr
+
+    route = "/api/v1/internal/bookings/monthly-rollover"
+    assert (await rig.client.post(route)).status_code == 401
+    rig.app.state.settings.monthly_booking_token = SecretStr("monthly-test-" + "q" * 40)
+    assert (await rig.client.post(route, headers=rig.headers["admin"])).status_code == 401
+    assert (await rig.get("/admin/bookings/monthly", user="agent")).status_code == 403
+    assert (
+        await rig.client.post("/api/v1/admin/bookings/monthly/run", headers=rig.headers["agent"])
+    ).status_code == 403
+    response = await rig.client.post(
+        route, headers={"Authorization": "Bearer monthly-test-" + "q" * 40}
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["created"] == 0
+    status = await rig.get("/admin/bookings/monthly", user="admin")
+    assert status.status_code == 200 and status.json()["day"] == 25
+    assert status.json()["external_trigger_configured"]
+
+
 async def test_import_preview_apply_rerun_and_station_month_inheritance(rig):
     data = (
         "Booking Number\tSuppliers\tStation Code\n"
@@ -145,6 +208,37 @@ async def test_operator_dataset_when_supplied(rig):
         assert len(books) == 239 and all(
             r.last_status_id is None and r.last_note_id is None and not r.is_done for r in books
         )
+
+
+async def test_full_operator_csv_when_supplied(rig):
+    path = os.environ.get("FULL_IMPORT_CHECK_FILE")
+    if not path:
+        pytest.skip("No full operator CSV supplied")
+    data = (await asyncio.to_thread(Path(path).read_bytes)).decode("utf-8-sig")
+    options = dict(data=data, station_source="station_code", fill_missing_supplier=True)
+    preview = await rig.client.post(
+        "/api/v1/admin/bookings/import",
+        headers=rig.headers["admin"],
+        json={**options, "apply": False},
+    )
+    assert preview.status_code == 200, preview.text
+    assert preview.json()["source_rows"] == 1425
+    assert preview.json()["unique_bookings"] == 1400
+    assert preview.json()["duplicate_rows"] == 35
+    assert len(preview.json()["adjustments"]) == 14
+    imported = await rig.client.post(
+        "/api/v1/admin/bookings/import",
+        headers=rig.headers["admin"],
+        json={**options, "apply": True},
+    )
+    assert imported.status_code == 200, imported.text
+    assert imported.json()["new_bookings"] == 1400
+    repeat = await rig.client.post(
+        "/api/v1/admin/bookings/import",
+        headers=rig.headers["admin"],
+        json={**options, "apply": True},
+    )
+    assert repeat.status_code == 200 and repeat.json()["new_bookings"] == 0
 
 
 @dataclass

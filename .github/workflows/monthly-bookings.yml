@@ -1,0 +1,30 @@
+name: Generate monthly bookings
+
+on:
+  schedule:
+    # 17:00 UTC on the 24th = 00:00 on the 25th in Vietnam.
+    - cron: '0 17 24 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monthly-bookings
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    if: vars.AF_BOOKING_API_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate the due booking period
+        env:
+          AF_BOOKING_API_URL: ${{ vars.AF_BOOKING_API_URL }}
+          MONTHLY_BOOKING_TOKEN: ${{ secrets.MONTHLY_BOOKING_TOKEN }}
+        run: python scripts/trigger_monthly_bookings.py

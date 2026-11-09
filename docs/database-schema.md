@@ -218,3 +218,13 @@ duplicates atomically. It preserves existing metadata and snapshots. Supplier
 classification is retained across periods for the same CW/station. Downgrade
 refuses to remove unclassified values or multi-station folders; operators must
 resolve representability before returning to the previous schema.
+
+## Migration 0013: monthly recurrence
+
+Adds `booking_groups.recurring_enabled` (default true) and nullable
+`recurring_through_period`, with a due-folder index. Existing booking rows are
+preserved. The scheduler creates clean missing periods from each folder's latest eligible
+booking through the business-timezone cutoff, under a per-folder row lock.
+Apply `alembic upgrade head` before starting the new backend. See
+[CSV and monthly schedule setup](monthly-bookings-vi.md) for the day-25 rule,
+Free-instance wake-up workflow, and folder opt-out.

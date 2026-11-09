@@ -325,6 +325,7 @@ class BookingReads:
                             station_code=f.station_code,
                             supplier_name=f.supplier_name,
                             supplier_type=f.supplier_type,
+                            recurring_enabled=f.recurring_enabled,
                         ),
                     )
                     for f in folders

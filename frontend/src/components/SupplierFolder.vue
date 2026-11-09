@@ -60,7 +60,8 @@ function newMonth() {
       ><FolderCard :folder="value.folder" :selectable="false" /><SupplierEditor
         :cw="cw"
         :name="value.folder.supplier_name"
-        :type="value.folder.supplier_type" />
+        :type="value.folder.supplier_type"
+        :recurring="value.folder.recurring_enabled" />
       <header class="folder-month-heading">
         <h3>{{ t('folderUi.months') }}</h3>
         <button type="button" class="button" @click="adding = !adding">

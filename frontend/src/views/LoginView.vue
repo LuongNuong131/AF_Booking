@@ -17,6 +17,7 @@ import { useAuthStore } from '../stores/auth'
 import { useUiStore } from '../stores/ui'
 import { safeRedirect } from '../utils/navigation'
 import BaseIcon from '../components/BaseIcon.vue'
+import BrandMark from '../components/BrandMark.vue'
 import ThemeMenu from '../components/ThemeMenu.vue'
 import LanguageSelect from '../components/LanguageSelect.vue'
 import { useWarmup } from '../composables/useWarmup'
@@ -63,8 +64,8 @@ onBeforeUnmount(() => {
     >
     <aside class="login-story">
       <RouterLink to="/" class="brand"
-        ><span class="brand-mark" aria-hidden="true">{{ t('app.initial') }}</span
-        ><span
+        ><BrandMark />
+        <span
           >{{ t('app.name') }}<small>{{ t('app.workspace') }}</small></span
         ></RouterLink
       >
@@ -92,8 +93,8 @@ onBeforeUnmount(() => {
       <div class="login-toolbar"><LanguageSelect /><ThemeMenu /></div>
       <div class="login-form-wrap">
         <div class="mobile-brand brand">
-          <span class="brand-mark" aria-hidden="true">{{ t('app.initial') }}</span
-          ><span>{{ t('app.name') }}</span>
+          <BrandMark />
+          <span>{{ t('app.name') }}</span>
         </div>
         <p class="login-kicker">{{ t('app.workspace') }}</p>
         <h2>{{ t('auth.signIn') }}</h2>

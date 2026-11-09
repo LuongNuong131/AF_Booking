@@ -31,6 +31,40 @@ def test_malformed_delimited_text_becomes_validation_error():
     assert error.value.details == {"reason": "invalid_delimited_text"}
 
 
+def test_source_repairs_are_explicit_and_reported():
+    data = (
+        HEADER + "CW2161901-MXP-2608\tWorld Transfer - MXP - LIN\tMXP\n"
+        "CW2161901-LIN-2608\t\tLIN\n"
+        "CW2132604-JFK-2608\tCrew Limousine - EWR - JFK\tEWR\n"
+    )
+    with pytest.raises(ApiException):
+        import_rows(data)
+    stats = {}
+    rows, count = import_rows(
+        data, stats, station_source="station_code", fill_missing_supplier=True
+    )
+    assert count == 3 and len(rows) == 3
+    assert rows[1].supplier == "World Transfer - MXP - LIN"
+    assert rows[2].key.key == "CW2132604-EWR-2608"
+    assert [r["row"] for r in stats["adjustments"]] == [3, 4]
+
+
+def test_large_source_limit_and_spelling_aliases():
+    row = "CW2159754-JRO-2606\tGRAN MELIA ARUSHA-JRO\tJRO\n"
+    rows, count = import_rows(HEADER + row * 1425)
+    assert count == 1425 and len(rows) == 1
+    with pytest.raises(ApiException) as error:
+        import_rows(HEADER + row * 2001)
+    assert error.value.details == {"max_rows": 2000}
+
+
+def test_recurring_column_is_optional_and_one_off_is_preserved():
+    rows, _ = import_rows(
+        HEADER.rstrip() + "\tRecurring\nCWXXXX-LAS-2610\tExample Supplier\tLAS\tfalse\n"
+    )
+    assert not rows[0].recurring
+
+
 def test_import_deduplicates_and_keeps_stations_without_inventing_type():
     rows, count = import_rows(
         HEADER + "CW2143505-JFK-2609\tMarriott Hotel\tJFK\n"

@@ -153,6 +153,7 @@ class KeyIndex:
                                 BookingGroup.station_code,
                                 BookingGroup.supplier_name,
                                 BookingGroup.supplier_type,
+                                BookingGroup.recurring_enabled,
                                 BookingGroup.last_activity_at,
                             )
                             .where(BookingGroup.id > last)
@@ -173,6 +174,7 @@ class KeyIndex:
                                     "station_code",
                                     "supplier_name",
                                     "supplier_type",
+                                    "recurring_enabled",
                                 )
                             }
                         ),

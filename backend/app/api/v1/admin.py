@@ -16,6 +16,8 @@ from app.schemas.admin import (
     BookingImportRequest,
     BookingImportResult,
     DeleteNote,
+    MonthlyBookingResult,
+    MonthlyBookingStatus,
     PerformanceReport,
     ProfileStats,
     ResetPassword,
@@ -46,6 +48,31 @@ async def import_bookings(body: BookingImportRequest, request: Request, user: Ad
     from app.services.booking_import import run_import
 
     return await run_import(request.app.state, body, user, AuditContext.from_request(request))
+
+
+@router.get("/admin/bookings/monthly", response_model=MonthlyBookingStatus)
+async def monthly_status(request: Request, user: Admin):
+    return await request.app.state.monthly_bookings.status()
+
+
+@router.post("/admin/bookings/monthly/run", response_model=MonthlyBookingResult)
+@timeout(120)
+async def monthly_run(request: Request, user: Admin):
+    return await request.app.state.monthly_bookings.run()
+
+
+@router.post("/internal/bookings/monthly-rollover", response_model=MonthlyBookingResult)
+@timeout(120)
+async def monthly_external(request: Request):
+    import secrets
+
+    expected = request.app.state.settings.monthly_booking_token
+    supplied = request.headers.get("authorization", "")
+    if expected is None or not secrets.compare_digest(
+        supplied.encode("utf-8"), ("Bearer " + expected.get_secret_value()).encode("utf-8")
+    ):
+        raise ApiException(ErrorCode.UNAUTHORIZED)
+    return await request.app.state.monthly_bookings.run()
 
 
 @router.get("/admin/users", response_model=Page[AdminUser])

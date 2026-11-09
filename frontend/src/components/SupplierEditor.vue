@@ -7,17 +7,18 @@ import { useRequest } from '../composables/useRequest'
 import { timeouts } from '../config/timeouts'
 import type { GroupInfo, SupplierType } from '../types/api.generated'
 import RequestStatus from './RequestStatus.vue'
-const props = defineProps<{ cw: string; name: string; type: SupplierType }>(),
+const props = withDefaults(defineProps<{ cw: string; name: string; type: SupplierType; recurring?: boolean }>(), { recurring: true }),
   emit = defineEmits<{ updated: [group: GroupInfo] }>()
 const { t } = useI18n(),
   auth = useAuthStore(),
   store = useFoldersStore(),
   editing = ref(false),
   name = ref(props.name),
-  type = ref(props.type)
+  type = ref(props.type),
+  recurring = ref(props.recurring)
 const allowed = computed(() => ['admin', 'qc'].includes(auth.user?.role ?? ''))
 const request = useRequest(
-  (ctx, body: { supplier_name: string; supplier_type: SupplierType }) =>
+  (ctx, body: { supplier_name: string; supplier_type: SupplierType; recurring_enabled: boolean }) =>
     store.rename(ctx, props.cw, body),
   { timeoutMs: timeouts.profile },
 )
@@ -27,12 +28,14 @@ watch(
     if (!editing.value) {
       name.value = props.name
       type.value = props.type
+      recurring.value = props.recurring
     }
   },
 )
 function start() {
   name.value = props.name
   type.value = props.type
+  recurring.value = props.recurring
   editing.value = true
 }
 async function save() {
@@ -40,6 +43,7 @@ async function save() {
   const result = await request.run({
     supplier_name: name.value.trim(),
     supplier_type: type.value,
+    recurring_enabled: recurring.value,
   })
   if (result) {
     editing.value = false
@@ -66,6 +70,8 @@ async function save() {
           </option>
         </select></label
       >
+      <label class="recurring-toggle"><input v-model="recurring" type="checkbox" />{{ t('monthlyUi.recurring') }}</label>
+      <p class="muted">{{ t('monthlyUi.folderHint') }}</p>
       <div class="supplier-editor-actions">
         <button
           type="submit"

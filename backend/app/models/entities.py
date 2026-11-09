@@ -78,6 +78,9 @@ class BookingGroup(Timestamps, Base):
         Index("ix_booking_groups_supplier_name_normalized", "supplier_name_normalized"),
         Index("ix_booking_groups_last_activity_at", "last_activity_at"),
         Index("ix_booking_groups_created_by", "created_by"),
+        Index(
+            "ix_booking_groups_recurring_due", "recurring_enabled", "recurring_through_period", "id"
+        ),
         TABLE_OPTIONS,
     )
 
@@ -98,6 +101,10 @@ class BookingGroup(Timestamps, Base):
         UTCDateTime(), server_default=text("CURRENT_TIMESTAMP(3)")
     )
     created_by: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    recurring_enabled: Mapped[bool] = mapped_column(
+        mysql.BOOLEAN, default=True, server_default=text("1")
+    )
+    recurring_through_period: Mapped[str | None] = mapped_column(ascii_char(4))
 
     @validates("supplier_name")
     def update_normalized_name(self, attribute: str, value: str) -> str:

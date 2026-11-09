@@ -21,9 +21,9 @@ export type Attachment = { "id": number; "file_name": string; "mime_type": strin
 
 export type AuditEntry = { "id": number; "user": AgentSummary | null; "action": string; "entity_type": string | null; "entity_id": string | null; "meta": { [key: string]: JsonValue } | null; "ip": string | null; "created_at": string }
 
-export type BookingImportRequest = { "data": string; "apply"?: boolean }
+export type BookingImportRequest = { "data": string; "apply"?: boolean; "station_source"?: "strict" | "station_code" | "booking_number"; "fill_missing_supplier"?: boolean }
 
-export type BookingImportResult = { "source_rows": number; "unique_bookings": number; "duplicate_rows": number; "new_bookings": number; "existing_bookings": number; "new_folders": number; "applied": boolean; "sample_keys": Array<string> }
+export type BookingImportResult = { "source_rows": number; "unique_bookings": number; "duplicate_rows": number; "new_bookings": number; "existing_bookings": number; "new_folders": number; "applied": boolean; "sample_keys": Array<string>; "adjustments"?: Array<ImportAdjustment> }
 
 export type BookingItem = { "booking_key": string; "display_key": string; "cw_number": string; "station_code": string; "period": string; "period_label": string; "supplier": SupplierSummary; "version": number; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "last_note_preview": string | null; "is_done": boolean; "done_at": string | null; "updated_at": string; "is_stale": boolean; "invoice_state": InvoiceState; "invoice_count": number; "invoices_preview": Array<string>; "supplier_name": string; "supplier_type": SupplierType; "my_pending_tasks"?: number; "my_watching"?: boolean; "stale_hours"?: number | null }
 
@@ -67,21 +67,23 @@ export type EndpointMetrics = { "requests": number; "errors": number; "error_rat
 
 export type ErrorCode = "PASSWORD_CHANGE_REQUIRED" | "PAYLOAD_TOO_LARGE" | "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
 
-export type FolderCard = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string; "booking_count": number; "open_count": number; "stale_count"?: number; "last_activity_at": string; "latest": FolderLatest | null }
+export type FolderCard = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "recurring_enabled"?: boolean; "station_code": string; "booking_count": number; "open_count": number; "stale_count"?: number; "last_activity_at": string; "latest": FolderLatest | null }
 
 export type FolderDetail = { "folder": FolderCard; "months": Array<MonthRow> }
 
 export type FolderLatest = { "booking_key": string; "display_key": string; "period_label": string; "status": StatusSummary | null; "agent": AgentSummary | null }
 
-export type FolderPatch = { "supplier_name"?: string | null; "supplier_type"?: SupplierType | null }
+export type FolderPatch = { "supplier_name"?: string | null; "supplier_type"?: SupplierType | null; "recurring_enabled"?: boolean | null }
 
 export type ForceLogoutData = { "reason": string; "message": string }
 
 export type ForceLogoutFrame = { "event": "session.force_logout"; "data": ForceLogoutData }
 
-export type GroupInfo = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string }
+export type GroupInfo = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "station_code": string; "recurring_enabled"?: boolean }
 
 export type HeartbeatFrame = { "event": "ping" | "pong"; "data": EmptyData }
+
+export type ImportAdjustment = { "row": number; "field": string; "before": string; "after": string }
 
 export type InputKind = "full" | "partial" | "invalid"
 
@@ -150,6 +152,10 @@ export type MessageResponse = { "message": string }
 export type MetricPoint = { "requests": number; "errors": number; "error_rate": number; "p50_ms": number | null; "p95_ms": number | null; "p99_ms": number | null; "at": string; "db_latency_ms": number | null }
 
 export type MonthRow = { "booking_key": string; "display_key": string; "period": string; "period_label": string; "last_status": StatusSummary | null; "last_position": string | null; "last_agent": AgentSummary | null; "is_done": boolean; "is_stale": boolean; "updated_at": string; "invoice_state": InvoiceState; "invoice_count": number }
+
+export type MonthlyBookingResult = { "period": string; "created": number; "processed_folders": number; "enabled": boolean }
+
+export type MonthlyBookingStatus = { "enabled": boolean; "day": number; "timezone": string; "due_period": string; "next_run_at": string; "active_folders": number; "pending_folders": number; "external_trigger_configured": boolean }
 
 export type MutationResult = { "ok"?: boolean }
 

@@ -1,0 +1,4 @@
+Booking Number,Suppliers,Station Code,Supplier Type,Recurring
+CW9999001-SGN-2610,"Example Hotel, Saigon",SGN,hotel,true
+CW9999002-HAN-2610,Example Crew Transport,HAN,transportation,true
+CWXXXX-LAS-2610,Example Supplier,LAS,,false

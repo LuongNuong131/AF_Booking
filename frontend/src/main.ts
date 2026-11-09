@@ -6,6 +6,7 @@ import { createAppRouter } from './router'
 import { installApplication } from './runtime/application'
 import { useUiStore } from './stores/ui'
 import './style.css'
+import './responsive.css'
 import { initializeMonitoring } from './monitoring'
 import { installPwa } from './pwa/register'
 

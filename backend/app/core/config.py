@@ -72,6 +72,9 @@ class Settings(BaseSettings):
     vapid_private_key: SecretStr | None = None
     vapid_subject: str | None = None
     scheduler_enabled: bool = True
+    monthly_booking_enabled: bool = True
+    monthly_booking_day: int = Field(default=25, ge=1, le=28)
+    monthly_booking_token: SecretStr | None = Field(default=None, min_length=32, max_length=512)
     scheduler_job_timeout_seconds: float = Field(default=120, gt=0, le=300)
     task_job_interval_seconds: float = Field(default=30, gt=0, le=60)
     stale_job_interval_seconds: float = Field(default=1200, gt=0, le=1800)
@@ -112,6 +115,7 @@ class Settings(BaseSettings):
         "vapid_public_key",
         "vapid_private_key",
         "vapid_subject",
+        "monthly_booking_token",
         mode="before",
     )
     @classmethod

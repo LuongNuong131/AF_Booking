@@ -253,7 +253,7 @@ export const useFoldersStore = defineStore('folders', () => {
   async function rename(
     ctx: RequestContext,
     cw: string,
-    body: { supplier_name: string; supplier_type: FolderCard['supplier_type'] },
+    body: { supplier_name: string; supplier_type: FolderCard['supplier_type']; recurring_enabled?: boolean },
   ) {
     const generation = epoch
     const group = (
@@ -269,6 +269,7 @@ export const useFoldersStore = defineStore('folders', () => {
       if (folderKey(card) === cw || (!cw.includes('-') && card.cw_number === cw)) {
         card.supplier_name = group.supplier_name
         card.supplier_type = group.supplier_type
+        card.recurring_enabled = group.recurring_enabled
       }
     })
     persistRecent()

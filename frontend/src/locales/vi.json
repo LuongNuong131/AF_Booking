@@ -67,12 +67,12 @@
     "hrs_preview": "Xem trước HRS"
   },
   "app": {
-    "name": "Booking Tracker",
+    "name": "AF Booking",
     "workspace": "Không gian làm việc nhóm",
     "navigationLabel": "Điều hướng chính",
     "overview": "Tổng quan",
     "footer": "Một không gian cho mọi booking.",
-    "initial": "BT",
+    "initial": "AF",
     "version": "Không gian làm việc"
   },
   "overview": {
@@ -426,7 +426,7 @@
     "notePrompt": "Đã hoàn tất công việc. Thêm ghi chú booking mới?",
     "addNote": "Thêm ghi chú",
     "browserTitle": "Nhắc nhở booking",
-    "documentTitle": "({count}) công việc đến hạn · Booking Tracker",
+    "documentTitle": "({count}) công việc đến hạn · AF Booking",
     "preferences": "Tùy chọn nhắc nhở",
     "defaultTime": "Giờ nhắc mặc định",
     "defaultSkip": "Mặc định bỏ cuối tuần",
@@ -792,6 +792,38 @@
     "apply": "Nhập các booking này",
     "done": "Đã nhập thành công. Tải lại Tổng hợp để xem booking.",
     "file": "Chọn tệp CSV/TSV/văn bản",
-    "fileError": "Không thể đọc tệp. Dùng tệp văn bản UTF-8 tối đa 500 KB."
+    "fileError": "Không thể đọc tệp. Dùng tệp văn bản UTF-8 tối đa 500 KB.",
+    "template": "Tải mẫu CSV",
+    "columnsTitle": "Cấu trúc CSV",
+    "columnsHint": "Ba cột đầu bắt buộc. Supplier Type: hotel, transportation hoặc để trống. Recurring: true (lặp hằng tháng, mặc định) hoặc false (một lần). Tên có dấu phẩy cần đặt trong dấu nháy kép. Lưu dưới dạng CSV UTF-8.",
+    "errorRow": "Kiểm tra dòng nguồn {row}, gồm mã booking, station và nhà cung cấp.",
+    "options": "Xử lý dữ liệu chưa khớp",
+    "stationPolicy": "Khi hai trường station không khớp",
+    "strict": "Yêu cầu hai trường khớp nhau",
+    "useStation": "Lấy theo cột Station Code",
+    "useBooking": "Lấy station trong Booking Number",
+    "fillMissing": "Điền tên supplier còn trống khi cùng CW chỉ có một supplier rõ ràng trong file",
+    "reviewHint": "Kiểm tra các thay đổi đề xuất bên dưới trước khi nhập. Giữ nguyên dữ liệu đã có trong database. Tối đa 2.000 dòng nguồn mỗi file.",
+    "changes": "Xem {count} thay đổi đề xuất",
+    "row": "Dòng nguồn",
+    "field": "Trường",
+    "before": "Trước",
+    "after": "Sau"
+  },
+  "monthlyUi": {
+    "title": "Chu kỳ booking hằng tháng",
+    "rule": "Ngày 25 tạo booking của tháng hiện tại để xử lý trong tháng tiếp theo. Booking mới chưa có trạng thái, ghi chú hoặc khai báo hóa đơn.",
+    "state": "Tự động sinh",
+    "enabled": "Đã bật",
+    "disabled": "Đã tắt",
+    "folders": "Nhà cung cấp lặp hằng tháng",
+    "due": "Kỳ hiện có thể sinh",
+    "next": "Lần sinh kế tiếp",
+    "pending": "{count} thư mục nhà cung cấp cần sinh bù.",
+    "freeHint": "Render Free có thể ngủ. Cấu hình lịch GitHub Actions để gọi đánh thức; nếu chưa cấu hình, hệ thống sẽ sinh bù khi máy chủ hoạt động.",
+    "catchUp": "Sinh bù booking đến kỳ",
+    "created": "Đã tạo {count} booking đến kỳ {period}.",
+    "recurring": "Tự sinh booking nhà cung cấp này mỗi tháng",
+    "folderHint": "Áp dụng cho CW và station này. Tắt vẫn giữ booking đã có. Bật lại sẽ sinh bù các kỳ còn thiếu."
   }
 }

@@ -2,7 +2,7 @@
 
 ## Deploy bản cập nhật
 
-Backend cần migration `0012` trước khi sử dụng bản frontend này. Render Free giữ
+Backend cần migration `0013` trước khi sử dụng bản frontend này. Render Free giữ
 Start Command có `alembic upgrade head && ... uvicorn ...`; không chạy seed nếu đã
 xóa biến ADMIN_USERNAME/ADMIN_PASSWORD. Sau khi Render Live, kiểm tra
 `https://af-booking.onrender.com/api/v1/ready`, rồi đợi Vercel deploy cùng commit.
@@ -47,8 +47,8 @@ status, note, hóa đơn hoặc công việc của booking/thư mục đã có.
 Dùng tài khoản Admin hoặc QC, mở thư mục nhà cung cấp của đúng **CW + station** →
 **Edit supplier / Sửa nhà cung cấp** → chọn Hotel hoặc Transportation → lưu.
 Sau đó dùng **New month / Tháng mới** trong thư mục. Booking của tháng mới kế thừa
-supplier và loại đã lưu. Không cần phân loại lại từng tháng. Việc này không tự
-tạo trước booking cho tất cả các tháng và không áp loại của JFK sang EWR.
+supplier và loại đã lưu. Không cần phân loại lại từng tháng. Lịch tự động ngày 25 tạo kỳ đã đến hạn cho những thư mục bật sinh tháng;
+không áp loại của JFK sang EWR. Xem [cấu hình lịch và CSV](monthly-bookings-vi.md).
 
 Thông tin đã lưu tồn tại trong TiDB qua refresh, đăng xuất và deploy lại. Giao diện
 vẫn cho phép Admin/QC chủ động sửa metadata; file import không ghi đè các sửa đổi đó.

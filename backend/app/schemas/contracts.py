@@ -254,6 +254,7 @@ class FolderCard(ContractModel):
     cw_number: str
     supplier_name: str
     supplier_type: SupplierType
+    recurring_enabled: bool = True
     station_code: str
     booking_count: int
     open_count: int

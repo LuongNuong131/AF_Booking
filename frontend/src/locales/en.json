@@ -67,12 +67,12 @@
     "hrs_preview": "HRS Preview"
   },
   "app": {
-    "name": "Booking Tracker",
+    "name": "AF Booking",
     "workspace": "Team workspace",
     "navigationLabel": "Main navigation",
     "overview": "Overview",
     "footer": "One workspace. Every booking.",
-    "initial": "BT",
+    "initial": "AF",
     "version": "Workspace"
   },
   "overview": {
@@ -426,7 +426,7 @@
     "notePrompt": "Task completed. Add a new booking note?",
     "addNote": "Add a note",
     "browserTitle": "Booking reminder",
-    "documentTitle": "({count}) Tasks due · Booking Tracker",
+    "documentTitle": "({count}) Tasks due · AF Booking",
     "preferences": "Reminder preferences",
     "defaultTime": "Default reminder time",
     "defaultSkip": "Skip weekends by default",
@@ -792,6 +792,38 @@
     "apply": "Import these bookings",
     "done": "Import completed. Refresh Summary to see the bookings.",
     "file": "Choose CSV/TSV/text file",
-    "fileError": "Could not read the file. Use a UTF-8 text file up to 500 KB."
+    "fileError": "Could not read the file. Use a UTF-8 text file up to 500 KB.",
+    "template": "Download CSV template",
+    "columnsTitle": "CSV format",
+    "columnsHint": "First three columns are required. Supplier Type: hotel, transportation, or blank. Recurring: true (monthly, default) or false (one-off). Put names containing commas inside double quotes. Save as CSV UTF-8.",
+    "errorRow": "Check source row {row}, including its booking number, station and supplier.",
+    "options": "Resolve inconsistent source data",
+    "stationPolicy": "When station fields disagree",
+    "strict": "Require both fields to match",
+    "useStation": "Use the Station Code column",
+    "useBooking": "Use the station in Booking Number",
+    "fillMissing": "Fill a missing supplier name only when the same CW has one unambiguous supplier in this file",
+    "reviewHint": "Review all proposed changes below before importing. Existing database records are preserved. Maximum 2,000 source rows per file.",
+    "changes": "Review {count} proposed change(s)",
+    "row": "Source row",
+    "field": "Field",
+    "before": "Before",
+    "after": "After"
+  },
+  "monthlyUi": {
+    "title": "Monthly booking cycle",
+    "rule": "On day 25, create this month’s booking records for work in the following month. New records start without status, notes or invoice declarations.",
+    "state": "Automation",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "folders": "Recurring suppliers",
+    "due": "Period now eligible",
+    "next": "Next generation date",
+    "pending": "{count} supplier folder(s) need catch-up.",
+    "freeHint": "Render Free can sleep. Configure the GitHub Actions monthly trigger to wake it; otherwise generation catches up when the server is awake.",
+    "catchUp": "Generate missing due bookings",
+    "created": "Created {count} booking(s) through period {period}.",
+    "recurring": "Generate this supplier’s bookings every month",
+    "folderHint": "Applies to this CW and station. Turning it off keeps existing bookings. Turning it on again catches up missing periods."
   }
 }

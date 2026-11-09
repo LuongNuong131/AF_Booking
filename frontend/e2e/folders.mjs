@@ -60,10 +60,11 @@ try {
     'Search booking, CW number, station code or supplier…',
   )
   await search.fill('YUL')
-  await expect(page.locator('.station-section')).toHaveCount(2)
+  await expect(page.locator('.station-section')).toHaveCount(3)
   await expect(page.locator('.station-section').first()).toContainText('Hotel')
-  await expect(page.locator('.station-section').last()).toContainText('Transportation')
-  await expect(page.locator('.station-section').last()).toContainText('Montreal Crew Shuttle')
+  await expect(page.locator('.station-section').nth(1)).toContainText('Transportation')
+  await expect(page.locator('.station-section').nth(1)).toContainText('Montreal Crew Shuttle')
+  await expect(page.locator('.station-section').last()).toContainText('Unclassified')
   await search.press('ArrowDown')
   await expect(page.locator('.station-section').first().locator('.folder-card')).toBeFocused()
   await page.keyboard.press('Enter')
@@ -88,7 +89,7 @@ try {
   await expect(page.locator('.supplier-folder .folder-open')).toHaveText('2 open')
   await expect(page.locator('.supplier-folder .month-row').first()).toContainText('Done')
   await expect
-    .poll(() => requests.slice(before).filter((p) => p === `/api/v1/folders/${CW}`).length)
+    .poll(() => requests.slice(before).filter((p) => p === `/api/v1/folders/${CW}-YUL`).length)
     .toBeGreaterThan(0)
   expect(
     requests.slice(before).filter((p) => p === '/api/v1/search' || p === '/api/v1/folders'),
@@ -103,7 +104,7 @@ try {
   await expect(page.locator('.supplier-folder .month-row')).toHaveCount(3)
   const beforeBack = requests.filter((p) => p === '/api/v1/search').length
   await search.press('Backspace')
-  await expect(page.locator('.station-section')).toHaveCount(2)
+  await expect(page.locator('.station-section')).toHaveCount(3)
   // The invalidated SWR result is visible immediately and is revalidated once.
   await expect
     .poll(() => requests.filter((p) => p === '/api/v1/search').length)

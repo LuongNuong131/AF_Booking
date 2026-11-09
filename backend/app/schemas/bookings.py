@@ -22,6 +22,7 @@ class GroupInfo(ContractModel):
     supplier_name: str
     supplier_type: SupplierType
     station_code: str
+    recurring_enabled: bool = True
 
 
 class BookingItem(BookingSnapshot):
@@ -67,6 +68,7 @@ class NoteSaveResponse(ContractModel):
 class FolderPatch(ContractModel):
     supplier_name: str | None = None
     supplier_type: SupplierType | None = None
+    recurring_enabled: bool | None = None
 
 
 class NotificationItem(BookingIdentity):

@@ -10,6 +10,7 @@ import { useAuthStore } from './stores/auth'
 import { useUiStore } from './stores/ui'
 import { createShortcutRegistry, shortcutRegistryKey } from './composables/useBookingShortcuts'
 import BaseIcon from './components/BaseIcon.vue'
+import BrandMark from './components/BrandMark.vue'
 import ErrorBoundary from './components/ErrorBoundary.vue'
 import PwaUpdateBanner from './components/PwaUpdateBanner.vue'
 const { t, locale } = useI18n()
@@ -46,8 +47,8 @@ async function retryRoute() {
   <ErrorBoundary :reset-key="route.fullPath"
     ><RouterView v-if="route.meta.public || auth.isAuthenticated" />
     <div v-else class="initial-shell">
-      <span class="brand-mark" aria-hidden="true">{{ t('app.initial') }}</span
-      ><span>{{ t('common.loading') }}</span>
+      <BrandMark />
+      <span>{{ t('common.loading') }}</span>
     </div></ErrorBoundary
   >
   <div class="notice-stack" aria-live="polite" aria-relevant="additions">

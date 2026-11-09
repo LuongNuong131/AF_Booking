@@ -38,6 +38,7 @@ from app.services.folders import FolderService
 from app.services.integrity import IntegrityService
 from app.services.invoice_service import InvoiceService
 from app.services.key_index import KeyIndex
+from app.services.monthly_bookings import MonthlyBookings
 from app.services.note_search import create_note_search
 from app.services.push import PushService
 from app.services.reports import ReportService
@@ -172,6 +173,13 @@ def create_app(
             application.state.booking_writes,
             ws_manager,
             application.state.reports,
+        )
+        application.state.monthly_bookings = MonthlyBookings(application.state)
+        scheduler.add_job(
+            "bookings.monthly",
+            application.state.monthly_bookings.tick,
+            interval=300,
+            timeout=config.scheduler_job_timeout_seconds,
         )
         application.state.integrity = IntegrityService(
             application.state.engine, config, application.state.admin

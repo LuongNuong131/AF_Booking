@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { folderKey } from '../utils/folderKey'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { parseBookingKey } from '../utils/bookingKey'
@@ -36,9 +37,10 @@ const identity = computed(() =>
     <h2 v-if="booking.group">{{ booking.group.supplier_name }}</h2>
     <SupplierEditor
       v-if="booking.group"
-      :cw="booking.group.cw_number"
+      :cw="folderKey(booking.group)"
       :name="booking.group.supplier_name"
       :type="booking.group.supplier_type"
+      :recurring="booking.group.recurring_enabled"
       @updated="$emit('supplierUpdated')"
     />
     <div class="summary-metadata">

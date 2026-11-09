@@ -90,6 +90,7 @@ class BackendListener:
         "pwa.mjs",
         "security.mjs",
         "deadlines.mjs",
+        "responsive.mjs",
     ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(

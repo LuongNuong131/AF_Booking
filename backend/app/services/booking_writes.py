@@ -40,6 +40,7 @@ def group_entry(group: BookingGroup) -> GroupEntry:
             station_code=group.station_code,
             supplier_name=group.supplier_name,
             supplier_type=group.supplier_type,
+            recurring_enabled=group.recurring_enabled,
         ),
         group.last_activity_at,
     )
@@ -492,6 +493,10 @@ class BookingWrites:
                     group.supplier_name = supplier_name(body.supplier_name)
                 if body.supplier_type is not None:
                     group.supplier_type = body.supplier_type.value
+                if "recurring_enabled" in body.model_fields_set:
+                    if body.recurring_enabled is None:
+                        raise ApiException(ErrorCode.VALIDATION_ERROR)
+                    group.recurring_enabled = body.recurring_enabled
                 group.updated_at = datetime.now(UTC)
                 changed = group_entry(group)
                 record_audit(
