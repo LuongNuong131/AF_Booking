@@ -6,6 +6,9 @@ try {
     (preference !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
   document.documentElement.dataset.theme = dark ? 'dark' : 'light'
   document.documentElement.classList.toggle('dark', dark)
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute('content', dark ? '#11181c' : '#eef2f5')
 } catch {
   /* Storage can be unavailable in private browsing. */
 }

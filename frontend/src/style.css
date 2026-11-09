@@ -4544,3 +4544,83 @@ h2 {
     width: 100%;
   }
 }
+
+
+/* Eye-comfort dark mode: softened contrast, no pure-white surfaces */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --page: #11181c;
+  --surface: #182328;
+  --surface-soft: #202f35;
+  --ink: #e4eeee;
+  --muted: #a5b6ba;
+  --line: #30444b;
+  --primary: #8bd3c7;
+  --primary-hover: #afe4db;
+  --primary-soft: #1e4745;
+  --nav-bg: #0c1418;
+  --nav-ink: #d2e1e2;
+  --nav-muted: #8fa6aa;
+  --nav-active: #193b3d;
+  --success: #78d1b4;
+  --danger: #f2a0a6;
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+  --el-color-primary: #8bd3c7;
+  --el-color-primary-light-3: #a6ddd4;
+  --el-color-primary-light-5: #c0e7e0;
+  --el-color-primary-light-7: #d9f1ed;
+  --el-color-primary-light-9: #eaf8f5;
+  --el-bg-color: #182328;
+  --el-bg-color-page: #11181c;
+  --el-bg-color-overlay: #1d2b30;
+  --el-fill-color: #203036;
+  --el-fill-color-light: #26383e;
+  --el-fill-color-blank: #182328;
+  --el-text-color-primary: #e4eeee;
+  --el-text-color-regular: #c5d3d5;
+  --el-text-color-secondary: #a5b6ba;
+  --el-text-color-placeholder: #82979b;
+  --el-border-color: #30444b;
+  --el-border-color-light: #27383e;
+  --el-mask-color: rgba(0, 0, 0, 0.58);
+}
+:root[data-theme='dark'] body {
+  background: var(--page);
+  -webkit-font-smoothing: antialiased;
+}
+:root[data-theme='dark'] ::selection {
+  color: #10211f;
+  background: #8bd3c7;
+}
+:root[data-theme='dark'] .button.primary {
+  color: #10211f;
+}
+:root[data-theme='dark'] .brand-mark {
+  color: #10211f;
+  background: var(--primary);
+}
+:root[data-theme='dark'] .topbar {
+  background: color-mix(in srgb, var(--surface) 94%, var(--page));
+}
+:root[data-theme='dark'] .booking-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--primary-soft) 70%, var(--surface));
+}
+:root[data-theme='dark'] .el-dialog,
+:root[data-theme='dark'] .el-popover,
+:root[data-theme='dark'] .el-dropdown-menu {
+  background: var(--el-bg-color-overlay);
+  border-color: var(--line);
+}
+:root[data-theme='dark'] .el-input__wrapper,
+:root[data-theme='dark'] .el-textarea__inner,
+:root[data-theme='dark'] .el-select__wrapper {
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line) inset;
+}
+@media (prefers-contrast: more) {
+  :root[data-theme='dark'] {
+    --ink: #f1f8f8;
+    --muted: #c1d0d2;
+    --line: #587078;
+  }
+}

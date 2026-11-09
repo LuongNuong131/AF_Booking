@@ -31,8 +31,12 @@ export const useUiStore = defineStore('ui', () => {
   const noticeTimers = new Map<number, ReturnType<typeof setTimeout>>()
 
   function applyTheme(): void {
+    const dark = resolvedTheme.value === 'dark'
     document.documentElement.dataset.theme = resolvedTheme.value
-    document.documentElement.classList.toggle('dark', resolvedTheme.value === 'dark')
+    document.documentElement.classList.toggle('dark', dark)
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', dark ? '#11181c' : '#eef2f5')
   }
   function setTheme(value: Theme): void {
     theme.value = value
