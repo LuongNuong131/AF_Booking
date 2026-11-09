@@ -265,6 +265,7 @@ async def test_nightly_catchup_once_per_business_day_and_opt_in_autofix(rig):
 
 async def test_new_migration_refines_existing_column_and_preserves_custom_days(rig):
     from alembic.config import Config
+    from alembic.script import ScriptDirectory
     from sqlalchemy import text
 
     from alembic import command
@@ -290,7 +291,9 @@ async def test_new_migration_refines_existing_column_and_preserves_custom_days(r
             )
         )
         assert column.lower().startswith("smallint")
-        assert await conn.scalar(text("SELECT version_num FROM alembic_version")) == "0009"
+        assert await conn.scalar(text("SELECT version_num FROM alembic_version")) == (
+            ScriptDirectory.from_config(config).get_current_head()
+        )
 
 
 async def test_cancelled_check_finishes_as_interrupted_and_source_errors_are_not_autofixed(
