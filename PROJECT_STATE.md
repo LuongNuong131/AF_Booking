@@ -193,7 +193,7 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 - Independent IP/account login protection, strict HS256 required claims, production signing-key validation, bounded text/path/body input and parameterized database session configuration.
 - Exact HTTP/WS origins, inbound WS byte/rate limits, existing slow-client eviction, response headers/no-store, sanitized route/error logging.
 - Shared localStorage tokens, explicit expiry/cross-tab cleanup, one physical WebSocket per same-browser session via Web Locks/BroadcastChannel, dedicated first-password screen.
-- CSP deployment configuration script and Vercel mismatch guard; external theme script, no unsafe script inline/eval, style-only inline exception documented.
+- Build-generated Vercel Build Output API routes and exact CSP origins from the bundle environment; missing/insecure production endpoints fail the build. External theme script, no unsafe script inline/eval, style-only inline exception documented.
 - Whole-frontend vue/no-v-html lint and negative probe, exact dependency pins/hash locks, pip-audit/npm audit gates, automated security regression tests and report in docs/security-report.md.
 - Hosting is still prepared configuration only. Actual Render URL/CORS/CSP and TiDB credentials are entered when provisioning providers; no live deployment is claimed.
 

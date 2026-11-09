@@ -44,8 +44,9 @@ VITE_API_URL=https://YOUR-API.onrender.com/api/v1 \
 VITE_WS_URL=wss://YOUR-API.onrender.com/api/v1/ws npm run build
 ```
 
-The build runs strict Vue/TypeScript checking. Vercel serves `dist` with the committed
-SPA fallback; WSS connects directly to Render. See [deploy.md](deploy.md).
+The build runs strict Vue/TypeScript checking and copies `dist` into
+`.vercel/output/static`, with generated CSP headers and SPA routes in
+`.vercel/output/config.json`. WSS connects directly to Render. See [deploy.md](deploy.md).
 
 ## Structure and session handling
 
@@ -166,6 +167,6 @@ socket fallback; an older tab shows Superseded until resumed.
 
 ESLint enforces vue/no-v-html at error level (`npm run lint`), and
 `npm run test:security` verifies the rule rejects an unsafe component. CSP uses exact
-API/WSS origins from `npm run configure:csp`; style-only inline declarations support
+API/WSS origins generated from the build environment; style-only inline declarations support
 Element Plus/virtual lists, while script inline/eval remains blocked. Details and
 an httpOnly-cookie alternative are in security-report.md.

@@ -47,10 +47,10 @@ message and source-frame locations only. Requests, local variables, breadcrumbs,
 user details and note contents are discarded. Frontend Vue and global exception
 handlers use the same scrubber. Delivery to a real Sentry project was not exercised.
 
-For frontend deployment, run `npm run configure:csp` with the same `VITE_API_URL`,
-optional `VITE_WS_URL` and `VITE_SENTRY_DSN` used for the build. CSP adds only the
-specific Sentry origin to connect-src; the Vercel production mismatch guard still
-checks the final committed header. See [deploy.md](deploy.md).
+For frontend deployment, set `VITE_API_URL`, optional `VITE_WS_URL` and
+`VITE_SENTRY_DSN` in Vercel, then redeploy. The build generates the CSP from those
+same values and adds only the specific Sentry origin to connect-src.
+See [deploy.md](deploy.md).
 
 ## Retention
 

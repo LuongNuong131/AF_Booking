@@ -7,7 +7,7 @@ export function resolveApiBaseUrl(value: string | undefined, production: boolean
   if (!value) {
     if (production)
       throw new Error(
-        'VITE_API_URL is required for production (VITE_API_BASE_URL remains a fallback alias).',
+        'VITE_API_URL is required for production. Set it in Vercel Project Settings > Environment Variables to https://YOUR-API.onrender.com/api/v1, then redeploy. VITE_API_BASE_URL remains a fallback alias.',
       )
     return 'http://localhost:8000/api/v1'
   }

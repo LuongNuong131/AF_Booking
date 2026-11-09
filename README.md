@@ -304,10 +304,10 @@ High-level release flow:
 3. Run the latest Alembic migrations and provision the first Admin account.
 4. Deploy the frontend from the `frontend` directory with Node 24.x.
 5. Configure the real API and WebSocket origins.
-6. Generate and commit the exact CSP origins with `npm run configure:csp`.
+6. Build with the real API URL; Vercel routes and exact CSP origins are generated automatically.
 7. Verify `/health`, `/api/v1/ready`, sign-in, role navigation, SPA fallback, and realtime status.
 
-Read the complete provider-specific procedure in [docs/deploy.md](docs/deploy.md). A Git push or a successful local build does not, by itself, establish a live production deployment.
+Read the complete provider-specific procedure in [docs/deploy.md](docs/deploy.md), or the first-time Vietnamese walkthrough in [docs/deploy-vi.md](docs/deploy-vi.md). A Git push or a successful local build does not, by itself, establish a live production deployment.
 
 ## Security model
 

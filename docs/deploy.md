@@ -1,6 +1,6 @@
 # Deploy on Vercel, Render, and TiDB Cloud
 
-This guide deploys the backend and frontend through Prompt 9. It does not provision provider accounts. Home/Summary/booking, reminder tasks and smart supplier-folder navigation are implemented; Admin/QC/Profile and durable note sending are implemented; invoice management/reconciliation are implemented. Run migrations and initial admin seeding explicitly. No live deployment is performed by committing these files.
+This guide covers the backend and frontend deployment. For a step-by-step Vietnamese walkthrough, including first-time setup and the free Render alternative, see [deploy-vi.md](deploy-vi.md). Provider accounts are configured by the operator. The Render Blueprint runs migrations before deployment; initial admin seeding remains an explicit operator step. Committing these files does not provision a live service.
 
 ## 1. TiDB Cloud
 
@@ -27,6 +27,7 @@ Connect `LuongNuong131/AF_Booking` and create a Blueprint using the root `render
 | Root directory | `backend` |
 | Python | 3.12 (`PYTHON_VERSION=3.12.12` in the Blueprint) |
 | Build | `pip install --require-hashes -r requirements.txt` |
+| Pre-deploy (paid services) | `alembic upgrade head` |
 | Start | `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log --ws websockets-sansio --ws-max-size 4096` |
 | Health path | `/health` |
 | Region | Singapore (`singapore`) |
@@ -70,7 +71,7 @@ Expected responses:
 
 A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
-Run `alembic upgrade head` once as a release/pre-deploy step with the protected database settings. Current head is **`0011`**, which adds user-scoped notification-feed and completed-task list indexes on top of private note snippets, retention indexes, application tables, durable note/task replay, collaboration, daily reports, push subscriptions and password rotation; deploy the latest `head` before starting the API. Do not run concurrent schema changes in every application worker. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) for index rationale, provisional status rules, CHECK compatibility, and destructive rollback semantics, and [database-operations.md](database-operations.md) for release diagnostics and pagination migration guidance.
+The Blueprint runs `alembic upgrade head` as its pre-deploy command, using the protected database settings. For a manually created service, configure that command or run migrations explicitly before application startup. Free services do not support pre-deploy commands or Render Shell; use the local migration/seed procedure in [deploy-vi.md](deploy-vi.md), including before future schema upgrades. Current head is **`0011`**. Do not run concurrent schema changes in multiple workers. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) and [database-operations.md](database-operations.md).
 
 ## 3. Vercel frontend
 
@@ -89,25 +90,23 @@ Import the GitHub repository into Vercel:
 | `VITE_WS_URL` | `wss://YOUR-API.onrender.com/api/v1/ws` (optional; derived from API URL if unset) |
 | `VITE_TIMEOUT_SCALE` | `1` (optional) |
 
-Before importing/building the frontend, wait for Render to assign its public HTTPS
-URL, then run from `frontend` with that real public URL:
+Before building the frontend, wait for Render to assign its public HTTPS URL.
+Set `VITE_API_URL` in **Vercel Project Settings > Environment Variables**, including
+the Production environment (and Preview if you intend to use previews). Then
+redeploy from the latest `main` commit. For a local production build:
 
 ```sh
-VITE_API_URL=https://YOUR-API.onrender.com/api/v1 npm run configure:csp
-git add vercel.json
-git commit -m "Configure production API origins"
-git push
+VITE_API_URL=https://YOUR-API.onrender.com/api/v1 npm run build
 ```
 
-If using an explicit `VITE_WS_URL`, supply the same value to both this command and
-Vercel settings. The script updates the exact HTTP/WSS origins in the committed
-`vercel.json` header. The example `api.example.com` is a build fixture, not a Render
-endpoint. A Vercel build (`VERCEL=1`) rejects a CSP/environment mismatch. Commit the
-updated header **before** deployment; editing `vercel.json` during a build is too
-late for Vercel's configuration read. Custom domain changes require repeating this
-step. This workflow prepares configuration without provisioning a service.
+The build generates `.vercel/output/config.json` and `.vercel/output/static`
+using Vercel's Build Output API v3. The CSP is generated from the same validated
+API, WebSocket and optional Sentry settings as the bundle. Only exact origins are
+allowed. No `configure:csp` command or manual URL commit is needed. Missing API
+configuration and insecure production URLs still fail the build. The example
+`api.example.com` used in CI is a fixture, not a Render endpoint.
 
-`frontend/vercel.json` includes the SPA fallback for client-side routes. Vercel serves the static frontend only; the browser calls Render directly. WebSockets connect directly to Render over WSS rather than through a Vercel serverless function.
+The generated routes include the SPA fallback, security headers, immutable asset caching, and service-worker/manifest cache rules. Vercel serves the static frontend only; the browser calls Render directly. WebSockets connect directly to Render over WSS rather than through a Vercel serverless function.
 
 `VITE_*` values are public and compiled into the bundle. Never put `DATABASE_URL`, database credentials, or signing keys in them. Changing the API URL requires a new frontend build. After obtaining the final Vercel domain, update Render's exact CORS allowlist and redeploy as required.
 
@@ -130,7 +129,7 @@ Prompt 5's Render command selects the tested `websockets-sansio` backend and app
 
 Daily exports default to `EXPORT_BOOKING_KEY_STYLE=display`; set `canonical` only when
 an integration requires it. `EXPORT_TIMEOUT_SECONDS` defaults to 55. Frontend calls
-Render directly; Vercel has no API rewrite or Functions region. `vercel.json` caches
+Render directly; Vercel has no API rewrite or Functions region. The generated routes cache
 hashed `/assets/` for a year with immutable, while Vite inserts API preconnect and
 bundles the local Inter font. Warmup reduces sleeping-API delay after opening Login;
 it does not guarantee a free instance cold-start budget. Use one backend instance/worker
@@ -156,7 +155,7 @@ the actual provider/version is separately verified for FULLTEXT/ngram compatibil
 For live Web Push, set real matching VAPID_PUBLIC_KEY/VAPID_PRIVATE_KEY/VAPID_SUBJECT
 in Render (never VITE_*), deploy the frontend over HTTPS and opt in from Profile.
 No VAPID value is generated or committed as a production secret by the test suite.
-Vercel must preserve the committed worker/manifest/icon rewrite exclusions and
+Vercel must preserve the generated worker/manifest/icon rewrite exclusions and
 sw.js no-cache headers. See operations-pwa.md for key generation, sleep/iOS limits,
 rotation, static-only caching and verification. No provider deployment is implied
 by Git push or a saved development-environment draft.
@@ -190,10 +189,9 @@ for storage tradeoffs, dependency audit evidence and verification commands.
 
 Migrate through **0011** before this version starts. Keep one API worker/instance.
 Backend `SENTRY_DSN` and frontend `VITE_SENTRY_DSN` are optional; leave blank to
-disable them. When enabling frontend Sentry, rerun `npm run configure:csp` with
-the same API/WS/DSN values as the Vercel build, and commit the resulting header.
-This adds only the configured Sentry origin. The existing production CSP/URL guard
-still fails on mismatched origins. Use `/health` for Render liveness; `/health/db`
+disable them. When enabling frontend Sentry, set `VITE_SENTRY_DSN` in Vercel and
+redeploy. The build adds only the configured Sentry origin to its generated CSP.
+Production URL validation still rejects insecure endpoints. Use `/health` for Render liveness; `/health/db`
 is a separately throttled DB probe. Retention defaults and external alert routing
 are in [observability.md](observability.md). Configure encrypted backup secrets
 and opt-in scheduling only after database provisioning; see [backup.md](backup.md).
