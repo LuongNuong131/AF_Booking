@@ -109,11 +109,13 @@ Requested index prefixes are preserved. Ordered-list indexes explicitly append `
 | booking_notes | UNIQUE `client_request_id` | Retry deduplication; multiple NULLs allowed |
 | attachments | `note_id` | Attachments of a selected note |
 | notifications | `user_id, read_at, created_at` | Own/unread notifications |
+| notifications | `user_id, created_at, id` | Per-user notification feed order |
 | notifications | `booking_id`, `task_id`, `note_id`, `by_agent_id` separately | Indexed logical references |
 | audit_logs | `created_at` | Chronological audit |
 | audit_logs | `user_id, created_at` | Per-user audit |
 | audit_logs | `entity_type, entity_id` | Per-entity audit |
 | booking_tasks | `user_id, status, remind_at` | Own pending/due tasks |
+| booking_tasks | `user_id, status, completed_at, id` | Per-user completed-task feed ordering |
 | booking_tasks | `status, notified_at, remind_at` | Background due notifications |
 | booking_tasks | `booking_id, user_id, status` | Own pending tasks for a booking |
 | booking_tasks | `note_id` | Logical source-note reference |
@@ -181,3 +183,22 @@ Additive indexes: notifications `(read_at,id)`, terminal-task retention
 `(deleted_at,booking_id,id,created_at)`. Existing migrations 0001–0008 remain
 unchanged. Upgrade with `alembic upgrade head`; downgrade drops only these indexes.
 Retention runs in the scheduler, independently of migration, using configured ages.
+
+## Migration 0011: user feed indexes
+
+Migration `0011_user_feed_indexes` adds two user-scoped composite indexes after
+reviewing the actual SQL shapes: notifications are selected by `user_id` and ordered
+by `(created_at DESC, id DESC)` without a `read_at` filter; completed tasks are
+selected by `(user_id, status='done')` and ordered by `(completed_at DESC, id DESC)`.
+The existing unread-count index has `read_at` between `user_id` and `created_at`, so
+it cannot provide the all-notifications feed order when read and unread rows are
+mixed. The existing task reminder index ends in `remind_at`, not `completed_at`.
+
+The migration adds ordinary composite B-tree indexes, portable across the supported
+MySQL/TiDB engines. They consume storage and add write maintenance; the schema plan
+suite now populates 15,000 notifications and 15,000 completed tasks and checks that
+these list shapes use the intended indexes without sort operators on both engines.
+Run `alembic upgrade head` once as a release step; never edit migrations 0001–0010.
+Plan selection on synthetic fixtures is not a production latency guarantee. Compare
+provider-side rows examined/latency and write rate after rollout before concluding
+the indexes improved production performance.

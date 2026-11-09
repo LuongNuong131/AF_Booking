@@ -334,7 +334,7 @@ BOOKING_CHROMIUM_PATH=/usr/bin/chromium BOOKING_E2E_ARTIFACTS=/tmp/booking-brows
 ```
 
 No migration or dependency change was required for Prompt 7C. The current release
-head is **0010**; Prompt 7C's historical note is retained here only to explain the
+head is **0011**; Prompt 7C's historical note is retained here only to explain the
 original test scope. Manual checks and implementation boundaries: [smart-search.md](smart-search.md).
 
 ## Prompts 8 and 8B
@@ -376,8 +376,19 @@ runner owns port 5173; do not run two browser suites simultaneously.
 
 For key/index measurements and raw before/after JSON/EXPLAIN use
 [performance-8b.md](performance-8b.md). Benchmarks use isolated local databases, not
-hosted provider latency. The current schema head is **0010**; this historical section
+hosted provider latency. The current schema head is **0011**; this historical section
 did not add a migration for the Prompt 8B changes.
+
+## Migration 0011 query-plan coverage
+
+The schema suite creates 15,000 notifications and 15,000 completed tasks in addition
+to its booking/search fixtures. Its MySQL and TiDB EXPLAIN checks verify the per-user
+notification feed uses `ix_notifications_user_created_id` and the completed-task
+list uses `ix_booking_tasks_user_status_completed`, without a filesort/TopN sort in
+the checked plan. These synthetic plans establish index selection for the tested
+query shapes only; they do not prove a production latency improvement. Follow
+[database-operations.md](database-operations.md) for provider-side post-deploy
+validation and connection/index cost guidance.
 
 
 ## Prompt 8C

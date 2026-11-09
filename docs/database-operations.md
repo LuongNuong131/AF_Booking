@@ -60,6 +60,8 @@ cd backend
 
 These use fresh local containers and test data; they do not connect to the production database or prove production latency. Never run `ANALYZE TABLE`, DDL, bulk updates/deletes, or explain-analyze against production without reviewing provider impact, permissions, and an approved maintenance procedure. Do not paste production rows or secrets into tickets or AI prompts.
 
+The latest source-level SQL review is [index-review-2026-11.md](performance/index-review-2026-11.md). Migration `0011` adds `(user_id, created_at, id)` for the notification feed and `(user_id, status, completed_at, id)` for completed-task ordering. The report separates these two chosen changes from other candidates that need actual production plans or a query rewrite first. Treat its synthetic plan gates as optimizer-path checks, not production latency evidence.
+
 ## Pagination status and keyset migration plan
 
 The repository already uses keyset pagination for booking-note history (`GET /bookings/{key}/notes`), with an opaque cursor tied to the booking and a `(created_at, id)` order. That is the working local example. The remaining list APIs currently use numbered pages, return exact `total`, and are consumed by numbered `PageControls` that support page jumps and last-page recovery. Replacing their SQL alone would break the API contract/UI; keeping numbered arbitrary-page navigation requires an offset (or a cursor chain/cache and extra state), and retaining exact total still pays for the separate count query. There is therefore no safe transparent “replace `.offset()` only” change.

@@ -21,7 +21,17 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from alembic import command
 from app.core.config import Settings
 from app.core.db import create_database_engine
-from app.models import Base, Booking, BookingGroup, BookingNote, BookingTask, Station, Status, User
+from app.models import (
+    Base,
+    Booking,
+    BookingGroup,
+    BookingNote,
+    BookingTask,
+    Notification,
+    Station,
+    Status,
+    User,
+)
 from app.scripts.seed import AdminCredentials, seed_database
 
 pytestmark = pytest.mark.skipif(
@@ -126,34 +136,83 @@ async def populate_query_fixture(engine: AsyncEngine) -> dict[str, int]:
         for model, rows in [(BookingGroup, groups), (Booking, bookings), (BookingNote, notes)]:
             for start in range(0, len(rows), 500):
                 await connection.execute(model.__table__.insert(), rows[start : start + 500])
+        tasks, notifications = [], []
+        for identifier in range(1, 15001):
+            user_id = (identifier - 1) % 15 + 2
+            booking_id = (identifier - 1) % len(bookings) + 1
+            timestamp = now + timedelta(seconds=identifier)
+            tasks.append(
+                {
+                    "id": identifier,
+                    "booking_id": booking_id,
+                    "user_id": user_id,
+                    "message": "Fixture completed task",
+                    "remind_at": timestamp,
+                    "status": "done",
+                    "completed_at": timestamp,
+                    "created_at": timestamp,
+                    "updated_at": timestamp,
+                }
+            )
+            notifications.append(
+                {
+                    "id": identifier,
+                    "user_id": user_id,
+                    "booking_id": booking_id,
+                    "type": "task_due",
+                    "read_at": timestamp if identifier % 2 else None,
+                    "created_at": timestamp,
+                }
+            )
+        for model, rows in [(BookingTask, tasks), (Notification, notifications)]:
+            for start in range(0, len(rows), 500):
+                await connection.execute(model.__table__.insert(), rows[start : start + 500])
     async with engine.connect() as raw_connection:
         connection = await raw_connection.execution_options(isolation_level="AUTOCOMMIT")
         version = str((await connection.execute(text("SELECT VERSION()"))).scalar_one())
         if "tidb" in version.lower():
             # TiDB documents that ANALYZE can miss very recent commits (#16570).
             await asyncio.sleep(1)
-        for table in ("booking_groups", "bookings", "booking_notes"):
+        for table in (
+            "booking_groups",
+            "bookings",
+            "booking_notes",
+            "booking_tasks",
+            "notifications",
+        ):
             suffix = " ALL COLUMNS" if "tidb" in version.lower() else ""
             await connection.execute(text(f"ANALYZE TABLE {table}{suffix}"))
     async with engine.connect() as connection:
         version = str((await connection.execute(text("SELECT VERSION()"))).scalar_one())
         if "tidb" in version.lower():
             # ANALYZE updates TiDB's statistics cache asynchronously; wait for observed row counts.
+            expected = {
+                "bookings": len(bookings),
+                "booking_tasks": len(tasks),
+                "notifications": len(notifications),
+            }
             async with asyncio.timeout(15):
-                while True:
-                    stats = (
-                        (
-                            await connection.execute(
-                                text("SHOW STATS_META WHERE Table_name = 'bookings'")
+                for table, count in expected.items():
+                    while True:
+                        stats = (
+                            (
+                                await connection.execute(
+                                    text(f"SHOW STATS_META WHERE Table_name = '{table}'")
+                                )
                             )
+                            .mappings()
+                            .all()
                         )
-                        .mappings()
-                        .all()
-                    )
-                    if stats and int(stats[0]["Row_count"]) == len(bookings):
-                        break
-                    await asyncio.sleep(0.5)
-    return {"groups": len(groups), "bookings": len(bookings), "notes": len(notes)}
+                        if stats and int(stats[0]["Row_count"]) == count:
+                            break
+                        await asyncio.sleep(0.5)
+    return {
+        "groups": len(groups),
+        "bookings": len(bookings),
+        "notes": len(notes),
+        "tasks": len(tasks),
+        "notifications": len(notifications),
+    }
 
 
 QUERIES = {
@@ -202,6 +261,17 @@ QUERIES = {
         "JOIN booking_groups g ON g.id=b.group_id "
         "WHERE b.last_agent_id=1 ORDER BY b.updated_at DESC,b.id DESC LIMIT 20",
         "ix_bookings_agent_updated",
+    ),
+    "i_user_notifications": (
+        "SELECT id, booking_id, created_at, read_at FROM notifications "
+        "WHERE user_id=2 ORDER BY created_at DESC, id DESC LIMIT 20",
+        "ix_notifications_user_created_id",
+    ),
+    "j_user_completed_tasks": (
+        "SELECT id, booking_id, completed_at FROM booking_tasks "
+        "WHERE user_id=2 AND status='done' "
+        "ORDER BY completed_at DESC, id DESC LIMIT 20",
+        "ix_booking_tasks_user_status_completed",
     ),
 }
 

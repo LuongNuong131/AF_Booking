@@ -215,6 +215,7 @@ class Notification(CreatedAt, Base):
     __table_args__ = (
         UniqueConstraint("user_id", "unread_watch_booking", name="uq_notifications_unread_watch"),
         Index("ix_notifications_user_read_created", "user_id", "read_at", "created_at"),
+        Index("ix_notifications_user_created_id", "user_id", "created_at", "id"),
         Index("ix_notifications_read_id", "read_at", "id"),
         Index("ix_notifications_booking_id", "booking_id"),
         Index("ix_notifications_task_id", "task_id"),
@@ -304,6 +305,13 @@ class BookingTask(Timestamps, Base):
     __table_args__ = (
         UniqueConstraint("client_request_id", name="client_request_id"),
         Index("ix_booking_tasks_user_status_remind", "user_id", "status", "remind_at"),
+        Index(
+            "ix_booking_tasks_user_status_completed",
+            "user_id",
+            "status",
+            "completed_at",
+            "id",
+        ),
         Index("ix_booking_tasks_status_updated", "status", "updated_at", "id"),
         Index("ix_booking_tasks_status_notified_remind", "status", "notified_at", "remind_at"),
         Index("ix_booking_tasks_booking_user_status", "booking_id", "user_id", "status"),

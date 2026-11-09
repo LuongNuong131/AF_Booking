@@ -32,7 +32,8 @@ vụ đã deploy thực hiện sau khi tạo Vercel, Render, TiDB Cloud.
 
 ## Cấu hình khi deploy
 
-Chạy `alembic upgrade head` lên **0010** trước khi khởi động phiên bản này. Cờ mới
+Chạy `alembic upgrade head` lên **0011** trước khi khởi động phiên bản này. Migration mới
+thêm index cho notification feed và danh sách task đã hoàn tất. Cờ mới
 đánh dấu account chưa từng login trong dữ liệu cũ; các tài khoản đã dùng trước đó
 không bị đặt lại mật khẩu. Seed chạy lại giữ nguyên mật khẩu và cờ đã hoàn tất.
 Admin reset luôn buộc đổi và thu hồi phiên cũ. Không sửa migration cũ.
