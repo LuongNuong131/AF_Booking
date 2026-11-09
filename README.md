@@ -27,6 +27,7 @@ The application is intentionally narrow. Booking creation and the underlying bus
 - [Local development](#local-development)
 - [Configuration](#configuration)
 - [Testing and quality gates](#testing-and-quality-gates)
+- [UI quality and performance](#ui-quality-and-performance)
 - [Deployment](#deployment)
 - [Security model](#security-model)
 - [Operational boundaries](#operational-boundaries)
@@ -68,7 +69,7 @@ The product supports Agent, QC, and Admin roles, with authorization enforced on 
 - Booking watches, assignments, takeover notifications, and private notifications.
 - Private reminder tasks with due alerts, snooze, and booking navigation.
 - Command palette and scoped keyboard shortcuts.
-- Light, dark, and system theme modes.
+- Light, dark, and system theme modes, including an eye-comfort dark palette with no pure-white surfaces.
 - Responsive workspace shell for desktop and smaller screens.
 
 ### Administration and operations
@@ -245,6 +246,48 @@ cd backend
 ```
 
 GitHub Actions also runs dependency audit checks, contract drift checks, disposable MySQL/TiDB schema suites, security suites, frontend tests, and browser coverage. The full evidence and environment requirements are documented in [docs/testing.md](docs/testing.md).
+
+## UI quality and performance
+
+The frontend is treated as an operations console: clarity and response time take priority over decorative effects. The UI uses a restrained visual system, lightweight transitions, CSS containment on dense surfaces, stable scroll regions, responsive touch targets, and route-level lazy loading. No new UI dependency is added for the visual layer.
+
+### Dark Mode
+
+Dark Mode is designed for long working sessions rather than maximum contrast:
+
+- Soft blue-grey page and surface tones instead of pure black or white.
+- Teal accents with readable contrast and calmer hover states.
+- Theme-aware Element Plus dialogs, popovers, dropdowns, inputs, tables, and selection colors.
+- `prefers-contrast: more` support for users who need stronger separation.
+- `prefers-reduced-motion` support and no heavy animation pipeline.
+- Theme color is applied before the first render and updated when the user switches theme, reducing light flashes on dark devices.
+
+### Lighthouse production baseline
+
+The following scores were measured against the production bundle served through `vite preview` on the root/login route. This is a frontend baseline; authenticated booking routes require a session and are not represented here.
+
+| Profile | Performance | Accessibility | Best practices | FCP | LCP | TBT | CLS |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Desktop | **69** | **95** | **96** | 2.0 s | 3.2 s | 130 ms | 0 |
+| Mobile | **89** | **95** | **96** | 2.0 s | 3.4 s | 140 ms | 0 |
+
+Scores can move slightly between runs because Lighthouse is sensitive to local CPU scheduling and browser state. The important stability signals for the current shell are zero cumulative layout shift, low blocking time, and no additional runtime dependency introduced by the visual refresh. Dev-server Lighthouse scores are not comparable because Vite transforms modules on demand; use a production build for meaningful measurements.
+
+To reproduce the measurement locally:
+
+```sh
+cd frontend
+VITE_API_URL=https://api.example.com/api/v1 \
+VITE_WS_URL=wss://api.example.com/api/v1/ws \
+npm run build
+npm run preview -- --host 0.0.0.0 --port 4173
+
+npx lighthouse http://127.0.0.1:4173/ \
+  --only-categories=performance,accessibility,best-practices \
+  --output=html
+```
+
+These numbers are a checked local baseline, not a production SLA. Real deployment performance still depends on the Vercel edge, Render cold starts, database readiness, browser hardware, and the size of authenticated data views.
 
 ## Deployment
 
