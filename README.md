@@ -350,6 +350,7 @@ The following constraints are intentional and should remain visible when extendi
 | Admin, QC and Profile | [docs/admin-qc-profile.md](docs/admin-qc-profile.md) |
 | Invoice management | [docs/invoices.md](docs/invoices.md) |
 | Deployment | [docs/deploy.md](docs/deploy.md) |
+| Database pool sizing, query diagnostics, and keyset migration | [docs/database-operations.md](docs/database-operations.md) |
 | Testing and browser verification | [docs/testing.md](docs/testing.md) |
 | Observability and retention | [docs/observability.md](docs/observability.md) |
 | Backup and recovery | [docs/backup.md](docs/backup.md) |
