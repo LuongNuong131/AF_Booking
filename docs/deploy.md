@@ -71,7 +71,7 @@ Expected responses:
 
 A passing liveness check alone does not prove database readiness. A 503 ready response uses `{code:"SERVICE_BUSY",message,details:{database:"not_configured"|"unavailable"}}` with `Retry-After: 5`, following [the shared API contract](api-contract.md). Investigate the connection URL, database existence, TLS trust, and TiDB network access. The API intentionally does not expose database error details publicly.
 
-The Blueprint runs `alembic upgrade head` as its pre-deploy command, using the protected database settings. For a manually created service, configure that command or run migrations explicitly before application startup. Free services do not support pre-deploy commands or Render Shell; use the local migration/seed procedure in [deploy-vi.md](deploy-vi.md), including before future schema upgrades. Current head is **`0012`**. Do not run concurrent schema changes in multiple workers. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) and [database-operations.md](database-operations.md).
+The Blueprint runs `alembic upgrade head` as its pre-deploy command, using the protected database settings. For a manually created service, configure that command or run migrations explicitly before application startup. Free services do not support pre-deploy commands or Render Shell; use the local migration/seed procedure in [deploy-vi.md](deploy-vi.md), including before future schema upgrades. Current head is **`0013`**. Do not run concurrent schema changes in multiple workers. For initial admin provisioning, supply `ADMIN_USERNAME` and `ADMIN_PASSWORD` securely and run `python -m app.scripts.seed`; the seed preserves existing passwords and operator-managed status values. No default credentials exist. See [database-schema.md](database-schema.md) and [database-operations.md](database-operations.md).
 
 ## 3. Vercel frontend
 
@@ -131,7 +131,7 @@ Daily exports default to `EXPORT_BOOKING_KEY_STYLE=display`; set `canonical` onl
 an integration requires it. `EXPORT_TIMEOUT_SECONDS` defaults to 55. Frontend calls
 Render directly; Vercel has no API rewrite or Functions region. The generated routes cache
 hashed `/assets/` for a year with immutable, while Vite inserts API preconnect and
-bundles the local Inter font. Warmup reduces sleeping-API delay after opening Login;
+bundles the local Manrope font. Warmup reduces sleeping-API delay after opening Login;
 it does not guarantee a free instance cold-start budget. Use one backend instance/worker
 until auth caches, scheduler, locks and event coalescing are moved to shared storage.
 

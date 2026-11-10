@@ -118,7 +118,8 @@ jobs:
             /tmp/search-performance.json
 
   browser:
-    runs-on: ubuntu-latest
+    # Match the supported OS of the pinned Playwright release.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
