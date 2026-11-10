@@ -24,7 +24,7 @@ from app.services.auth import AuthService
 from app.services.search_limiter import SearchLimiter
 
 logger = logging.getLogger(__name__)
-PUSH_TYPES = {"task_due", "assigned", "watch_update"}
+PUSH_TYPES = {"task_due", "assigned", "watch_update", "work_task_created"}
 
 
 def decode_key(value):
@@ -295,6 +295,7 @@ class PushService:
                 "task_due": "Task due",
                 "assigned": "Booking assigned",
                 "watch_update": "Booking updated",
+                "work_task_created": "New booking ticket",
             }[notice["type"]]
             payload = {
                 "title": title,

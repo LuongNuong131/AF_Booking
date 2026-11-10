@@ -42,6 +42,32 @@ class Settings(BaseSettings):
     login_lockout_seconds: int = Field(default=300, ge=1, le=3600)
     auth_hash_concurrency: int = Field(default=2, ge=1, le=8)
     max_request_body_bytes: int = Field(default=1048576, ge=1, le=1048576)
+    s3_endpoint: str | None = None
+    s3_bucket: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
+    s3_region: str = "auto"
+    s3_access_key_id: SecretStr | None = None
+    s3_secret_access_key: SecretStr | None = None
+
+    @field_validator("s3_endpoint")
+    @classmethod
+    def storage_endpoint(cls, value):
+        if value:
+            parsed = urlsplit(value)
+            if (
+                parsed.scheme != "https"
+                or not parsed.hostname
+                or parsed.username
+                or parsed.password
+                or parsed.query
+                or parsed.fragment
+                or parsed.path not in {"", "/"}
+            ):
+                raise ValueError(
+                    "Use the HTTPS S3 endpoint origin without a bucket or credentials."
+                )
+            return value.rstrip("/")
+        return None
+
     ws_max_messages_per_second: int = Field(default=20, ge=1, le=100)
     ws_send_timeout_seconds: float = Field(default=5, gt=0, le=30)
     ws_ping_interval_seconds: float = Field(default=25, gt=0, le=60)

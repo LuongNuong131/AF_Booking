@@ -143,7 +143,8 @@
     "admin": "Quản trị",
     "reports": "Báo cáo",
     "skip": "Chuyển đến nội dung chính",
-    "toggle": "Đóng/mở điều hướng"
+    "toggle": "Đóng/mở điều hướng",
+    "tickets": "Ticket"
   },
   "pages": {
     "homeTitle": "Trang chủ",
@@ -264,7 +265,8 @@
     "RATE_LIMITED": "Quá nhiều yêu cầu. Hãy đợi một chút rồi thử lại.",
     "TASK_LIMIT_REACHED": "@:taskUi.limit",
     "PASSWORD_CHANGE_REQUIRED": "Đổi mật khẩu tạm trước khi tiếp tục.",
-    "PAYLOAD_TOO_LARGE": "Yêu cầu vượt quá giới hạn 1 MB."
+    "PAYLOAD_TOO_LARGE": "Yêu cầu vượt quá giới hạn 1 MB.",
+    "BOOKING_EXISTS": "Booking này đã tồn tại"
   },
   "roles": {
     "admin": "Quản trị viên",
@@ -377,7 +379,10 @@
     "filteredUpdate": "Booking vừa cập nhật không còn khớp bộ lọc. Tải lại để bổ sung danh sách.",
     "savingDraft": "Đang lưu bản nháp…",
     "draftFailed": "Trình duyệt không thể cập nhật bản nháp. Hãy sao chép ghi chú trước khi rời trang.",
-    "invoice": "Hóa đơn"
+    "invoice": "Hóa đơn",
+    "lookupWelcome": "Tìm booking cần xử lý",
+    "lookupWelcomeBody": "Tìm theo số booking, trạm hoặc nhà cung cấp để xem lịch sử và thêm cập nhật.",
+    "browseAll": "Xem tất cả booking"
   },
   "taskUi": {
     "task": "Công việc",
@@ -825,5 +830,74 @@
     "created": "Đã tạo {count} booking đến kỳ {period}.",
     "recurring": "Tự sinh booking nhà cung cấp này mỗi tháng",
     "folderHint": "Áp dụng cho CW và station này. Tắt vẫn giữ booking đã có. Bật lại sẽ sinh bù các kỳ còn thiếu."
+  },
+  "createBookingUi": {
+    "add": "Thêm booking",
+    "title": "Thêm booking",
+    "intro": "Thêm số booking vào không gian làm việc. Không thể thêm lại số booking đã tồn tại.",
+    "bookingKey": "Số booking",
+    "placeholder": "CW2154927-YUL-2611",
+    "keyHint": "Nhập đầy đủ số CW, trạm và kỳ booking (YYMM).",
+    "invalidKey": "Nhập đầy đủ số booking, ví dụ CW2154927-YUL-2611.",
+    "check": "Kiểm tra",
+    "checking": "Đang kiểm tra…",
+    "duplicateTitle": "Booking này đã tồn tại",
+    "duplicateBody": "Mở booking hiện có để xem thông tin hoặc thêm cập nhật.",
+    "openExisting": "Mở booking",
+    "existingSupplier": "{type}. Booking sẽ dùng thông tin nhà cung cấp đã có trong hệ thống.",
+    "newSupplier": "Nhà cung cấp mới",
+    "supplierPlaceholder": "Nhập tên nhà cung cấp",
+    "supplierHint": "Nhập tên và loại nhà cung cấp cho số CW và trạm này.",
+    "similarHint": "Có số booking tương tự. Kiểm tra trước khi thêm booking mới.",
+    "confirmNew": "Tôi đã kiểm tra các booking tương tự. Đây là booking mới.",
+    "adding": "Đang thêm…",
+    "created": "Đã thêm {key}."
+  },
+  "personalReportUi": {
+    "title": "Báo cáo ngày của tôi",
+    "intro": "Hoạt động booking của bạn trong một ngày làm việc.",
+    "bookings": "Booking đã thao tác",
+    "done": "Done ở cập nhật cuối của tôi",
+    "countHint": "Mỗi booking chỉ tính một lần, kể cả khi bạn ghi nhiều note. Trạng thái lấy từ cập nhật cuối của bạn trong ngày; báo cáo chỉ gồm công việc của bạn.",
+    "empty": "Chưa có cập nhật booking trong ngày này",
+    "emptyHint": "Chọn ngày khác. Booking xuất hiện sau khi bạn lưu cập nhật."
+  },
+  "workTaskUi": {
+    "nav": "Ticket",
+    "qcTitle": "Tổng hợp ticket QC",
+    "myTitle": "Ticket của tôi",
+    "intro": "Gom các vấn đề booking để làm việc với khách hàng.",
+    "bookingTitle": "Ticket gửi QC",
+    "bookingHint": "Báo lỗi booking và thông tin QC cần để làm việc với khách hàng. Nhắc việc cá nhân vẫn nằm ở mục Task.",
+    "issue": "Vấn đề và nội dung cần làm việc với khách hàng",
+    "placeholder": "Mô tả lỗi, thông tin khách hàng và việc cần QC hỗ trợ…",
+    "create": "Tạo ticket",
+    "creating": "Đang tạo ticket…",
+    "created": "Đã tạo ticket và thông báo cho QC.",
+    "viewTickets": "Xem ticket của booking này",
+    "status": "Trạng thái ticket",
+    "pending": "Chờ QC",
+    "handled": "Đã thao tác",
+    "all": "Tất cả ticket",
+    "createdDate": "Ngày tạo (không bắt buộc)",
+    "creator": "Người tạo",
+    "pendingHint": "Chờ QC gồm toàn bộ ticket chưa thao tác, kể cả các ngày trước. Để trống ngày để xem đầy đủ hàng chờ.",
+    "empty": "Không có ticket trong bộ lọc này",
+    "emptyHint": "Đổi bộ lọc hoặc tạo ticket từ trang booking.",
+    "handledBy": "Đã thao tác bởi {user}",
+    "handlingNote": "Nội dung làm việc với khách hàng / kết quả (không bắt buộc)",
+    "markHandled": "Đánh dấu đã thao tác",
+    "notificationCreated": "{user} tạo ticket mới cho {key}",
+    "notificationHandled": "{user} đã thao tác ticket của {key}",
+    "pageOf": "Trang {page}/{pages} · {total} ticket"
+  },
+  "noteImageUi": {
+    "add": "Thêm ảnh vào note này",
+    "view": "Xem ảnh ({count})",
+    "choose": "Chọn hình ảnh",
+    "download": "Tải ảnh",
+    "limits": "Tối đa 5 ảnh/note, mỗi ảnh 5 MB. Hỗ trợ JPEG, PNG, WebP hoặc GIF.",
+    "unavailable": "Quản trị viên chưa bật tính năng đính kèm ảnh.",
+    "afterSave": "Để thêm ảnh, lưu cập nhật rồi chọn “Thêm ảnh vào note này” trong phần Hoạt động."
   }
 }

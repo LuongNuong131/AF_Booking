@@ -28,6 +28,7 @@ import WatchButton from './WatchButton.vue'
 import AssigneePicker from './AssigneePicker.vue'
 import RequestStatus from './RequestStatus.vue'
 import BaseIcon from './BaseIcon.vue'
+import BookingTicketPanel from './BookingTicketPanel.vue'
 const props = defineProps<{ initialKey?: string; detail?: boolean }>()
 const emit = defineEmits<{ saved: [key: string]; opened: [key: string] }>()
 const { t } = useI18n(),
@@ -330,6 +331,12 @@ defineExpose({
           @open="nav.openFolder"
         />
       </section>
+      <div v-else-if="!nav.query && !nav.request.pending" class="lookup-welcome">
+        <span class="lookup-welcome-icon"><BaseIcon name="folder" /></span>
+        <h3>{{ t('bookingUi.lookupWelcome') }}</h3>
+        <p>{{ t('bookingUi.lookupWelcomeBody') }}</p>
+        <RouterLink :to="{ name: 'summary' }" class="text-button">{{ t('bookingUi.browseAll') }}</RouterLink>
+      </div>
     </template>
     <SupplierFolder
       v-if="!detail && nav.level === 'folder' && nav.cw"
@@ -480,6 +487,7 @@ defineExpose({
           :booking-key="w.key"
           :watching="w.snapshot?.my_watching"
         />
+        <BookingTicketPanel v-if="w.key && w.current?.exists" :key="w.key" :booking-key="w.key" />
         <BookingTimeline
           :notes="w.notes"
           :cursor="w.cursor"

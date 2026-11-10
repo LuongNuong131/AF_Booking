@@ -1,5 +1,7 @@
 """Bound request bytes before JSON parsing and apply security headers to every response."""
 
+import re
+
 from starlette.datastructures import Headers, MutableHeaders
 
 from app.core.errors import error_response
@@ -13,12 +15,17 @@ class BodyLimitMiddleware:
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
+        max_bytes = self.max_bytes
+        if scope.get("method") == "POST" and re.fullmatch(
+            r"/api/v1/notes/[0-9]+/attachments", scope["path"]
+        ):
+            max_bytes = 5 * 1024 * 1024
         length = Headers(scope=scope).get("content-length")
         if length and (
             not length.isascii()
             or not length.isdecimal()
             or len(length) > 12
-            or int(length) > self.max_bytes
+            or int(length) > max_bytes
         ):
             return await error_response(ErrorCode.PAYLOAD_TOO_LARGE)(scope, receive, send)
         messages = []
@@ -28,7 +35,7 @@ class BodyLimitMiddleware:
             if message["type"] == "http.disconnect":
                 return
             total += len(message.get("body", b""))
-            if total > self.max_bytes:
+            if total > max_bytes:
                 return await error_response(ErrorCode.PAYLOAD_TOO_LARGE)(scope, receive, send)
             messages.append(message)
             if not message.get("more_body", False):

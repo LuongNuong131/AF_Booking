@@ -23,6 +23,7 @@ from app.schemas.operations import OPERATIONS_MODELS  # noqa: E402
 from app.schemas.realtime import REALTIME_MODELS, ClientFrame, ServerFrame  # noqa: E402
 from app.schemas.snippets import SNIPPET_MODELS  # noqa: E402
 from app.schemas.tasks import TASK_MODELS  # noqa: E402
+from app.schemas.workflow import WORKFLOW_MODELS  # noqa: E402
 
 OUTPUT = ROOT / "frontend/src/types/api.generated.ts"
 
@@ -80,6 +81,7 @@ def generate() -> str:
         *REALTIME_MODELS,
         *SNIPPET_MODELS,
         *TASK_MODELS,
+        *WORKFLOW_MODELS,
     ):
         schema = model.model_json_schema(mode="serialization")
         for name, definition in schema.pop("$defs", {}).items():

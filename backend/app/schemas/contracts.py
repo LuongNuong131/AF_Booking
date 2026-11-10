@@ -48,6 +48,7 @@ class ErrorCode(StrEnum):
     TASK_LIMIT_REACHED = "TASK_LIMIT_REACHED"
     NEW_BOOKING_NEEDS_CONFIRM = "NEW_BOOKING_NEEDS_CONFIRM"
     DUPLICATE_RECENT_NOTE = "DUPLICATE_RECENT_NOTE"
+    BOOKING_EXISTS = "BOOKING_EXISTS"
     WATCH_LIMIT_REACHED = "WATCH_LIMIT_REACHED"
     ASSIGNMENT_INVALID = "ASSIGNMENT_INVALID"
     INVALID_BOOKING_KEY = "INVALID_BOOKING_KEY"
@@ -96,6 +97,8 @@ class NotificationType(StrEnum):
     WATCH_UPDATE = "watch_update"
     ASSIGNED = "assigned"
     ASSIGNMENT_DONE = "assignment_done"
+    WORK_TASK_CREATED = "work_task_created"
+    WORK_TASK_HANDLED = "work_task_handled"
 
 
 class SearchKind(StrEnum):

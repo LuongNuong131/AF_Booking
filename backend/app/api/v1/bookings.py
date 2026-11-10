@@ -6,13 +6,14 @@ from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import AwareDatetime
 from sqlalchemy import select
 
-from app.core.bounds import Identifier, KeyPath
+from app.core.bounds import KeyPath
 from app.core.deps import get_current_user, require_roles
 from app.core.errors import ApiException
 from app.core.timeouts import DeadlineRoute, timeout
 from app.core.unit_of_work import transaction
-from app.models import BookingNote, Status
+from app.models import Status
 from app.schemas.bookings import (
+    BookingCreateRequest,
     BookingItem,
     BookingLookup,
     FolderPatch,
@@ -31,6 +32,14 @@ PageSize = Annotated[int, Query(ge=1, le=100)]
 
 
 # Static routes must precede /bookings/{key}.
+@router.post("/bookings", response_model=BookingItem, status_code=201)
+@timeout("note_save_timeout_seconds")
+async def create_booking(body: BookingCreateRequest, request: Request, user: UserDep):
+    return await request.app.state.booking_writes.create(
+        body, user, AuditContext.from_request(request)
+    )
+
+
 @router.get("/bookings/lookup", response_model=BookingLookup)
 @timeout("lookup_timeout_seconds")
 async def lookup(
@@ -168,18 +177,6 @@ async def statuses(request: Request, response: Response, user: UserDep):
             return Response(status_code=304, headers=headers)
         response.headers.update(headers)
         return result
-
-
-@router.post("/notes/{id}/attachments", status_code=501)
-async def attachments(id: Identifier, request: Request, user: UserDep):
-    async with transaction(request.app.state.engine, request.app.state.settings) as session:
-        note = await session.scalar(
-            select(BookingNote).where(BookingNote.id == id, BookingNote.deleted_at.is_(None))
-        )
-        if note is None or (note.agent_id != user.id and user.role not in {"admin", "qc"}):
-            raise ApiException(ErrorCode.NOT_FOUND)
-    # No body is buffered while the storage provider is intentionally unconfigured.
-    return await request.app.state.storage.save(file_name="", mime_type="", content=b"")
 
 
 @router.get("/users/lookup", response_model=list[AgentSummary])

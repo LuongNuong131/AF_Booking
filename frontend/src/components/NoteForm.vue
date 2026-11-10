@@ -188,6 +188,7 @@ function selectStatus(code: string) {
       {{ t('bookingUi.draftFailed') }}
     </p>
     <slot name="fields" />
+    <p class="input-hint">{{ t('noteImageUi.afterSave') }}</p>
     <p v-if="!online" class="booking-warning offline-save" role="status">
       {{ t('network_offline') }}
     </p>

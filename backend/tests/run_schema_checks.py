@@ -237,7 +237,11 @@ def main() -> None:
                 "integrity-performance": "tests/test_integrity_performance.py",
                 "search-performance": "tests/test_search_performance.py",
             }[args.suite]
-            test_command = [sys.executable, "-m", "pytest", test_file, "-q", "-x"]
+            test_command = [sys.executable, "-m", "pytest", test_file]
+            if args.suite == "booking":
+                test_command.append("tests/test_booking_creation_database.py")
+                test_command.append("tests/test_workflow_database.py")
+            test_command.extend(["-q", "-x"])
             if args.suite not in {"schema", "search-performance", "integrity-performance", "load"}:
                 test_command.append(f"--junitxml={args.report.resolve()}")
             if args.suite == "coverage":

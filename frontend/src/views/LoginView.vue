@@ -13,8 +13,8 @@ import {
 import 'element-plus/es/components/button/style/css'
 import 'element-plus/es/components/form/style/css'
 import 'element-plus/es/components/input/style/css'
+import '../login.css'
 import { useAuthStore } from '../stores/auth'
-import { useUiStore } from '../stores/ui'
 import { safeRedirect } from '../utils/navigation'
 import BaseIcon from '../components/BaseIcon.vue'
 import BrandMark from '../components/BrandMark.vue'
@@ -24,8 +24,7 @@ import { useWarmup } from '../composables/useWarmup'
 import RequestStatus from '../components/RequestStatus.vue'
 const { t } = useI18n()
 const warmup = useWarmup()
-const auth = useAuthStore(),
-  ui = useUiStore()
+const auth = useAuthStore()
 const route = useRoute(),
   router = useRouter()
 const form = ref<FormInstance>(),
@@ -58,10 +57,7 @@ onBeforeUnmount(() => {
 })
 </script>
 <template>
-  <div class="login-page">
-    <span class="warmup-status" role="status" :class="warmup.state.value"
-      ><span class="status-dot" />{{ t(`outboxUi.warm_${warmup.state.value}`) }}</span
-    >
+  <div class="login-page premium-login">
     <aside class="login-story">
       <RouterLink to="/" class="brand"
         ><BrandMark />
@@ -70,24 +66,35 @@ onBeforeUnmount(() => {
         ></RouterLink
       >
       <div class="story-copy">
-        <p class="eyebrow">{{ t('auth.eyebrow') }}</p>
         <h1>{{ t('auth.welcome') }}</h1>
         <p class="story-intro">{{ t('auth.intro') }}</p>
+      </div>
+      <div class="operations-illustration" aria-hidden="true">
+        <div class="route-line">
+          <span class="route-station">CDG</span>
+          <svg viewBox="0 0 300 54" fill="none">
+            <path d="M8 40C75 40 77 10 150 10S225 40 292 40" stroke="currentColor" stroke-dasharray="3 6" />
+            <circle cx="8" cy="40" r="4" fill="currentColor" />
+            <circle cx="292" cy="40" r="4" fill="currentColor" />
+            <path d="m145 9 12 2-10 7 1-6-3-3Z" fill="currentColor" stroke="currentColor" stroke-linejoin="round" />
+          </svg>
+          <span class="route-station">YUL</span>
+        </div>
+        <div class="operations-ledger">
+          <div class="ledger-heading"><span>{{ t('app.name') }}</span><BaseIcon name="folder" /></div>
+          <div class="ledger-row"><span class="ledger-node complete"><BaseIcon name="check" /></span><div><strong>CW 2154927-YUL-2611</strong><span class="ledger-line long" /></div><span class="ledger-state complete" /></div>
+          <div class="ledger-row"><span class="ledger-node"><BaseIcon name="clock" /></span><div><strong>CW 2154654-CDG-2611</strong><span class="ledger-line" /></div><span class="ledger-state" /></div>
+          <div class="ledger-row"><span class="ledger-node"><BaseIcon name="folder" /></span><div><strong>CW 2154982-SGN-2611</strong><span class="ledger-line short" /></div><span class="ledger-state" /></div>
+        </div>
+      </div>
+      <div class="story-bottom">
         <ul class="story-features">
-          <li v-for="key in ['featureOne', 'featureTwo', 'featureThree']" :key="key">
-            <span class="story-check"><BaseIcon name="check" /></span>{{ t(`auth.${key}`) }}
+          <li v-for="(key, index) in ['featureOne', 'featureTwo', 'featureThree']" :key="key">
+            <BaseIcon :name="['folder', 'globe', 'shield'][index]!" />{{ t(`auth.${key}`) }}
           </li>
         </ul>
+        <p class="story-footer">{{ t('auth.security') }}</p>
       </div>
-      <div class="story-graphic" aria-hidden="true">
-        <div class="orbit orbit-one" />
-        <div class="orbit orbit-two" />
-        <div class="orbit orbit-three" />
-        <span class="orbit-point point-one" /><span class="orbit-point point-two" /><span
-          class="orbit-point point-three"
-        />
-      </div>
-      <p class="story-footer">{{ t('auth.security') }}</p>
     </aside>
     <main class="login-main">
       <div class="login-toolbar"><LanguageSelect /><ThemeMenu /></div>
@@ -96,6 +103,7 @@ onBeforeUnmount(() => {
           <BrandMark />
           <span>{{ t('app.name') }}</span>
         </div>
+        <div class="login-form-symbol" aria-hidden="true"><BaseIcon name="shield" /></div>
         <p class="login-kicker">{{ t('app.workspace') }}</p>
         <h2>{{ t('auth.signIn') }}</h2>
         <p class="login-subtitle">{{ t('auth.subtitle') }}</p>
@@ -178,10 +186,9 @@ onBeforeUnmount(() => {
         <p class="account-note"><BaseIcon name="shield" />{{ t('auth.noSignup') }}</p>
       </div>
       <footer class="login-footer">
-        <span>{{ t('app.name') }}</span
-        ><button type="button" class="text-button" @click="ui.toggleTheme">
-          {{ t(ui.resolvedTheme === 'dark' ? 'theme.switchLight' : 'theme.switchDark') }}
-        </button>
+        <span class="login-service-status" role="status" :class="warmup.state.value"
+          ><span class="status-dot" />{{ t(`outboxUi.warm_${warmup.state.value}`) }}</span
+        ><span>{{ t('app.name') }}</span>
       </footer>
     </main>
   </div>

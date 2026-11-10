@@ -33,6 +33,7 @@ from app.models import (
     BookingNote,
     BookingTask,
     BookingWatcher,
+    BookingWorkTask,
     DailyReport,
     IntegrityRun,
     Notification,
@@ -304,6 +305,7 @@ async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
                 PushSubscription,
                 BookingAssignment,
                 BookingWatcher,
+                BookingWorkTask,
                 Attachment,
                 Notification,
                 BookingInvoice,
@@ -693,11 +695,20 @@ async def test_fallback_and_unique_lookup_explain(rig):
             assert plan[0]["type"] == "const" and plan[0]["key"] == "booking_key"
 
 
-async def test_storage_placeholder_requires_owned_note(rig):
+async def test_unconfigured_image_storage_requires_owned_note(rig):
     saved = (await rig.save()).json()
-    path = f"/api/v1/notes/{saved['note']['id']}/attachments"
-    assert (await rig.client.post(path, headers=rig.headers["agent"])).status_code == 501
-    assert (await rig.client.post(path, headers=rig.headers["other"])).status_code == 404
+    path = f"/api/v1/notes/{saved['note']['id']}/attachments?file_name=image.png"
+    data = b"\x89PNG\r\n\x1a\nimage"
+    assert (
+        await rig.client.post(
+            path, headers={**rig.headers["agent"], "Content-Type": "image/png"}, content=data
+        )
+    ).status_code == 503
+    assert (
+        await rig.client.post(
+            path, headers={**rig.headers["other"], "Content-Type": "image/png"}, content=data
+        )
+    ).status_code == 404
 
 
 async def test_inline_invoices_validate_and_rollback(rig):
@@ -738,20 +749,24 @@ async def test_slow_query_504_discards_connection_and_recovers(rig, caplog):
 
     async def slow(request: Request):
         async with transaction(
-            request.app.state.engine, request.app.state.settings, seconds=3
+            request.app.state.engine, request.app.state.settings, seconds=6
         ) as session:
             identifiers.append(await session.scalar(text("SELECT CONNECTION_ID()")))
+            # Start the cancellation budget once SQL setup has completed. Under
+            # coverage a busy runner can spend the old 500 ms budget in setup,
+            # never reaching the sleeping query this test is meant to cancel.
+            request.state.request_timeout_seconds = 0.2
+            request.state.request_deadline.reschedule(asyncio.get_running_loop().time() + 0.2)
             await session.execute(text("SELECT SLEEP(2)"))
         return {"ok": True}
 
-    # Exercise query cancellation, with TLS/session setup outside the short query budget.
-    async with rig.app.state.engine.connect() as first, rig.app.state.engine.connect() as second:
-        await first.scalar(text("SELECT 1"))
-        await second.scalar(text("SELECT 1"))
-    add_route(rig, "/test/slow", slow, seconds=0.5)
+    add_route(rig, "/test/slow", slow, seconds=5)
     result = await rig.client.get("/test/slow", headers={"X-Request-ID": "slow-test"})
     assert (
-        result.status_code == 504 and result.json()["code"] == "REQUEST_TIMEOUT" and invalidations
+        result.status_code == 504
+        and result.json()["code"] == "REQUEST_TIMEOUT"
+        and identifiers
+        and invalidations
     )
     async with rig.app.state.engine.connect() as connection:
         assert await connection.scalar(text("SELECT CONNECTION_ID()")) != identifiers[0]

@@ -18,7 +18,7 @@ from app.models import (
     Status,
     User,
 )
-from app.schemas.bookings import GroupInfo, NoteSaveResponse
+from app.schemas.bookings import BookingCreateRequest, BookingItem, GroupInfo, NoteSaveResponse
 from app.schemas.contracts import BookingSnapshot, ErrorCode, Note, NoteSaveRequest
 from app.schemas.realtime import BookingUpdatedData
 from app.services.audit import record_audit
@@ -58,6 +58,157 @@ class BookingWrites:
         self.engine, self.settings, self.index, self.cache = engine, settings, index, cache
         self.ws_manager = ws_manager
         self.suggestions = Suggestions(engine, settings, index)
+
+    async def create(self, body: BookingCreateRequest, user, context) -> BookingItem:
+        """Insert an empty booking; the unique key remains the duplicate authority."""
+        parsed = parse(body.booking_key, self.settings.station_code_pattern)
+        if isinstance(parsed, PartialKey):
+            raise ApiException(ErrorCode.STATION_REQUIRED)
+        if not isinstance(parsed, ParsedKey):
+            raise ApiException(ErrorCode.INVALID_BOOKING_KEY)
+
+        identifier = None
+        key_entry = changed_group = event = None
+
+        def committed() -> None:
+            self.cache.invalidate(identifier)
+            self.index.update(key_entry, changed_group)
+            self.invoice_service.report_cache.clear()
+            self.ws_manager.saved(user.id, user.session_id, event, None)
+
+        async with request_budget(self.settings.note_save_timeout_seconds):
+            for attempt in range(2):
+                try:
+                    async with transaction(
+                        self.engine,
+                        self.settings,
+                        seconds=self.settings.note_save_timeout_seconds,
+                        retryable=True,
+                        after_commit=committed,
+                    ) as session:
+                        live = await session.scalar(
+                            select(User).where(User.id == user.id).with_for_update()
+                        )
+                        AuthService.require_live_row(live, user)
+                        group = await session.scalar(
+                            select(BookingGroup)
+                            .where(
+                                BookingGroup.cw_number == parsed.cw_number,
+                                BookingGroup.station_code == parsed.station_code,
+                            )
+                            .with_for_update()
+                        )
+                        existing = await session.scalar(
+                            select(Booking.id)
+                            .where(Booking.booking_key == parsed.key)
+                            .with_for_update()
+                        )
+                        if existing is not None:
+                            raise ApiException(
+                                ErrorCode.BOOKING_EXISTS,
+                                details={
+                                    "booking_key": parsed.key,
+                                    "display_key": parsed.display_key,
+                                },
+                            )
+                        # Existing folders retain their supplier and recurrence settings.
+                        if group is None:
+                            name = supplier_name(body.supplier_name)
+                            if body.supplier_type is None:
+                                raise ApiException(ErrorCode.SUPPLIER_REQUIRED)
+                        if not body.confirm_new:
+                            suggestions = await self.suggestions.find(parsed.key, session)
+                            if suggestions:
+                                raise ApiException(
+                                    ErrorCode.NEW_BOOKING_NEEDS_CONFIRM,
+                                    details={
+                                        "suggestions": [
+                                            row.model_dump(mode="json") for row in suggestions
+                                        ]
+                                    },
+                                )
+                        now = datetime.now(UTC)
+                        now = now.replace(microsecond=now.microsecond // 1000 * 1000)
+                        if group is None:
+                            group = BookingGroup(
+                                cw_number=parsed.cw_number,
+                                station_code=parsed.station_code,
+                                supplier_name=name,
+                                supplier_type=body.supplier_type,
+                                created_by=user.id,
+                                booking_count=0,
+                                last_activity_at=now,
+                            )
+                            session.add(group)
+                            await session.flush()
+                            station_insert = insert(Station).values(code=parsed.station_code)
+                            await session.execute(
+                                station_insert.on_duplicate_key_update(
+                                    code=station_insert.inserted.code
+                                )
+                            )
+                        booking = Booking(
+                            booking_key=parsed.key,
+                            group_id=group.id,
+                            cw_number=parsed.cw_number,
+                            station_code=parsed.station_code,
+                            period=parsed.period,
+                            version=1,
+                            invoice_state="unknown",
+                            invoice_count=0,
+                            updated_at=now,
+                        )
+                        session.add(booking)
+                        await session.flush()
+                        identifier = booking.id
+                        group.booking_count += 1
+                        group.last_activity_at = group.updated_at = now
+                        record_audit(
+                            session,
+                            "booking_created",
+                            actor_id=user.id,
+                            entity_type="booking",
+                            entity_id=str(booking.id),
+                            context=context,
+                            meta={"booking_key": parsed.key},
+                        )
+                        await session.flush()
+                        row = (
+                            await session.execute(snapshot_query().where(Booking.id == booking.id))
+                        ).one()
+                        result = snapshot_from_row(row, self.settings)
+                        changed_group = group_entry(group)
+                        key_entry = KeyEntry(
+                            booking.id,
+                            group.id,
+                            parsed.key,
+                            parsed.cw_number,
+                            parsed.period,
+                            parsed.station_code,
+                        )
+                        event = BookingUpdatedData(
+                            booking_key=parsed.key,
+                            display_key=parsed.display_key,
+                            cw_number=parsed.cw_number,
+                            station_code=parsed.station_code,
+                            version=result.version,
+                            last_agent_id=None,
+                            last_agent_name=None,
+                            status_code=None,
+                            position=None,
+                            updated_at=result.updated_at,
+                            is_done=False,
+                        ).model_dump(mode="json")
+                    return result
+                except DBAPIError as exc:
+                    # A concurrent insert may win either unique key. Re-read it on retry
+                    # so the loser returns BOOKING_EXISTS without a second row or count.
+                    if error_number(exc) in {1062, 1213} and attempt == 0:
+                        continue
+                    raise ApiException(ErrorCode.SERVICE_BUSY) from None
+                finally:
+                    if identifier is not None:
+                        self.cache.invalidate(identifier)
 
     async def save(self, raw: str, body: NoteSaveRequest, user, context) -> NoteSaveResponse:
         parsed = parse(raw, self.settings.station_code_pattern)

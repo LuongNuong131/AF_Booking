@@ -1,6 +1,39 @@
 # Booking backend — Prompt 4
 
-The API now supports lookup, notes/history, mine/overall/stale lists, active statuses and private notifications. It also implements Admin/QC supplier-folder edits needed by cache invalidation. No user endpoint edits or deletes an existing note. Prompt 5 implements WebSocket broadcast/private notifications, advisory locks and stale jobs; [ws-protocol.md](ws-protocol.md) defines the frames. Attachment storage deliberately returns 501. Frontend screens are not part of this backend prompt.
+The API now supports lookup, notes/history, mine/overall/stale lists, active statuses and private notifications. It also implements Admin/QC supplier-folder edits needed by cache invalidation. No user endpoint edits or deletes an existing note. Prompt 5 implements WebSocket broadcast/private notifications, advisory locks and stale jobs; [ws-protocol.md](ws-protocol.md) defines the frames. Authenticated note image uploads use private S3-compatible storage; see [R2 setup](note-images-vi.md). [Personal reports and QC tickets](workflow-release-vi.md) extend these workflows.
+
+## Add a booking as a normal user
+
+Every authenticated Agent, QC, or Admin can call `POST /api/v1/bookings` to add an
+existing business booking number to the tracker without writing its first note.
+The request is `{booking_key, supplier_name?, supplier_type?, confirm_new?}`. Enter
+the full CW, station, and period, for example `CW2154654-RDU-2609`. The server
+normalizes supported spaces, case, and dash variants before checking uniqueness.
+Partial keys require a station; malformed keys are rejected.
+
+For a new CW/station folder, supply a supplier name of 3–255 characters and a
+`supplier_type` of `hotel` or `transportation`. For an existing folder, the server
+reuses its supplier and recurrence settings; adding a booking cannot edit them.
+The same CW may have separate station folders, matching the import workflow.
+Nearby keys return `422 NEW_BOOKING_NEEDS_CONFIRM` with suggestions until the
+user confirms the new number with `confirm_new: true`.
+
+Success returns `201` with a `BookingItem`, version `1`, no status, no last agent,
+an unknown invoice state, and an empty note history. The booking appears in
+shared searches and folder/month lists immediately. It enters a user's My
+bookings list when that user writes a note, following the existing ownership
+rule. The first note uses the returned version as `expected_version`.
+
+An existing canonical number always returns `409 BOOKING_EXISTS` with
+`{booking_key, display_key}` in `details`; confirmation cannot bypass this check.
+This includes bookings whose note history was soft-deleted. Concurrent requests
+are protected by the database unique key and a transactional retry, so only one
+row, folder count increment, and `booking_created` audit entry can be committed.
+Successful creation refreshes the key index, invalidates report/snapshot caches,
+and broadcasts the existing `booking.updated` event after commit.
+
+No schema migration is required. Admin imports, supplier edits, deletion, and
+other administrative operations retain their existing role restrictions.
 
 ## Run and migrate
 

@@ -163,7 +163,14 @@ async def test_integrity_report_fix_max_id_realtime_and_preserve_operational_clo
         fixed = await finished(
             rig, await call(rig, "/admin/integrity/fix", {"run_id": report["id"]})
         )
-        frame = await realtime.event(socket, "booking.updated")
+        # Earlier note updates can still be in the manager's 100 ms batch when
+        # this peer connects. Wait for the repair version rather than assuming
+        # the first frame belongs to the operation under test.
+        async with asyncio.timeout(3):
+            while True:
+                frame = await realtime.event(socket, "booking.updated", KEY)
+                if frame["version"] >= 3:
+                    break
         assert frame["snapshot_rebuilt"] and frame["version"] == 3 and frame["is_done"]
     assert fixed["fixed"] == 1 and fixed["mismatched"] == 1
     snap = (await rig.get("/bookings/lookup", key=KEY)).json()["snapshot"]

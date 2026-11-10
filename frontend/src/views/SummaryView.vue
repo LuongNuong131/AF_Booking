@@ -1,13 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import SummaryBookings from './SummaryBookings.vue'
 import SummaryFolders from './SummaryFolders.vue'
+import CreateBookingDialog from '../components/CreateBookingDialog.vue'
 const route = useRoute(),
   router = useRouter(),
   { t } = useI18n()
 const mode = computed(() => (route.query.view === 'folders' ? 'folders' : 'bookings'))
+const creating = ref(false)
+function openCreated(key: string) {
+  creating.value = false
+  void router.push({ name: 'booking', params: { key } })
+}
 function change(value: 'bookings' | 'folders') {
   const query = { ...route.query }
   delete query.page
@@ -32,6 +38,10 @@ function change(value: 'bookings' | 'folders') {
     <RouterLink class="button" :to="{ name: 'note-search' }">{{
       t('opsUi.noteSearch')
     }}</RouterLink>
+    <button type="button" class="button primary create-booking-trigger" @click="creating = true">
+      <span aria-hidden="true">+</span>{{ t('createBookingUi.add') }}
+    </button>
   </div>
   <SummaryFolders v-if="mode === 'folders'" /><SummaryBookings v-else />
+  <CreateBookingDialog v-if="creating" @close="creating = false" @open="openCreated" />
 </template>

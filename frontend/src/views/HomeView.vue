@@ -8,12 +8,18 @@ import TaskList from '../components/TaskList.vue'
 import MyBookings from '../components/MyBookings.vue'
 import CollaborationList from '../components/CollaborationList.vue'
 import { useCollaborationStore } from '../stores/collaboration'
+import CreateBookingDialog from '../components/CreateBookingDialog.vue'
 const { t } = useI18n(),
   store = useBookingsStore(),
   tasks = useTasksStore(),
   collaboration = useCollaborationStore()
 const initialKey = store.homeKey || undefined
 const workspace = ref<InstanceType<typeof BookingWorkspace> | null>(null)
+const creating = ref(false)
+function openCreated(key: string) {
+  creating.value = false
+  open(key)
+}
 function open(key: string) {
   void workspace.value?.open(key)
   workspace.value?.focus()
@@ -44,7 +50,12 @@ watch(
         <h1>{{ t('pages.homeTitle') }}</h1>
         <p>{{ t('bookingUi.homeIntro') }}</p>
       </div>
-      <span class="workspace-date">{{ t('bookingUi.keyboardReady') }}</span>
+      <div class="home-heading-actions">
+        <span class="workspace-date">{{ t('bookingUi.keyboardReady') }}</span>
+        <button type="button" class="button primary create-booking-trigger" @click="creating = true">
+          <span aria-hidden="true">+</span>{{ t('createBookingUi.add') }}
+        </button>
+      </div>
     </header>
     <div class="booking-workspace-grid">
       <BookingWorkspace ref="workspace" :initial-key="initialKey" /><MyBookings
@@ -77,5 +88,6 @@ watch(
             :mode="tasks.rightTab === 'assignments' ? 'assignments' : 'watching'" /></template
       ></MyBookings>
     </div>
+    <CreateBookingDialog v-if="creating" @close="creating = false" @open="openCreated" />
   </section>
 </template>

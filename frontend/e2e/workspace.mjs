@@ -151,6 +151,7 @@ try {
     .fill('CW 2154654-2609')
   await expect(a.page.locator('.booking-table tbody tr')).toHaveCount(1)
   await expect(a.page).toHaveURL(/q=CW\+2154654-2609/)
+  await a.page.locator('.filter-details > summary').click()
   await a.page.getByLabel('Status', { exact: true }).selectOption('BUNDLE')
   await expect(a.page).toHaveURL(/status_code=BUNDLE/)
   const returnUrl = a.page.url()

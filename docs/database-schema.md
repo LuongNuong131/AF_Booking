@@ -228,3 +228,16 @@ booking through the business-timezone cutoff, under a per-folder row lock.
 Apply `alembic upgrade head` before starting the new backend. See
 [CSV and monthly schedule setup](monthly-bookings-vi.md) for the day-25 rule,
 Free-instance wake-up workflow, and folder opt-out.
+
+## Migration 0014: QC tickets and note images
+
+Adds `booking_work_tasks` for user-created booking tickets, indexed for the QC
+pending queue, creator history and booking history. A globally unique request UUID
+makes creation retries idempotent. Handling records the QC/Admin account, time and
+optional customer follow-up result. Notification types add ticket creation and
+handling; existing personal reminders stay independent.
+
+Adds a unique `(note_id, storage_key)` index on `attachments` for image upload
+retries. Images live in private S3-compatible object storage; the database stores
+metadata only. Apply the migration before the new API starts. See the
+[workflow release guide](workflow-release-vi.md) and [R2 setup](note-images-vi.md).

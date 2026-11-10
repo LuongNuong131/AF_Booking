@@ -1,5 +1,9 @@
 """Concrete Prompt 4 response envelopes; shared wire objects remain in contracts."""
 
+from typing import Literal
+
+from pydantic import Field
+
 from app.schemas.contracts import (
     AgentSummary,
     BookingIdentity,
@@ -31,6 +35,13 @@ class BookingItem(BookingSnapshot):
     my_pending_tasks: int = 0
     my_watching: bool = False
     stale_hours: float | None = None
+
+
+class BookingCreateRequest(ContractModel):
+    booking_key: str = Field(min_length=1, max_length=100)
+    supplier_name: str | None = Field(default=None, max_length=255)
+    supplier_type: Literal["hotel", "transportation"] | None = None
+    confirm_new: bool = False
 
 
 class BookingLookup(ContractModel):
@@ -94,6 +105,7 @@ class MutationResult(ContractModel):
 BOOKING_MODELS = (
     GroupInfo,
     BookingItem,
+    BookingCreateRequest,
     BookingLookup,
     NoteSaveResponse,
     FolderPatch,

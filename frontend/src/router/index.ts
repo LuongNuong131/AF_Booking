@@ -91,13 +91,24 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
             meta: { titleKey: 'opsUi.noteSearch' },
           },
           {
+            path: 'reports/mine',
+            name: 'my-daily-report',
+            component: () => import('../views/MyDailyReportView.vue'),
+            meta: { titleKey: 'personalReportUi.title' },
+          },
+          {
+            path: 'tickets',
+            name: 'tickets',
+            component: () => import('../views/TicketsView.vue'),
+            meta: { titleKey: 'workTaskUi.nav' },
+          },
+          {
             path: 'reports',
             name: 'reports',
-            component: () => import('../views/ReportsView.vue'),
+            component: () => import('../views/ReportsLanding.vue'),
             meta: {
               titleKey: 'pages.reportsTitle',
               descriptionKey: 'pages.reportsDescription',
-              roles: ['admin', 'qc'],
             },
           },
           {

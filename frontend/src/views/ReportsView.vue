@@ -94,6 +94,7 @@ useViewRefresh(load)
       <RouterLink class="button" :to="{ name: 'daily-report' }">{{
         t('opsUi.dailyTitle')
       }}</RouterLink>
+      <RouterLink class="button" :to="{ name: 'my-daily-report' }">{{ t('personalReportUi.title') }}</RouterLink>
       <p>{{ t('adminUi.reportIntro') }}</p>
     </header>
 

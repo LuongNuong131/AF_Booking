@@ -143,7 +143,8 @@
     "admin": "Admin",
     "reports": "Reports",
     "skip": "Skip to main content",
-    "toggle": "Toggle navigation"
+    "toggle": "Toggle navigation",
+    "tickets": "Tickets"
   },
   "pages": {
     "homeTitle": "Home",
@@ -264,7 +265,8 @@
     "RATE_LIMITED": "Too many requests. Please wait a moment and try again.",
     "TASK_LIMIT_REACHED": "@:taskUi.limit",
     "PASSWORD_CHANGE_REQUIRED": "Change your temporary password before continuing.",
-    "PAYLOAD_TOO_LARGE": "The request is larger than the 1 MB limit."
+    "PAYLOAD_TOO_LARGE": "The request is larger than the 1 MB limit.",
+    "BOOKING_EXISTS": "This booking already exists"
   },
   "roles": {
     "admin": "Admin",
@@ -377,7 +379,10 @@
     "filteredUpdate": "An updated booking no longer matches these filters. Refresh to fill the page.",
     "savingDraft": "Saving draft…",
     "draftFailed": "Your browser could not update this draft. Keep a copy of your note before leaving.",
-    "invoice": "Invoice"
+    "invoice": "Invoice",
+    "lookupWelcome": "Find your next booking",
+    "lookupWelcomeBody": "Search by booking number, station or supplier to see its updates and add your own.",
+    "browseAll": "Browse all bookings"
   },
   "taskUi": {
     "task": "Task",
@@ -825,5 +830,74 @@
     "created": "Created {count} booking(s) through period {period}.",
     "recurring": "Generate this supplier’s bookings every month",
     "folderHint": "Applies to this CW and station. Turning it off keeps existing bookings. Turning it on again catches up missing periods."
+  },
+  "createBookingUi": {
+    "add": "Add booking",
+    "title": "Add a booking",
+    "intro": "Add a booking number to the workspace. Existing booking numbers cannot be added again.",
+    "bookingKey": "Booking number",
+    "placeholder": "CW2154927-YUL-2611",
+    "keyHint": "Use the full booking number: CW number, station and period (YYMM).",
+    "invalidKey": "Enter a full booking number, for example CW2154927-YUL-2611.",
+    "check": "Check",
+    "checking": "Checking…",
+    "duplicateTitle": "This booking already exists",
+    "duplicateBody": "Open the existing booking to view its details or add an update.",
+    "openExisting": "Open booking",
+    "existingSupplier": "{type}. This booking will use the supplier details already on file.",
+    "newSupplier": "New supplier",
+    "supplierPlaceholder": "Enter the supplier name",
+    "supplierHint": "Enter the supplier name and type for this CW number and station.",
+    "similarHint": "Similar booking numbers exist. Review them before adding a new booking.",
+    "confirmNew": "I checked the similar bookings. This is a new booking.",
+    "adding": "Adding…",
+    "created": "Added {key}."
+  },
+  "personalReportUi": {
+    "title": "My daily report",
+    "intro": "Your booking activity for one business day.",
+    "bookings": "Bookings worked",
+    "done": "Done in my final update",
+    "countHint": "Each booking counts once, even if you wrote several updates. Status reflects your final update that day; the report only includes your own work.",
+    "empty": "No booking updates for this day",
+    "emptyHint": "Choose another date. Bookings appear after you save an update."
+  },
+  "workTaskUi": {
+    "nav": "Tickets",
+    "qcTitle": "QC ticket desk",
+    "myTitle": "My tickets",
+    "intro": "Booking issues to collect and work through with the customer.",
+    "bookingTitle": "Tickets for QC",
+    "bookingHint": "Report the booking issue and the information QC needs to work with the customer. Personal reminders remain in Tasks.",
+    "issue": "Issue and customer follow-up required",
+    "placeholder": "Describe the problem, customer context and action required…",
+    "create": "Create ticket",
+    "creating": "Creating ticket…",
+    "created": "Ticket created. QC has been notified.",
+    "viewTickets": "View tickets for this booking",
+    "status": "Ticket status",
+    "pending": "Awaiting QC",
+    "handled": "Handled",
+    "all": "All tickets",
+    "createdDate": "Created on (optional)",
+    "creator": "Created by",
+    "pendingHint": "Awaiting QC includes all unhandled tickets, including earlier days. Leave the date empty to keep the full queue.",
+    "empty": "No tickets in this view",
+    "emptyHint": "Change the filters, or create a ticket from the booking workspace.",
+    "handledBy": "Handled by {user}",
+    "handlingNote": "Customer follow-up / handling result (optional)",
+    "markHandled": "Mark as handled",
+    "notificationCreated": "{user} created a ticket for {key}",
+    "notificationHandled": "{user} handled a ticket for {key}",
+    "pageOf": "Page {page} of {pages} · {total} ticket(s)"
+  },
+  "noteImageUi": {
+    "add": "Add images to this note",
+    "view": "View images ({count})",
+    "choose": "Choose images",
+    "download": "Download",
+    "limits": "Up to 5 images per note, 5 MB each. JPEG, PNG, WebP or GIF.",
+    "unavailable": "Image attachments have not been enabled by your administrator yet.",
+    "afterSave": "To add images, save your update, then choose “Add images to this note” in Activity."
   }
 }
