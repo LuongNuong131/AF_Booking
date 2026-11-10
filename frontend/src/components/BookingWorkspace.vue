@@ -330,6 +330,12 @@ defineExpose({
           @open="nav.openFolder"
         />
       </section>
+      <div v-else-if="!nav.query && !nav.request.pending" class="lookup-welcome">
+        <span class="lookup-welcome-icon"><BaseIcon name="folder" /></span>
+        <h3>{{ t('bookingUi.lookupWelcome') }}</h3>
+        <p>{{ t('bookingUi.lookupWelcomeBody') }}</p>
+        <RouterLink :to="{ name: 'summary' }" class="text-button">{{ t('bookingUi.browseAll') }}</RouterLink>
+      </div>
     </template>
     <SupplierFolder
       v-if="!detail && nav.level === 'folder' && nav.cw"

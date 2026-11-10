@@ -264,7 +264,8 @@
     "RATE_LIMITED": "Quá nhiều yêu cầu. Hãy đợi một chút rồi thử lại.",
     "TASK_LIMIT_REACHED": "@:taskUi.limit",
     "PASSWORD_CHANGE_REQUIRED": "Đổi mật khẩu tạm trước khi tiếp tục.",
-    "PAYLOAD_TOO_LARGE": "Yêu cầu vượt quá giới hạn 1 MB."
+    "PAYLOAD_TOO_LARGE": "Yêu cầu vượt quá giới hạn 1 MB.",
+    "BOOKING_EXISTS": "Booking này đã tồn tại"
   },
   "roles": {
     "admin": "Quản trị viên",
@@ -377,7 +378,10 @@
     "filteredUpdate": "Booking vừa cập nhật không còn khớp bộ lọc. Tải lại để bổ sung danh sách.",
     "savingDraft": "Đang lưu bản nháp…",
     "draftFailed": "Trình duyệt không thể cập nhật bản nháp. Hãy sao chép ghi chú trước khi rời trang.",
-    "invoice": "Hóa đơn"
+    "invoice": "Hóa đơn",
+    "lookupWelcome": "Tìm booking cần xử lý",
+    "lookupWelcomeBody": "Tìm theo số booking, trạm hoặc nhà cung cấp để xem lịch sử và thêm cập nhật.",
+    "browseAll": "Xem tất cả booking"
   },
   "taskUi": {
     "task": "Công việc",
@@ -825,5 +829,27 @@
     "created": "Đã tạo {count} booking đến kỳ {period}.",
     "recurring": "Tự sinh booking nhà cung cấp này mỗi tháng",
     "folderHint": "Áp dụng cho CW và station này. Tắt vẫn giữ booking đã có. Bật lại sẽ sinh bù các kỳ còn thiếu."
+  },
+  "createBookingUi": {
+    "add": "Thêm booking",
+    "title": "Thêm booking",
+    "intro": "Thêm số booking vào không gian làm việc. Không thể thêm lại số booking đã tồn tại.",
+    "bookingKey": "Số booking",
+    "placeholder": "CW2154927-YUL-2611",
+    "keyHint": "Nhập đầy đủ số CW, trạm và kỳ booking (YYMM).",
+    "invalidKey": "Nhập đầy đủ số booking, ví dụ CW2154927-YUL-2611.",
+    "check": "Kiểm tra",
+    "checking": "Đang kiểm tra…",
+    "duplicateTitle": "Booking này đã tồn tại",
+    "duplicateBody": "Mở booking hiện có để xem thông tin hoặc thêm cập nhật.",
+    "openExisting": "Mở booking",
+    "existingSupplier": "{type}. Booking sẽ dùng thông tin nhà cung cấp đã có trong hệ thống.",
+    "newSupplier": "Nhà cung cấp mới",
+    "supplierPlaceholder": "Nhập tên nhà cung cấp",
+    "supplierHint": "Nhập tên và loại nhà cung cấp cho số CW và trạm này.",
+    "similarHint": "Có số booking tương tự. Kiểm tra trước khi thêm booking mới.",
+    "confirmNew": "Tôi đã kiểm tra các booking tương tự. Đây là booking mới.",
+    "adding": "Đang thêm…",
+    "created": "Đã thêm {key}."
   }
 }

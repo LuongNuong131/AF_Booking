@@ -16,7 +16,7 @@
     "test:security": "node scripts/check-security.mjs"
   },
   "dependencies": {
-    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/manrope": "5.2.8",
     "@sentry/vue": "11.10.0",
     "@vueuse/core": "13.9.0",
     "axios": "1.21.0",

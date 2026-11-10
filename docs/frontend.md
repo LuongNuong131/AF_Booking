@@ -170,3 +170,26 @@ ESLint enforces vue/no-v-html at error level (`npm run lint`), and
 API/WSS origins generated from the build environment; style-only inline declarations support
 Element Plus/virtual lists, while script inline/eval remains blocked. Details and
 an httpOnly-cookie alternative are in security-report.md.
+
+## Booking workspace design and self-service entry
+
+The shared shell uses a navy navigation rail, white work surfaces, a slate canvas,
+and a restrained bronze accent on the primary lookup panel. Manrope Variable is
+self-hosted with Latin, extended Latin, and Vietnamese subsets. All controls share
+the same light/dark tokens, with visible focus, reduced-motion support, and mobile
+layouts. The login illustration is decorative and does not represent live data.
+
+Home and Summary expose **Add booking** to all authenticated roles. The dialog
+checks the full canonical key, displays an existing booking instead of enabling
+another insert, and collects supplier details for a new station folder. The API
+remains authoritative if another user creates the booking after this check. A
+successful insert refreshes lists and opens the booking without inventing a note,
+status, or ownership assignment. See [bookings.md](bookings.md) for the API rules.
+
+Local previews below use isolated test data, not production bookings.
+
+![Booking workspace](images/workspace-preview.png)
+
+![Add booking dialog](images/add-booking-preview.png)
+
+![Sign-in page](images/login-preview.png)

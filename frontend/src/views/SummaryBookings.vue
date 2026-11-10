@@ -32,6 +32,8 @@ const { t } = useI18n(),
 const initial = readSummaryQuery(route.query),
   filters = reactive(initial.filters),
   page = ref(initial.page)
+const activeFilterCount = computed(() => Object.entries(filters).filter(([key, value]) => key !== 'q' && value !== '').length)
+const filtersExpanded = ref(activeFilterCount.value > 0)
 const rows = ref<BookingItem[]>([]),
   total = ref(0),
   refreshing = ref(false)
@@ -243,8 +245,8 @@ function refreshPage() {
           :placeholder="t('search_placeholder')"
           @input="changed"
       /></label>
-      <details class="filter-details" open>
-        <summary>{{ t('bookingUi.filters') }}</summary>
+      <details class="filter-details" :open="filtersExpanded" @toggle="filtersExpanded = ($event.target as HTMLDetailsElement).open">
+        <summary><BaseIcon name="filter" />{{ t('bookingUi.filters') }}<span v-if="activeFilterCount" class="filter-count">{{ activeFilterCount }}</span><BaseIcon name="chevron" class="filter-chevron" /></summary>
         <div class="filter-grid">
           <label
             >{{ t('invoiceUi.filter')

@@ -264,7 +264,8 @@
     "RATE_LIMITED": "Too many requests. Please wait a moment and try again.",
     "TASK_LIMIT_REACHED": "@:taskUi.limit",
     "PASSWORD_CHANGE_REQUIRED": "Change your temporary password before continuing.",
-    "PAYLOAD_TOO_LARGE": "The request is larger than the 1 MB limit."
+    "PAYLOAD_TOO_LARGE": "The request is larger than the 1 MB limit.",
+    "BOOKING_EXISTS": "This booking already exists"
   },
   "roles": {
     "admin": "Admin",
@@ -377,7 +378,10 @@
     "filteredUpdate": "An updated booking no longer matches these filters. Refresh to fill the page.",
     "savingDraft": "Saving draft…",
     "draftFailed": "Your browser could not update this draft. Keep a copy of your note before leaving.",
-    "invoice": "Invoice"
+    "invoice": "Invoice",
+    "lookupWelcome": "Find your next booking",
+    "lookupWelcomeBody": "Search by booking number, station or supplier to see its updates and add your own.",
+    "browseAll": "Browse all bookings"
   },
   "taskUi": {
     "task": "Task",
@@ -825,5 +829,27 @@
     "created": "Created {count} booking(s) through period {period}.",
     "recurring": "Generate this supplier’s bookings every month",
     "folderHint": "Applies to this CW and station. Turning it off keeps existing bookings. Turning it on again catches up missing periods."
+  },
+  "createBookingUi": {
+    "add": "Add booking",
+    "title": "Add a booking",
+    "intro": "Add a booking number to the workspace. Existing booking numbers cannot be added again.",
+    "bookingKey": "Booking number",
+    "placeholder": "CW2154927-YUL-2611",
+    "keyHint": "Use the full booking number: CW number, station and period (YYMM).",
+    "invalidKey": "Enter a full booking number, for example CW2154927-YUL-2611.",
+    "check": "Check",
+    "checking": "Checking…",
+    "duplicateTitle": "This booking already exists",
+    "duplicateBody": "Open the existing booking to view its details or add an update.",
+    "openExisting": "Open booking",
+    "existingSupplier": "{type}. This booking will use the supplier details already on file.",
+    "newSupplier": "New supplier",
+    "supplierPlaceholder": "Enter the supplier name",
+    "supplierHint": "Enter the supplier name and type for this CW number and station.",
+    "similarHint": "Similar booking numbers exist. Review them before adding a new booking.",
+    "confirmNew": "I checked the similar bookings. This is a new booking.",
+    "adding": "Adding…",
+    "created": "Added {key}."
   }
 }

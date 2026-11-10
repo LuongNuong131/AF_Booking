@@ -56,6 +56,41 @@ CI checks that the generated file is current and runs the frontend build.
 
 ## Errors
 
+### Authenticated booking creation
+
+`POST /bookings` is available to Agent, QC, and Admin. It accepts a
+`BookingCreateRequest`:
+
+```json
+{
+  "booking_key": "CW2154654-RDU-2609",
+  "supplier_name": "Example Hotel",
+  "supplier_type": "hotel",
+  "confirm_new": false
+}
+```
+
+`booking_key` is required and bounded to 100 characters; its normalized full key
+is validated and stored canonically. Supplier fields are optional for an existing
+CW/station folder and required for a new one. A new folder requires a cleaned
+supplier name of 3–255 characters and `hotel | transportation`; an existing
+folder's metadata is never changed by this request. Unknown fields are rejected.
+
+Success is `201` with a `BookingItem` at version `1`, nullable latest-note fields,
+`invoice_state: "unknown"`, and zero invoices. Creation writes no note and does
+not assign ownership. The returned version must be used for the first note.
+The existing `booking.updated` event is sent after commit with null agent/status
+fields. No additional realtime event format is introduced.
+
+Relevant errors are `401 UNAUTHORIZED`, `422 INVALID_BOOKING_KEY`,
+`422 STATION_REQUIRED`, `422 SUPPLIER_REQUIRED`, and
+`422 NEW_BOOKING_NEEDS_CONFIRM` (existing suggestion envelope). `confirm_new`
+acknowledges similar numbers only. An exact normalized duplicate always returns
+`409 BOOKING_EXISTS` with details `{booking_key, display_key}`, including races
+between users and bookings with no live notes. Uncertain creation requests may
+be safely retried: a committed booking returns `BOOKING_EXISTS`, after which the
+client can open the existing booking. Creation never overwrites an existing row.
+
 ### Auth implementation details — Prompt 3
 
 - `POST /auth/login` accepts JSON `{username,password}`. Success returns `{access_token,user,token_type:"bearer",expires_in}`; the last two fields are explicit additions for bearer-token clients. `expires_in` is seconds (default 43200).

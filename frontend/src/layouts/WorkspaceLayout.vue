@@ -46,6 +46,7 @@ const links = computed(() => [
   { name: 'profile', icon: 'user' },
   ...(auth.user?.role === 'admin' ? [{ name: 'admin', icon: 'shield' }] : []),
 ])
+const currentPage = computed(() => t(String(route.meta.titleKey || 'app.workspace')))
 async function logout() {
   await auth.logout()
   await router.replace({ name: 'login' })
@@ -111,7 +112,7 @@ async function logout() {
           >
             <BaseIcon name="menu" /></button
           ><RouterLink class="mobile-brand-title" to="/"><BrandMark /><span>{{ t('app.name') }}</span></RouterLink><span class="workspace-label">{{ t('app.workspace') }}</span
-          ><span
+          ><BaseIcon name="chevron" class="context-chevron" /><span class="topbar-page">{{ currentPage }}</span><span
             class="connection-status"
             :class="realtime.state"
             :aria-label="t('realtime.label', { state: t(`realtime.${realtime.state}`) })"

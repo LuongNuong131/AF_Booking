@@ -21,6 +21,8 @@ export type Attachment = { "id": number; "file_name": string; "mime_type": strin
 
 export type AuditEntry = { "id": number; "user": AgentSummary | null; "action": string; "entity_type": string | null; "entity_id": string | null; "meta": { [key: string]: JsonValue } | null; "ip": string | null; "created_at": string }
 
+export type BookingCreateRequest = { "booking_key": string; "supplier_name"?: string | null; "supplier_type"?: "hotel" | "transportation" | null; "confirm_new"?: boolean }
+
 export type BookingImportRequest = { "data": string; "apply"?: boolean; "station_source"?: "strict" | "station_code" | "booking_number"; "fill_missing_supplier"?: boolean }
 
 export type BookingImportResult = { "source_rows": number; "unique_bookings": number; "duplicate_rows": number; "new_bookings": number; "existing_bookings": number; "new_folders": number; "applied": boolean; "sample_keys": Array<string>; "adjustments"?: Array<ImportAdjustment> }
@@ -65,7 +67,7 @@ export type EmptyData = {  }
 
 export type EndpointMetrics = { "requests": number; "errors": number; "error_rate": number; "p50_ms": number | null; "p95_ms": number | null; "p99_ms": number | null; "group": string }
 
-export type ErrorCode = "PASSWORD_CHANGE_REQUIRED" | "PAYLOAD_TOO_LARGE" | "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
+export type ErrorCode = "PASSWORD_CHANGE_REQUIRED" | "PAYLOAD_TOO_LARGE" | "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "BOOKING_EXISTS" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
 
 export type FolderCard = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "recurring_enabled"?: boolean; "station_code": string; "booking_count": number; "open_count": number; "stale_count"?: number; "last_activity_at": string; "latest": FolderLatest | null }
 
@@ -301,4 +303,4 @@ export type WebSocketClientFrame = LockCommandFrame | HeartbeatFrame
 
 export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | TaskDueFrame | ForceLogoutFrame | HeartbeatFrame | CatalogFrame | SystemHealthFrame
 
-export const ERROR_CODES = ["PASSWORD_CHANGE_REQUIRED", "PAYLOAD_TOO_LARGE", "UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]
+export const ERROR_CODES = ["PASSWORD_CHANGE_REQUIRED", "PAYLOAD_TOO_LARGE", "UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "BOOKING_EXISTS", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]

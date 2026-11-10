@@ -14,7 +14,7 @@ AF Booking is an internal, multi-role booking operations console for teams that 
 - Who owns the next action?
 - What changed, when, and by whom?
 
-The application is intentionally narrow. Booking creation and the underlying business transaction remain in the company’s existing system. AF Booking provides the operational layer around that workflow: fast lookup, structured notes, history, collaboration, reminders, invoices, reporting, and auditable administration.
+The application is intentionally narrow. The underlying booking transaction remains in the company’s existing system. Any authenticated Agent, QC, or Admin can add its booking number to AF Booking for tracking; existing numbers cannot be added again. AF Booking provides the operational layer around that workflow: fast lookup, structured notes, history, collaboration, reminders, invoices, reporting, and auditable administration.
 
 ---
 
@@ -54,6 +54,7 @@ The product supports Agent, QC, and Admin roles, with authorization enforced on 
 
 ### Booking workspace
 
+- Self-service booking-number entry for Agent, QC, and Admin, with canonical duplicate protection and supplier details for new folders.
 - Canonical booking-key normalization and validation.
 - Exact, partial, ambiguous, and station-assisted lookup.
 - Smart search across booking keys, CW numbers, stations, periods, and supplier names.
@@ -256,7 +257,7 @@ The frontend is treated as an operations console: clarity and response time take
 Dark Mode is designed for long working sessions rather than maximum contrast:
 
 - Soft blue-grey page and surface tones instead of pure black or white.
-- Teal accents with readable contrast and calmer hover states.
+- Pale blue action accents with readable contrast and restrained bronze navigation details.
 - Theme-aware Element Plus dialogs, popovers, dropdowns, inputs, tables, and selection colors.
 - `prefers-contrast: more` support for users who need stronger separation.
 - `prefers-reduced-motion` support and no heavy animation pipeline.
