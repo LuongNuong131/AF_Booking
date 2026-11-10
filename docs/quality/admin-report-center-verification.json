@@ -95,7 +95,8 @@
     "production_changed": false,
     "migration_required": "0015",
     "migration_command": "alembic upgrade head",
-    "github_ci": "not yet checked for the publication commit"
+    "github_ci": "Fresh CI requested after account email verification; the original startup-failure run had no jobs and cannot be retried.",
+    "original_ci_run": "https://github.com/LuongNuong131/AF_Booking/actions/runs/42838707028"
   },
   "limitations": [
     "TiDB was not exercised locally in this follow-up.",
