@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AdminDeleteButton from '../../components/AdminDeleteButton.vue'
 import { ref, watch } from 'vue'
 import { useBookingRows, patchBooking } from '../../composables/useBookingRows'
 import { useBookingsStore } from '../../stores/bookings'
@@ -49,7 +50,7 @@ watch(
 </script>
 <template>
   <section>
-    <h2>{{ t('adminUi.bookings') }}</h2>
+    <header class="admin-section-heading"><h2>{{ t('adminUi.bookings') }}</h2><RouterLink class="button" :to="{ name: 'admin-data', query: { resource: 'bookings' } }">{{ t('dataUi.manageBookings') }}</RouterLink></header>
     <form class="admin-filters" @submit.prevent="list.apply">
       <label
         >{{ t('folderUi.searchLabel')
@@ -68,7 +69,7 @@ watch(
       @page="list.page.value = $event"
       :loading="list.request.pending.value"
       @open="key = $event"
-    /><PageControls
+    ><template #actions="{ row }"><AdminDeleteButton resource="bookings" :identifier="row.booking_key" :label="row.display_key" @deleted="list.load" /></template></BookingTable><PageControls
       :page="list.page.value"
       :total="list.total.value"
       :size="20"

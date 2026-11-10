@@ -11,6 +11,7 @@ from app.core.config import Settings
 from app.core.errors import ApiException
 from app.core.request_context import request_id, request_path
 from app.schemas.contracts import ErrorCode
+from app.services import visibility  # noqa: F401
 
 logger = logging.getLogger(__name__)
 

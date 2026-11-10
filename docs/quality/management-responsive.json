@@ -1,0 +1,666 @@
+{
+  "result": "passed",
+  "metrics": [
+    {
+      "role": "agent",
+      "route": "/reports",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "agent",
+      "route": "/reports/mine",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "agent",
+      "route": "/summary/:bookingKey",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "agent",
+      "route": "/summary",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "agent",
+      "route": "/tickets",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "agent",
+      "route": "/reports",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "agent",
+      "route": "/reports/mine",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "agent",
+      "route": "/summary/:bookingKey",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "agent",
+      "route": "/summary",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "agent",
+      "route": "/tickets",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "agent",
+      "route": "/reports",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "agent",
+      "route": "/reports/mine",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "agent",
+      "route": "/summary/:bookingKey",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "agent",
+      "route": "/summary",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "agent",
+      "route": "/tickets",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "agent",
+      "route": "/reports",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "agent",
+      "route": "/reports/mine",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "agent",
+      "route": "/summary/:bookingKey",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "agent",
+      "route": "/summary",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "agent",
+      "route": "/tickets",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "agent",
+      "route": "/reports",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "agent",
+      "route": "/reports/mine",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "agent",
+      "route": "/summary/:bookingKey",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "agent",
+      "route": "/summary",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "agent",
+      "route": "/tickets",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "qc",
+      "route": "/reports",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "qc",
+      "route": "/reports/mine",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "qc",
+      "route": "/summary/:bookingKey",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "qc",
+      "route": "/summary",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "qc",
+      "route": "/tickets",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "qc",
+      "route": "/reports",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "qc",
+      "route": "/reports/mine",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "qc",
+      "route": "/summary/:bookingKey",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "qc",
+      "route": "/summary",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "qc",
+      "route": "/tickets",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "qc",
+      "route": "/reports",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "qc",
+      "route": "/reports/mine",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "qc",
+      "route": "/summary/:bookingKey",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "qc",
+      "route": "/summary",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "qc",
+      "route": "/tickets",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "qc",
+      "route": "/reports",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "qc",
+      "route": "/reports/mine",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "qc",
+      "route": "/summary/:bookingKey",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "qc",
+      "route": "/summary",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "qc",
+      "route": "/tickets",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "qc",
+      "route": "/reports",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "qc",
+      "route": "/reports/mine",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "qc",
+      "route": "/summary/:bookingKey",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "qc",
+      "route": "/summary",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "qc",
+      "route": "/tickets",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/reports",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/reports/mine",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/summary/:bookingKey",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/summary",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/tickets",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/admin/data",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/admin/users",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/admin/bookings",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/admin/statuses",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/admin/trash",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/admin/system",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/admin/integrity",
+      "viewport": 320,
+      "document": 320
+    },
+    {
+      "role": "admin",
+      "route": "/reports",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/reports/mine",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/summary/:bookingKey",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/summary",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/tickets",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/admin/data",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/admin/users",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/admin/bookings",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/admin/statuses",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/admin/trash",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/admin/system",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/admin/integrity",
+      "viewport": 375,
+      "document": 375
+    },
+    {
+      "role": "admin",
+      "route": "/reports",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/reports/mine",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/summary/:bookingKey",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/summary",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/tickets",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/admin/data",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/admin/users",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/admin/bookings",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/admin/statuses",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/admin/trash",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/admin/system",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/admin/integrity",
+      "viewport": 768,
+      "document": 768
+    },
+    {
+      "role": "admin",
+      "route": "/reports",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/reports/mine",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/summary/:bookingKey",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/summary",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/tickets",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/admin/data",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/admin/users",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/admin/bookings",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/admin/statuses",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/admin/trash",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/admin/system",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/admin/integrity",
+      "viewport": 1024,
+      "document": 1024
+    },
+    {
+      "role": "admin",
+      "route": "/reports",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/reports/mine",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/summary/:bookingKey",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/summary",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/tickets",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/admin/data",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/admin/users",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/admin/bookings",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/admin/statuses",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/admin/trash",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/admin/system",
+      "viewport": 1440,
+      "document": 1440
+    },
+    {
+      "role": "admin",
+      "route": "/admin/integrity",
+      "viewport": 1440,
+      "document": 1440
+    }
+  ],
+  "errors": []
+}

@@ -140,21 +140,13 @@ try {
   await expect(agent.page.locator('.booking-summary-card')).toContainText('Bundle')
   await page.keyboard.press('Escape')
   await page.getByRole('link', { name: 'Trash', exact: true }).click()
-  await expect(page.locator('.admin-note')).toHaveCount(1)
-  await expect(page.locator('.admin-note')).toContainText('Incorrect completion record')
-  await page
-    .locator('.admin-note')
-    .getByRole('button', { name: 'Restore note', exact: true })
-    .click()
-  await page
-    .getByRole('dialog', { name: 'Restore note', exact: true })
-    .getByRole('button', { name: 'Confirm', exact: true })
-    .click()
-  await expect(page.locator('.admin-note')).toHaveCount(0)
-  await agent.page
-    .locator('.booking-update-banner')
-    .getByRole('button', { name: 'Refresh', exact: true })
-    .click()
+  const recycled = page.locator('.trash-console tbody tr').filter({ hasText: 'Incorrect completion record' })
+  await expect(recycled).toHaveCount(1)
+  const restoring = page.waitForResponse(r => /\/admin\/data\/trash\/\d+\/restore$/.test(new URL(r.url()).pathname))
+  await recycled.getByRole('button', { name: 'Restore', exact: true }).click()
+  const restored = await restoring
+  expect(restored.status(), await restored.text()).toBe(200)
+  await expect(recycled).toHaveCount(0)
   await expect(agent.page.locator('.booking-summary-card')).toContainText('Done')
   await page.getByRole('link', { name: 'Statuses', exact: true }).click()
   await page
@@ -205,17 +197,16 @@ try {
   await expect(page.locator('.admin-table')).toContainText('Raleigh crew station')
   const qc = await login('qc')
   await go(qc.page, '/reports')
-  await expect(qc.page.locator('.reports-view > .report-metrics')).toContainText('Notes')
-  await expect(qc.page.locator('.report-charts canvas')).toHaveCount(2)
-  await qc.page.getByLabel('Format', { exact: true }).selectOption('csv')
+  await expect(qc.page.locator('.report-kpis')).toContainText('Updates written')
+  await expect(qc.page.locator('.report-breakdown-list')).toBeVisible()
   const download = qc.page.waitForEvent('download')
-  await qc.page.getByRole('button', { name: 'Download', exact: true }).click()
+  await qc.page.getByRole('button', { name: 'CSV', exact: true }).click()
   const file = await download,
     exportPath = path.join(artifacts, 'daily-record.csv')
   await file.saveAs(exportPath)
   const content = await readFile(exportPath, 'utf8')
   expect(
-    content.startsWith('\ufeffDate,Agent,Booking,Supplier,Station,Type,Status,Position,Note'),
+    content.startsWith('\ufeffBooking,Supplier,Classification,Station,Booking period,Final agent'),
   ).toBe(true)
   expect(content.includes(DISPLAY)).toBe(true)
   expect(content.includes("'=1+1")).toBe(true)

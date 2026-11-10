@@ -13,6 +13,7 @@ from app.core.timeouts import DeadlineRoute, timeout
 from app.core.unit_of_work import transaction
 from app.models import Status
 from app.schemas.bookings import (
+    BookingClassification,
     BookingCreateRequest,
     BookingItem,
     BookingLookup,
@@ -162,7 +163,7 @@ async def statuses(request: Request, response: Response, user: UserDep):
         rows = (
             await session.scalars(
                 select(Status)
-                .where(Status.is_active.is_(True))
+                .where(Status.is_active.is_(True), Status.deleted_at.is_(None))
                 .order_by(Status.sort_order, Status.id)
             )
         ).all()
@@ -188,3 +189,12 @@ async def user_lookup(
 ):
     request.app.state.collaboration.limiter.check(user.id)
     return await request.app.state.collaboration.lookup_users(q, limit)
+
+
+@router.patch("/bookings/{key}/classification", response_model=BookingItem)
+async def classify_booking(
+    key: KeyPath, body: BookingClassification, request: Request, user: UserDep
+):
+    return await request.app.state.booking_writes.classify(
+        key, body, user, AuditContext.from_request(request)
+    )

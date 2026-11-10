@@ -248,17 +248,42 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 
 ## Supplier classification and interface completion (2026-11-10)
 
-- Active Agent, QC and Admin users can change Hotel/Transportation inline in the
-  booking workspace, booking detail and supplier folder. The type-only agent patch
-  is enforced against the live role; other supplier administration remains Admin/QC.
-- Folder changes apply to the CW/station and all its months, preserve operational
-  booking fields and drafts, and record before/after supplier values in audit logs.
+- Agent, QC and Admin can classify individual booking rows and workspace records.
+  See the later administration/report-center section for the current per-booking
+  override and the separate Admin/QC folder defaults.
+- Per-booking classification preserves operational fields and drafts and records
+  before/after values in audit logs; sibling monthly bookings retain their own type.
 - Completed inline editing, report/ticket/note-search styles, request loading and
   actionable error feedback, filtered administration empty states, and mobile report
   tables. Existing theme tokens and English/Vietnamese copy are used throughout.
-- Chromium verified all roles, populated reports/tickets, draft preservation and 200
-  route/width combinations with no page errors or document overflow. A separate
-  MySQL/TLS folder suite and frontend/backend checks are recorded in
-  `docs/quality/supplier-classification-verification.json`.
+- The original UI iteration was verified on Chromium and local TLS MySQL. Its
+  verification artifacts are superseded by the current per-booking management/report
+  results in `docs/quality/admin-report-center-verification.json`.
 - See `docs/supplier-classification-ui.md` for workflow scope and repeatable
-  checks. No new migration/dependency or production deployment is included.
+  checks. The expanded follow-up below requires migration 0015; no production
+  deployment was performed.
+
+
+## Administrative CRUD, report center and system diagnostics (2026-11-10)
+
+- Added per-booking classification overrides and actions in every booking row and
+  workspace for Agent/QC/Admin, including imported unclassified records. Supplier
+  folder defaults retain their Admin/QC scope.
+- Added a typed Admin data console for twelve business-resource categories, direct
+  delete actions in User/Booking/Status screens, selected-record recycling, a unified
+  restore/purge bin, dependency previews and durable private-object cleanup retries.
+- Retained user/status historical attribution during soft deletion; permanent purge
+  checks retained references. Operational roots are excluded consistently from reads,
+  search, statistics and reports; cache/index invalidation happens after commit.
+- Replaced primary personal/team reporting with a shared filtered report source,
+  actual agent participation/daily activity, detailed rows and professional seven-sheet
+  Excel/CSV downloads. Legacy daily/invoice/ticket workbooks also receive shared
+  streaming styles without loading their entire datasets into memory.
+- Added an observed system control room with component readiness, live database probe,
+  process/container/disk/pool capacity, workload/job diagnostics and integrity findings.
+  Added a plain-language integrity explanation and repaired URL-change remounting that
+  discarded active form state.
+- Migration 0015 is required before serving this backend/frontend. Production data,
+  provider credentials and production deployment were not changed. Current workflow,
+  limits and verification are documented in `docs/admin-report-center.md` and the
+  accompanying quality verification results.

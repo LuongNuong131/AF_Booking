@@ -15,7 +15,6 @@ from zoneinfo import ZoneInfo
 
 import orjson
 from fastapi.responses import StreamingResponse
-from openpyxl import Workbook
 from sqlalchemy import func, select
 from sqlalchemy.dialects.mysql import insert
 
@@ -42,6 +41,7 @@ from app.services.exports import (
     safe_cell,
 )
 from app.services.reports import day_bounds
+from app.services.workflow_xlsx import professional_workbook
 from app.utils.booking_key import to_display
 from app.utils.invoice import state_label
 
@@ -235,7 +235,9 @@ class DailyReports:
                 invoices.c.invoice_numbers,
                 Booking.created_at,
                 BookingGroup.supplier_name,
-                BookingGroup.supplier_type,
+                func.coalesce(Booking.classification, BookingGroup.supplier_type).label(
+                    "supplier_type"
+                ),
                 BookingNote.created_at.label("last_at"),
                 BookingNote.agent_id,
                 Status.code,
@@ -297,14 +299,22 @@ class DailyReports:
                     await session.execute(
                         select(
                             Booking.station_code,
-                            BookingGroup.supplier_type,
+                            func.coalesce(Booking.classification, BookingGroup.supplier_type).label(
+                                "supplier_type"
+                            ),
                             func.count().label("note_count"),
                         )
                         .join(BookingNote, BookingNote.booking_id == Booking.id)
                         .join(BookingGroup, BookingGroup.id == Booking.group_id)
                         .where(*day_notes)
-                        .group_by(Booking.station_code, BookingGroup.supplier_type)
-                        .order_by(Booking.station_code, BookingGroup.supplier_type)
+                        .group_by(
+                            Booking.station_code,
+                            func.coalesce(Booking.classification, BookingGroup.supplier_type),
+                        )
+                        .order_by(
+                            Booking.station_code,
+                            func.coalesce(Booking.classification, BookingGroup.supplier_type),
+                        )
                     )
                 )
                 .mappings()
@@ -338,7 +348,9 @@ class DailyReports:
                     Booking.invoice_state,
                     Booking.invoice_count,
                     invoice_numbers_query(),
-                    BookingGroup.supplier_type,
+                    func.coalesce(Booking.classification, BookingGroup.supplier_type).label(
+                        "supplier_type"
+                    ),
                     Status.label,
                     BookingNote.position_label,
                     BookingNote.note,
@@ -362,7 +374,9 @@ class DailyReports:
                                 r.booking_key,
                                 r.supplier_name,
                                 r.station_code,
-                                "Hotel" if r.supplier_type == "hotel" else "Transportation",
+                                {"hotel": "Hotel", "transportation": "Transportation"}.get(
+                                    r.supplier_type, "Unclassified"
+                                ),
                                 r.label,
                                 r.position_label,
                                 r.note or "",
@@ -477,7 +491,7 @@ class DailyReports:
                 entity_type="export",
                 entity_id=f"daily-report:{day}",
             )
-        workbook = Workbook(write_only=True)
+        workbook = professional_workbook()
         overview = workbook.create_sheet("Overview")
         records = workbook.create_sheet("Daily record")
         stale = workbook.create_sheet("Stale")
@@ -503,7 +517,9 @@ class DailyReports:
             overview.append(
                 [
                     safe_cell(row.station_code),
-                    "Hotel" if row.supplier_type == "hotel" else "Transportation",
+                    {"hotel": "Hotel", "transportation": "Transportation"}.get(
+                        row.supplier_type, "Unclassified"
+                    ),
                     row.note_count,
                     row.done_count,
                 ]
@@ -524,7 +540,9 @@ class DailyReports:
                         else row.booking_key,
                         row.supplier_name,
                         row.station_code,
-                        "Hotel" if row.supplier_type == "hotel" else "Transportation",
+                        {"hotel": "Hotel", "transportation": "Transportation"}.get(
+                            row.supplier_type, "Unclassified"
+                        ),
                         row.status.label if row.status else "",
                         row.agent.full_name if row.agent else "",
                         date_text(row.updated_at, ZoneInfo(report.timezone)),

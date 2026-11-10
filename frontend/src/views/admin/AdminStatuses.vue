@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AdminDeleteButton from '../../components/AdminDeleteButton.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { reactive, ref, onMounted } from 'vue'
 import { ElDialog } from 'element-plus'
@@ -129,6 +130,7 @@ useViewRefresh(() => list.run())
               <button type="button" class="text-button" @click="open(status)">
                 {{ t('adminUi.edit') }}
               </button>
+              <AdminDeleteButton resource="statuses" :identifier="status.id" :label="status.label" @deleted="list.run" />
             </td>
           </tr>
         </tbody>

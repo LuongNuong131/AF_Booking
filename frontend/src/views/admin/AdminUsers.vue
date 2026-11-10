@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AdminDeleteButton from '../../components/AdminDeleteButton.vue'
 import EmptyState from '../../components/EmptyState.vue'
 import { reactive, ref } from 'vue'
 import { ElDialog } from 'element-plus'
@@ -142,6 +143,7 @@ async function save() {
               >
                 {{ t('adminUi.kick') }}
               </button>
+              <AdminDeleteButton resource="users" :identifier="user.id" :label="user.full_name" :disabled="user.id === auth.user?.id" @deleted="list.load" />
             </td>
           </tr>
         </tbody>

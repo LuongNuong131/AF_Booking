@@ -14,9 +14,11 @@ from app.api.v1.folders import router as folders_router
 from app.api.v1.health import HealthResponse, database_health, health
 from app.api.v1.health import router as health_router
 from app.api.v1.invoices import router as invoices_router
+from app.api.v1.management import router as management_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.operations import router as operations_router
 from app.api.v1.realtime import router as realtime_router
+from app.api.v1.report_center import router as report_center_router
 from app.api.v1.snippets import router as snippets_router
 from app.api.v1.tasks import router as tasks_router
 from app.api.v1.workflow import router as workflow_router
@@ -40,10 +42,12 @@ from app.services.folders import FolderService
 from app.services.integrity import IntegrityService
 from app.services.invoice_service import InvoiceService
 from app.services.key_index import KeyIndex
+from app.services.management import Management
 from app.services.monthly_bookings import MonthlyBookings
 from app.services.note_search import create_note_search
 from app.services.personal_reports import PersonalReports
 from app.services.push import PushService
+from app.services.report_center import ReportCenterService
 from app.services.reports import ReportService
 from app.services.retention import RetentionService
 from app.services.scheduler import Scheduler
@@ -180,6 +184,13 @@ def create_app(
             ws_manager,
             application.state.reports,
         )
+        from app.services.storage_cleanup import cleanup_storage
+
+        scheduler.add_job(
+            "storage.cleanup", lambda: cleanup_storage(application.state), interval=60, timeout=60
+        )
+        application.state.management = Management(application.state)
+        application.state.report_center = ReportCenterService(application.state.engine, config)
         application.state.monthly_bookings = MonthlyBookings(application.state)
         scheduler.add_job(
             "bookings.monthly",
@@ -282,6 +293,8 @@ def create_app(
     application.include_router(tasks_router, prefix="/api/v1")
     application.include_router(snippets_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
+    application.include_router(management_router, prefix="/api/v1")
+    application.include_router(report_center_router, prefix="/api/v1")
     application.include_router(operations_router, prefix="/api/v1")
     application.include_router(workflow_router, prefix="/api/v1")
     application.include_router(attachments_router, prefix="/api/v1")

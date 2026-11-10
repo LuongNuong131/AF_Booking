@@ -5,6 +5,7 @@ const { t } = useI18n(),
   health = useSystemHealthStore()
 const sections = [
   'users',
+  'data',
   'audit',
   'bookings',
   'import',

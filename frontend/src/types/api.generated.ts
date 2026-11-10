@@ -23,6 +23,8 @@ export type AttachmentStorageInfo = { "enabled": boolean; "max_file_bytes": numb
 
 export type AuditEntry = { "id": number; "user": AgentSummary | null; "action": string; "entity_type": string | null; "entity_id": string | null; "meta": { [key: string]: JsonValue } | null; "ip": string | null; "created_at": string }
 
+export type BookingClassification = { "supplier_type": "hotel" | "transportation"; "expected_type"?: SupplierType | null }
+
 export type BookingCreateRequest = { "booking_key": string; "supplier_name"?: string | null; "supplier_type"?: "hotel" | "transportation" | null; "confirm_new"?: boolean }
 
 export type BookingImportRequest = { "data": string; "apply"?: boolean; "station_source"?: "strict" | "station_code" | "booking_number"; "fill_missing_supplier"?: boolean }
@@ -39,7 +41,7 @@ export type BookingUpdatedData = { "booking_key": string; "display_key": string;
 
 export type BookingUpdatedFrame = { "event": "booking.updated"; "data": BookingUpdatedData }
 
-export type CatalogData = { "resource": "statuses" | "users"; "snapshots_changed"?: boolean }
+export type CatalogData = { "resource": "statuses" | "users" | "suppliers"; "snapshots_changed"?: boolean }
 
 export type CatalogFrame = { "event": "catalog.updated"; "data": CatalogData }
 
@@ -60,6 +62,16 @@ export type DailyReportDTO = { "report_date": string; "provisional"?: boolean; "
 export type DailyStation = { "station_code": string; "supplier_type": SupplierType; "note_count": number; "done_count": number }
 
 export type DailyStatusCount = { "code": string; "label": string; "count": number }
+
+export type DataBulkDelete = { "reason": string; "ids": Array<string> }
+
+export type DataDelete = { "reason": string }
+
+export type DataField = { "name": string; "kind"?: string; "required"?: boolean; "options"?: Array<string>; "readonly"?: boolean; "max_length"?: number | null; "reference"?: string | null }
+
+export type DataMutation = { "values": { [key: string]: JsonValue } }
+
+export type DataResource = { "name": string; "fields": Array<DataField> }
 
 export type DeleteNote = { "reason": string }
 
@@ -211,6 +223,10 @@ export type ProfileStats = { "notes_today": number; "notes_week": number; "timez
 
 export type PublicUser = { "id": number; "username": string; "full_name": string; "role": "admin" | "qc" | "agent"; "must_change_password"?: boolean; "is_active": boolean; "settings": { [key: string]: JsonValue } | null }
 
+export type PurgePreview = { "token": string; "entries": number; "counts": { [key: string]: number }; "blockers": Array<string> }
+
+export type PurgeRequest = { "ids": Array<number>; "confirmation": "DELETE"; "preview_token": string }
+
 export type PushKeys = { "p256dh": string; "auth": string }
 
 export type PushPublicKey = { "public_key": string | null; "enabled": boolean }
@@ -220,6 +236,16 @@ export type PushSubscribe = { "endpoint": string; "keys": PushKeys }
 export type PushUnsubscribe = { "endpoint": string }
 
 export type ReminderSettingsPatch = { "timezone"?: string | null; "default_remind_time"?: string | null; "auto_watch_on_note"?: boolean | null; "web_push_enabled"?: boolean | null; "task_sound"?: boolean | null; "web_notifications"?: boolean | null; "skip_weekends"?: boolean | null }
+
+export type ReportBreakdown = { "key": string; "label": string; "bookings": number; "updates": number; "done": number }
+
+export type ReportCenter = { "filters": ReportFilters; "generated_at": string; "timezone": string; "requested_by": string; "bookings": number; "updates": number; "done": number; "unclassified": number; "undeclared_invoices": number; "agents": Array<ReportBreakdown>; "statuses": Array<ReportBreakdown>; "stations": Array<ReportBreakdown>; "classifications": Array<ReportBreakdown>; "trend": Array<ReportBreakdown>; "items": Array<ReportRecord>; "total": number; "page": number; "size": number }
+
+export type ReportFilters = { "date_from": string; "date_to": string; "agent_id"?: number | null; "station"?: string | null; "supplier_type"?: SupplierType | null; "status_code"?: string | null; "invoice_state"?: InvoiceState | null; "scope"?: "mine" | "team" }
+
+export type ReportOptions = { "timezone": string; "today": string; "scopes": Array<string>; "max_days"?: number }
+
+export type ReportRecord = { "booking_key": string; "display_key": string; "supplier_name": string; "supplier_type": string; "station": string; "period": string; "agent": AgentSummary; "status_code": string; "status_label": string; "position": string; "note": string | null; "updated_at": string; "note_count": number; "is_done": boolean; "invoice_state": string; "invoice_count": number; "invoices": Array<string> }
 
 export type RequestMetrics = { "requests": number; "errors": number; "error_rate": number; "p50_ms": number | null; "p95_ms": number | null; "p99_ms": number | null }
 
@@ -277,6 +303,8 @@ export type SupplierSummary = { "name": string; "type": SupplierType }
 
 export type SupplierType = "hotel" | "transportation" | "unclassified"
 
+export type SystemDetail = { "health": SystemHealth; "runtime": { [key: string]: JsonValue }; "inventory": { [key: string]: number }; "components": Array<{ [key: string]: string }>; "jobs": Array<{ [key: string]: JsonValue }>; "latest_integrity": { [key: string]: JsonValue } | null; "recommendations": Array<string>; "observation": string; "database_available": boolean }
+
 export type SystemHealth = { "generated_at": string; "uptime_seconds": number; "version": string; "window_seconds": number; "percentiles_approximate": boolean; "total": RequestMetrics; "groups": Array<EndpointMetrics>; "db_latency_ms": number | null; "db_error": string | null; "pool": PoolMetrics; "websocket_connections": number; "soft_locks": number; "jobs": Array<JobMetrics>; "slow_queries": Array<SlowQuery>; "points": Array<MetricPoint>; "degraded": boolean; "key_index"?: KeyIndexMetrics; "snapshot_cache"?: SnapshotMetrics; "operational_errors"?: OperationalErrors }
 
 export type SystemHealthData = { "degraded": boolean }
@@ -297,9 +325,11 @@ export type TaskEdit = { "remind_date"?: string | null; "remind_time"?: string |
 
 export type TaskStatus = "pending" | "done" | "cancelled"
 
+export type TrashItem = { "id": number; "resource": string; "record_id": string; "label": string; "deleted_by": number; "reason": string; "created_at": string }
+
 export type TrendPoint = { "date": string; "count": number }
 
-export type UserCreate = { "username": string; "full_name": string; "role"?: "admin" | "qc" | "agent"; "temporary_password": string }
+export type UserCreate = { "is_active"?: boolean; "username": string; "full_name": string; "role"?: "admin" | "qc" | "agent"; "temporary_password": string }
 
 export type UserUpdate = { "full_name"?: string | null; "role"?: "admin" | "qc" | "agent" | null; "is_active"?: boolean | null }
 

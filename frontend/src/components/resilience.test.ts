@@ -135,3 +135,18 @@ it('shows loading feedback and only offers retry when the caller can handle it',
   expect(retry).toHaveBeenCalledOnce()
   actionable.unmount()
 })
+
+it('preserves active form state when the URL changes without a render failure', async () => {
+  let mounts = 0
+  const Child = defineComponent({ setup() {
+    mounts++
+    const draft = ref('')
+    return () => h('input', { value: draft.value, onInput: (event: Event) => { draft.value = (event.target as HTMLInputElement).value } })
+  } })
+  const wrapper = mount(ErrorBoundary, { props: { resetKey: '/reports' }, slots: { default: () => h(Child) }, global: { plugins: [i18n] } })
+  await wrapper.get('input').setValue('Keep applied filters and my draft')
+  await wrapper.setProps({ resetKey: '/reports?scope=team' })
+  expect(mounts).toBe(1)
+  expect((wrapper.get('input').element as HTMLInputElement).value).toBe('Keep applied filters and my draft')
+  wrapper.unmount()
+})

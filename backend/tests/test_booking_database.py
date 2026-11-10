@@ -36,10 +36,13 @@ from app.models import (
     BookingWorkTask,
     DailyReport,
     IntegrityRun,
+    NoteSnippet,
     Notification,
     PushSubscription,
+    RecycleEntry,
     Station,
     Status,
+    StorageGarbage,
     User,
 )
 from app.scripts.seed import seed_database
@@ -300,9 +303,13 @@ async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
         await app.state.key_index.stop()
         async with app.state.engine.begin() as connection:
             for model in (
+                StorageGarbage,
+                RecycleEntry,
+                NoteSnippet,
                 IntegrityRun,
                 DailyReport,
                 PushSubscription,
+                RecycleEntry,
                 BookingAssignment,
                 BookingWatcher,
                 BookingWorkTask,

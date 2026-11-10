@@ -75,13 +75,13 @@ try {
   await expect(
     admin.page.getByRole('heading', { name: 'System health', exact: true }),
   ).toBeVisible()
-  await expect(admin.page.locator('.system-health')).toContainText('Slow queries')
-  await expect(admin.page.locator('.system-health')).toContainText('reports.daily')
-  await expect(admin.page.locator('.system-health')).not.toContainText('hidden-health-param')
-  await expect(admin.page.locator('.health-sparkline polyline')).toHaveAttribute('points', /.+/)
+  await expect(admin.page.locator('.system-console')).toContainText('Slow queries')
+  await expect(admin.page.locator('.system-console')).toContainText('reports.daily')
+  await expect(admin.page.locator('.system-console')).not.toContainText('hidden-health-param')
+  await expect(admin.page.locator('.system-console .report-trend polyline')).toHaveAttribute('points', /.+/)
   let healthReads = 0
   admin.page.on('request', (r) => {
-    if (new URL(r.url()).pathname === '/api/v1/admin/system/health') healthReads++
+    if (new URL(r.url()).pathname === '/api/v1/admin/system/detail') healthReads++
   })
   await admin.page.goto('http://localhost:5173/profile')
   await expect(admin.page.getByRole('heading', { name: 'Profile', exact: true })).toBeVisible()

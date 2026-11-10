@@ -120,7 +120,7 @@ class AuthService:
 
     @staticmethod
     def require_live_row(row: User | None, caller: CurrentUser) -> User:
-        if row is None or not row.is_active:
+        if row is None or not row.is_active or row.deleted_at is not None:
             raise unauthorized()
         if caller.session_id is None or row.current_session_id != caller.session_id:
             raise ApiException(ErrorCode.SESSION_REPLACED, headers={"WWW-Authenticate": "Bearer"})
@@ -159,7 +159,12 @@ class AuthService:
         bucket_username = candidate.username if candidate is not None else username
         async with self.limiter.attempt(ip, bucket_username) as attempt:
             valid = await self.passwords.verify(encoded, password)
-            if not valid or candidate is None or not candidate.is_active:
+            if (
+                not valid
+                or candidate is None
+                or not candidate.is_active
+                or candidate.deleted_at is not None
+            ):
                 attempt.failed()
                 await self.failed_login(username, context, candidate_id)
                 raise ApiException(
@@ -177,6 +182,7 @@ class AuthService:
                 if (
                     row is not None
                     and row.is_active
+                    and row.deleted_at is None
                     and row.password_hash == encoded
                     and row.username == candidate.username
                 ):

@@ -72,7 +72,7 @@ export function parseServerFrame(raw: unknown): WebSocketServerFrame | null {
       break
     case 'catalog.updated':
       valid =
-        ['users', 'statuses'].includes(String(d.resource)) &&
+        ['users', 'statuses', 'suppliers'].includes(String(d.resource)) &&
         typeof d.snapshots_changed === 'boolean'
       break
     case 'task.due':

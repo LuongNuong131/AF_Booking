@@ -620,11 +620,7 @@ class BookingWrites:
                     select(User).where(User.id == user.id).with_for_update()
                 )
                 AuthService.require_live_row(live, user)
-                if live.role not in {"admin", "qc"} and (
-                    live.role != "agent"
-                    or body.model_fields_set != {"supplier_type"}
-                    or body.supplier_type.value not in {"hotel", "transportation"}
-                ):
+                if live.role not in {"admin", "qc"}:
                     raise ApiException(ErrorCode.FORBIDDEN)
                 conditions = [BookingGroup.cw_number == cw]
                 if station:
@@ -681,3 +677,62 @@ class BookingWrites:
         finally:
             if group_id is not None:
                 self.cache.invalidate_group(group_id)
+
+    async def classify(self, key, body, user, context):
+        identifier = None
+
+        def committed():
+            self.cache.invalidate(identifier)
+            self.ws_manager.spawn(
+                self.ws_manager.broadcast(
+                    "catalog.updated", {"resource": "suppliers", "snapshots_changed": True}
+                )
+            )
+
+        try:
+            async with transaction(self.engine, self.settings, after_commit=committed) as session:
+                live = await session.scalar(
+                    select(User).where(User.id == user.id).with_for_update()
+                )
+                AuthService.require_live_row(live, user)
+                book = await session.scalar(
+                    select(Booking).where(Booking.booking_key == key).with_for_update()
+                )
+                if book is None:
+                    raise ApiException(ErrorCode.NOT_FOUND)
+                group = await session.get(BookingGroup, book.group_id)
+                before = book.classification or group.supplier_type
+                if body.expected_type is not None and before != body.expected_type.value:
+                    raise ApiException(
+                        ErrorCode.VERSION_CONFLICT,
+                        message="Classification changed. Refresh this booking before saving.",
+                    )
+                identifier = book.id
+                book.classification = body.supplier_type
+                from sqlalchemy.orm.attributes import flag_modified
+
+                flag_modified(book, "updated_at")
+                # Classification is metadata, not a note/status/ownership transition.
+                session.add(book)
+                record_audit(
+                    session,
+                    "booking_classified",
+                    actor_id=user.id,
+                    entity_type="booking",
+                    entity_id=key,
+                    context=context,
+                    meta={"before": before, "after": body.supplier_type},
+                )
+                await session.flush()
+                row = (
+                    await session.execute(snapshot_query().where(Booking.id == identifier))
+                ).one()
+                result = snapshot_from_row(
+                    row,
+                    self.settings,
+                    (await invoice_previews(session, [identifier])).get(identifier),
+                )
+            return result
+        finally:
+            if identifier is not None:
+                self.cache.invalidate(identifier)

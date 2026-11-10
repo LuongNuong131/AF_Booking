@@ -35,6 +35,7 @@ class AdminUser(ContractModel):
 
 
 class UserCreate(ContractModel):
+    is_active: bool = True
     username: str = Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_.-]{2,49}$")
     full_name: str
     role: UserRole = "agent"

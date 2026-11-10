@@ -15,8 +15,10 @@ from app.models.entities import (
     NoteSnippet,
     Notification,
     PushSubscription,
+    RecycleEntry,
     Station,
     Status,
+    StorageGarbage,
     User,
 )
 
@@ -36,8 +38,10 @@ __all__ = [
     "NoteSnippet",
     "IntegrityRun",
     "Station",
+    "StorageGarbage",
     "Status",
     "User",
     "DailyReport",
     "PushSubscription",
+    "RecycleEntry",
 ]

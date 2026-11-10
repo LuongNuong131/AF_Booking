@@ -8,6 +8,7 @@ import { useUiStore } from './stores/ui'
 import './style.css'
 import './responsive.css'
 import './workspace-polish.css'
+import './operations-center.css'
 import { initializeMonitoring } from './monitoring'
 import { installPwa } from './pwa/register'
 

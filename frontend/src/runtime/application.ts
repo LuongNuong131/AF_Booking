@@ -162,7 +162,7 @@ export function installApplication(pinia: Pinia, router: Router): () => void {
               bookings.invalidateCatalogue()
               folders.invalidate()
               if (frame.data.resource === 'statuses') void catalogueRequest.run()
-              else {
+              else if (frame.data.resource === 'users') {
                 const generation = auth.epoch
                 void identityRequest.run().then((user) => {
                   if (user && generation === auth.epoch) auth.user = user

@@ -64,6 +64,7 @@ class ReportService:
         hi = day_bounds(end, zone)[1]
         notes = [
             BookingNote.deleted_at.is_(None),
+            BookingNote.booking_id.in_(select(Booking.id)),
             BookingNote.created_at >= lo,
             BookingNote.created_at < hi,
         ]

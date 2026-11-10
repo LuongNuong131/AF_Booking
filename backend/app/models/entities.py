@@ -20,6 +20,7 @@ def ascii_char(length: int) -> mysql.CHAR:
 
 
 class User(Timestamps, Base):
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
     __tablename__ = "users"
     __table_args__ = (UniqueConstraint("username", name="username"), TABLE_OPTIONS)
 
@@ -38,6 +39,7 @@ class User(Timestamps, Base):
 
 
 class Status(Base):
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
     __tablename__ = "statuses"
     __table_args__ = (UniqueConstraint("code", name="code"), TABLE_OPTIONS)
 
@@ -56,6 +58,7 @@ class Status(Base):
 
 
 class Station(CreatedAt, Base):
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
     __tablename__ = "stations"
     __table_args__ = TABLE_OPTIONS
 
@@ -65,6 +68,7 @@ class Station(CreatedAt, Base):
 
 
 class BookingGroup(Timestamps, Base):
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
     __tablename__ = "booking_groups"
     __table_args__ = (
         UniqueConstraint("cw_number", "station_code", name="uq_booking_groups_cw_station"),
@@ -113,6 +117,7 @@ class BookingGroup(Timestamps, Base):
 
 
 class Booking(Timestamps, Base):
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), index=True)
     __tablename__ = "bookings"
     __table_args__ = (
         UniqueConstraint("booking_key", name="booking_key"),
@@ -138,6 +143,9 @@ class Booking(Timestamps, Base):
     cw_number: Mapped[str] = mapped_column(ascii_varchar(12), nullable=False)
     station_code: Mapped[str] = mapped_column(ascii_varchar(4), nullable=False)
     period: Mapped[str] = mapped_column(ascii_char(4), nullable=False)
+    classification: Mapped[str | None] = mapped_column(
+        mysql.ENUM("hotel", "transportation", "unclassified"), nullable=True
+    )
     last_note_id: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
     last_agent_id: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
     last_status_id: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
@@ -445,3 +453,29 @@ class PushSubscription(CreatedAt, Base):
     auth: Mapped[str] = mapped_column(ascii_varchar(40), nullable=False)
     user_agent: Mapped[str | None] = mapped_column(mysql.VARCHAR(255))
     last_success_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+
+
+class RecycleEntry(CreatedAt, Base):
+    __tablename__ = "recycle_entries"
+    __table_args__ = (
+        Index("ix_recycle_resource_created", "resource", "created_at", "id"),
+        TABLE_OPTIONS,
+    )
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    resource: Mapped[str] = mapped_column(mysql.VARCHAR(30), nullable=False)
+    record_id: Mapped[str] = mapped_column(mysql.VARCHAR(40), nullable=False)
+    label: Mapped[str] = mapped_column(mysql.VARCHAR(255), nullable=False)
+    deleted_by: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    reason: Mapped[str] = mapped_column(mysql.VARCHAR(255), nullable=False)
+    payload: Mapped[dict[str, JsonValue]] = mapped_column(
+        mysql.JSON(none_as_null=True), nullable=False
+    )
+
+
+class StorageGarbage(CreatedAt, Base):
+    __tablename__ = "storage_garbage"
+    __table_args__ = (UniqueConstraint("storage_key", name="uq_storage_garbage_key"), TABLE_OPTIONS)
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    storage_key: Mapped[str] = mapped_column(mysql.VARCHAR(512), nullable=False)
+    attempts: Mapped[int] = mapped_column(mysql.INTEGER(unsigned=True), server_default="0")
+    last_error: Mapped[str | None] = mapped_column(mysql.VARCHAR(100))

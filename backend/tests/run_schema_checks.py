@@ -119,6 +119,7 @@ def main() -> None:
             "frontend",
             "tasks",
             "admin",
+            "management",
             "safeguards",
             "collaboration",
             "operations",
@@ -225,6 +226,7 @@ def main() -> None:
                 "frontend": "tests/test_frontend_database.py",
                 "tasks": "tests/test_tasks_database.py",
                 "admin": "tests/test_admin_database.py",
+                "management": "tests/test_management_database.py",
                 "safeguards": "tests/test_safeguards_database.py",
                 "collaboration": "tests/test_collaboration_database.py",
                 "operations": "tests/test_operations_database.py",
@@ -269,7 +271,7 @@ def main() -> None:
                 cwd=BACKEND,
                 env=test_env,
                 check=True,
-                timeout=900 if args.suite in {"coverage", "load"} else 360,
+                timeout=900 if args.suite in {"coverage", "load", "frontend"} else 360,
             )
             print(f"{args.engine} {args.suite}: checks passed; report: {args.report}")
         finally:

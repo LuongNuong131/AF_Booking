@@ -113,3 +113,11 @@ BOOKING_MODELS = (
     NotificationList,
     MutationResult,
 )
+
+
+class BookingClassification(ContractModel):
+    supplier_type: Literal["hotel", "transportation"]
+    expected_type: SupplierType | None = None
+
+
+BOOKING_MODELS += (BookingClassification,)

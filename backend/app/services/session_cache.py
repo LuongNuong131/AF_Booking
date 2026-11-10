@@ -30,7 +30,7 @@ class CurrentUser:
             user.username,
             user.full_name,
             user.role,
-            user.is_active,
+            user.is_active and getattr(user, "deleted_at", None) is None,
             user.current_session_id,
             deepcopy(user.settings),
             user.must_change_password,

@@ -7,7 +7,6 @@ import tempfile
 from zoneinfo import ZoneInfo
 
 from fastapi.responses import StreamingResponse
-from openpyxl import Workbook
 from sqlalchemy import select
 from sqlalchemy.orm import aliased
 
@@ -15,6 +14,7 @@ from app.core.unit_of_work import transaction
 from app.models import Booking, BookingGroup, BookingInvoice, Status, User
 from app.services.audit import record_audit
 from app.services.exports import date_text, safe_cell
+from app.services.workflow_xlsx import professional_workbook
 from app.utils.booking_key import period_label, to_display
 from app.utils.invoice import state_label
 
@@ -81,7 +81,9 @@ async def rows(engine, settings, period, request):
                         else book.booking_key,
                         folder.supplier_name,
                         book.station_code,
-                        "Hotel" if folder.supplier_type == "hotel" else "Transportation",
+                        {"hotel": "Hotel", "transportation": "Transportation"}.get(
+                            book.classification or folder.supplier_type, "Unclassified"
+                        ),
                         status or "",
                         agent or "",
                         state_label(book.invoice_state),
@@ -141,7 +143,7 @@ async def export_invoices(engine, settings, period, format, request, actor, cont
         return StreamingResponse(chunks(), media_type="text/csv; charset=utf-8", headers=headers)
 
     async def prepare():
-        workbook = Workbook(write_only=True)
+        workbook = professional_workbook()
         invoices = workbook.create_sheet("Invoices")
         bookings = workbook.create_sheet("Bookings")
         invoices.append(INVOICE_COLUMNS)

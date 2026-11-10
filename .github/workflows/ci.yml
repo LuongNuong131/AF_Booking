@@ -84,6 +84,7 @@ jobs:
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite booking --report /tmp/booking-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite tasks --report /tmp/tasks-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite admin --report /tmp/admin-report.xml
+      - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite management --report /tmp/management-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite operations --report /tmp/operations-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite backup --report /tmp/backup-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite observability --report /tmp/observability-report.xml
@@ -104,6 +105,7 @@ jobs:
             /tmp/booking-report.xml
             /tmp/tasks-report.xml
             /tmp/admin-report.xml
+            /tmp/management-report.xml
             /tmp/safeguards-report.xml
             /tmp/collaboration-report.xml
             /tmp/operations-report.xml

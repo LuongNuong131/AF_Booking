@@ -11,10 +11,9 @@ public API/WSS environment variables.
 
 ## Supplier classification
 
-All active Agent, QC and Admin users can use **Edit classification** in the booking
-summary or supplier folder to change Hotel/Transportation. This applies to all monthly
-bookings in the same CW/station folder and preserves the note draft and booking
-operational history. See [supplier classification and UI completion](supplier-classification-ui.md)
+All active Agent, QC and Admin users can classify individual bookings from each
+booking row or its workspace. The per-booking override preserves drafts and operational
+history; other monthly bookings retain their own classifications. See [supplier classification and UI completion](supplier-classification-ui.md)
 for scope and verification.
 
 ## Home workflow

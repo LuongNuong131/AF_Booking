@@ -58,8 +58,14 @@ class KeyIndex:
         self._pending_keys: dict[str, KeyEntry] = {}
         self._pending_groups: dict[str, GroupEntry] = {}
         self._loading = False
+        self._load_lock = asyncio.Lock()
+        self._generation = 0
         self._task: asyncio.Task | None = None
         self._signature = None
+
+    def invalidate(self):
+        self._generation += 1
+        self.ready = False
 
     @property
     def usable(self) -> bool:
@@ -136,6 +142,12 @@ class KeyIndex:
             return tuple(books) + tuple(groups)
 
     async def load(self) -> None:
+        async with self._load_lock:
+            await self._load()
+
+    async def _load(self) -> None:
+        generation = self._generation
+        self.ready = False
         self._loading = True
         self._pending_keys.clear()
         self._pending_groups.clear()
@@ -218,6 +230,8 @@ class KeyIndex:
             partial: dict[tuple[str, str], dict[str, KeyEntry]] = {}
             for entry in keys.values():
                 partial.setdefault((entry.cw_number, entry.period), {})[entry.key] = entry
+            if generation != self._generation:
+                return
             self.keys, self.groups, self.partial = keys, groups, partial
             self.cw_groups = {}
             for group in groups.values():

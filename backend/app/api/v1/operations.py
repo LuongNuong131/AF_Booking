@@ -16,6 +16,7 @@ from app.schemas.operations import (
     PushPublicKey,
     PushSubscribe,
     PushUnsubscribe,
+    SystemDetail,
     SystemHealth,
 )
 from app.services.audit import AuditContext
@@ -102,3 +103,10 @@ async def unsubscribe(body: PushUnsubscribe, request: Request, user: UserDep):
     request.app.state.push.limiter.check(user.id)
     await request.app.state.push.unsubscribe(body.endpoint, user)
     return MutationResult()
+
+
+@router.get("/admin/system/detail", response_model=SystemDetail)
+async def system_detail(request: Request, user: AdminDep):
+    from app.services.system_detail import system_detail
+
+    return await system_detail(request.app.state)

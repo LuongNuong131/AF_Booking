@@ -7,6 +7,7 @@ from app.schemas.contracts import (
     BookingIdentity,
     ContractModel,
     InvoiceState,
+    JsonValue,
     StatusSummary,
     SupplierType,
     UtcTimestamp,
@@ -200,3 +201,18 @@ OPERATIONS_MODELS = (
     PushUnsubscribe,
     PushPublicKey,
 )
+
+
+class SystemDetail(ContractModel):
+    health: SystemHealth
+    runtime: dict[str, JsonValue]
+    inventory: dict[str, int]
+    components: list[dict[str, str]]
+    jobs: list[dict[str, JsonValue]]
+    latest_integrity: dict[str, JsonValue] | None
+    recommendations: list[str]
+    observation: str
+    database_available: bool
+
+
+OPERATIONS_MODELS += (SystemDetail,)
