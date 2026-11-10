@@ -13,6 +13,42 @@ depends_on = None
 OLD_TYPES = ("taken_over", "stale", "task_due", "watch_update", "assigned", "assignment_done")
 
 
+def notification_types(before, after):
+    # TiDB rejects changing a column referenced by a generated column. Rebuild
+    # this virtual projection and its index; the notification rows stay intact.
+    tidb = "tidb" in op.get_bind().execute(sa.text("SELECT VERSION()")).scalar().lower()
+    if tidb:
+        op.drop_constraint("uq_notifications_unread_watch", "notifications", type_="unique")
+        op.drop_column("notifications", "unread_watch_booking")
+    try:
+        op.alter_column(
+            "notifications",
+            "type",
+            existing_type=mysql.ENUM(*before),
+            type_=mysql.ENUM(*after),
+            existing_nullable=False,
+            existing_server_default="taken_over",
+        )
+    finally:
+        if tidb:
+            op.add_column(
+                "notifications",
+                sa.Column(
+                    "unread_watch_booking",
+                    mysql.BIGINT(unsigned=True),
+                    sa.Computed(
+                        "IF(type = 'watch_update' AND read_at IS NULL, booking_id, NULL)",
+                        persisted=False,
+                    ),
+                ),
+            )
+            op.create_unique_constraint(
+                "uq_notifications_unread_watch",
+                "notifications",
+                ["user_id", "unread_watch_booking"],
+            )
+
+
 def upgrade():
     op.create_table(
         "booking_work_tasks",
@@ -52,25 +88,11 @@ def upgrade():
     op.create_unique_constraint(
         "uq_attachment_note_storage", "attachments", ["note_id", "storage_key"]
     )
-    op.alter_column(
-        "notifications",
-        "type",
-        existing_type=mysql.ENUM(*OLD_TYPES),
-        type_=mysql.ENUM(*OLD_TYPES, "work_task_created", "work_task_handled"),
-        existing_nullable=False,
-        existing_server_default="taken_over",
-    )
+    notification_types(OLD_TYPES, (*OLD_TYPES, "work_task_created", "work_task_handled"))
 
 
 def downgrade():
     op.execute("DELETE FROM notifications WHERE type IN ('work_task_created','work_task_handled')")
-    op.alter_column(
-        "notifications",
-        "type",
-        existing_type=mysql.ENUM(*OLD_TYPES, "work_task_created", "work_task_handled"),
-        type_=mysql.ENUM(*OLD_TYPES),
-        existing_nullable=False,
-        existing_server_default="taken_over",
-    )
+    notification_types((*OLD_TYPES, "work_task_created", "work_task_handled"), OLD_TYPES)
     op.drop_constraint("uq_attachment_note_storage", "attachments", type_="unique")
     op.drop_table("booking_work_tasks")

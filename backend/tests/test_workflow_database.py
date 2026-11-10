@@ -3,6 +3,7 @@
 import base64
 import io
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from uuid import uuid4
 from zoneinfo import ZoneInfo
 
@@ -17,6 +18,7 @@ from app.services.reports import day_bounds
 migrated, password_pair, rig = support.migrated, support.password_pair, support.rig
 pytestmark = support.pytestmark
 KEY = support.KEY
+ALEMBIC_CONFIG_PATH = Path(__file__).resolve().parents[1] / "alembic.ini"
 PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jkAAAAABJRU5ErkJggg=="
 )
@@ -222,3 +224,41 @@ async def test_image_types_limit_failed_storage_and_large_image_body(rig):
         assert (await upload(rig, note, content=PNG + bytes([n]))).status_code == 201
     assert (await upload(rig, note, content=PNG + b"new")).status_code == 422
     assert (await upload(rig, note, content=PNG + b"0" * (5 * 1024 * 1024))).status_code == 413
+
+
+async def test_notification_enum_migration_preserves_existing_watch_feed_and_uniqueness(rig):
+    import asyncio
+
+    import pytest
+    from alembic.config import Config
+    from sqlalchemy.exc import IntegrityError
+
+    from alembic import command
+    from app.models import Booking, Notification
+
+    assert (await rig.save()).status_code == 200
+    async with rig.app.state.engine.begin() as connection:
+        booking_id = await connection.scalar(select(Booking.id).where(Booking.booking_key == KEY))
+        await connection.execute(
+            Notification.__table__.insert(),
+            {
+                "user_id": 3,
+                "booking_id": booking_id,
+                "type": "watch_update",
+                "merged_count": 2,
+            },
+        )
+    config = Config(str(ALEMBIC_CONFIG_PATH))
+    await asyncio.to_thread(command.downgrade, config, "0013")
+    await asyncio.to_thread(command.upgrade, config, "head")
+    await asyncio.to_thread(command.check, config)
+    async with rig.app.state.engine.connect() as connection:
+        row = (await connection.execute(select(Notification.__table__))).mappings().one()
+        assert row["type"] == "watch_update" and row["merged_count"] == 2
+        assert row["unread_watch_booking"] == booking_id
+    with pytest.raises(IntegrityError):
+        async with rig.app.state.engine.begin() as connection:
+            await connection.execute(
+                Notification.__table__.insert(),
+                {"user_id": 3, "booking_id": booking_id, "type": "watch_update"},
+            )

@@ -31,6 +31,9 @@ Task nhắc việc cá nhân vẫn hoạt động độc lập với ticket gử
 2. Áp dụng migration `0014` bằng `alembic upgrade head` trên backend. Paid Render
    dùng pre-deploy command; service Free cần chạy migration qua môi trường quản trị
    đã cấu hình database. Giữ khóa database trong secret manager.
+   Với TiDB, tạm dừng ghi dữ liệu/thông báo trong lúc migration chạy: migration
+   dựng lại cột tính toán và unique index của thông báo để mở rộng enum. Không
+   chạy migration đồng thời với instance cũ đang tạo thông báo.
 3. Deploy backend rồi frontend. Kiểm tra `/health` và `/api/v1/ready`.
 4. Đăng nhập Agent để kiểm tra báo cáo riêng, Excel và tạo ticket. Đăng nhập QC để
    kiểm tra chuông thông báo, hàng chờ và đánh dấu đã thao tác.
