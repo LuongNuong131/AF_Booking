@@ -83,7 +83,7 @@ try {
         !url.pathname.startsWith('/api/') &&
         (url.pathname.startsWith('/assets/') ||
           url.pathname.startsWith('/icons/') ||
-          ['/index.html', '/manifest.webmanifest'].includes(url.pathname))
+          ['/index.html', '/manifest.webmanifest', '/brand/af-logo.png'].includes(url.pathname))
       )
     }),
   ).toBe(true)
