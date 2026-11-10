@@ -118,3 +118,20 @@ it('ends route loading after 20 seconds and refreshes after a minute hidden', as
   expect(ui.refreshReason).toBe('visible')
   stop()
 })
+
+it('shows loading feedback and only offers retry when the caller can handle it', async () => {
+  const wrapper = mount(RequestStatus, { props: { state: 'loading' }, global: { plugins: [i18n] } })
+  expect(wrapper.get('[role="status"]').text()).toContain('Loading')
+  await wrapper.setProps({ state: 'error', error: { code: 'UNKNOWN', message: '' } })
+  expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+  expect(wrapper.find('button').exists()).toBe(false)
+  wrapper.unmount()
+  const retry = vi.fn()
+  const actionable = mount(RequestStatus, {
+    props: { state: 'error', error: { code: 'UNKNOWN', message: '' }, onRetry: retry },
+    global: { plugins: [i18n] },
+  })
+  await actionable.get('button').trigger('click')
+  expect(retry).toHaveBeenCalledOnce()
+  actionable.unmount()
+})

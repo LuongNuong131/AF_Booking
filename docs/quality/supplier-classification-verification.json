@@ -1,0 +1,60 @@
+{
+  "date": "2026-11-10",
+  "base_commit": "7d02a1a7cd61cd93b174d022f5950f1b309e5263",
+  "frontend": {
+    "vitest_files": 56,
+    "vitest_passed": 264,
+    "lint": "passed",
+    "typecheck": "passed",
+    "security_configuration": "passed",
+    "production_build": "passed"
+  },
+  "backend": {
+    "unit_run_passed": 221,
+    "unit_run_skipped": 199,
+    "folder_suite_passed": 35,
+    "final_classification_subset_passed": 8,
+    "final_classification_subset_deselected": 28,
+    "database": "disposable MySQL 8.4 with verified local TLS",
+    "ruff_check": "passed",
+    "ruff_format": "passed",
+    "generated_contract_check": "passed"
+  },
+  "browser": {
+    "runner": "frontend/e2e/classification.mjs",
+    "real_api": true,
+    "api_interception": false,
+    "roles": [
+      "agent",
+      "qc",
+      "admin"
+    ],
+    "widths": [
+      320,
+      375,
+      768,
+      1024,
+      1440
+    ],
+    "route_width_combinations": 200,
+    "page_errors": [],
+    "document_overflow_failures": 0,
+    "checks": [
+      "type-only PATCH for each role",
+      "unsaved note draft preserved",
+      "history, version, status, owner and booking timestamp preserved",
+      "English and Vietnamese",
+      "light and dark",
+      "mobile report column headings remain visible"
+    ]
+  },
+  "deployment": {
+    "production_changed": false,
+    "schema_migration_required": false
+  },
+  "limitations": [
+    "Other database suites were skipped without their dedicated database configuration.",
+    "TiDB and external object-storage integrations were not exercised in this session.",
+    "No production deployment or migration was run."
+  ]
+}

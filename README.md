@@ -59,6 +59,7 @@ The product supports Agent, QC, and Admin roles, with authorization enforced on 
 - Exact, partial, ambiguous, and station-assisted lookup.
 - Smart search across booking keys, CW numbers, stations, periods, and supplier names.
 - Supplier folders with station and monthly booking navigation.
+- Inline Hotel/Transportation classification edits for Agent, QC and Admin, with folder-wide scope and an audit trail.
 - Append-only notes with status, position, ownership, and optimistic version checks.
 - Activity timeline with cursor pagination.
 - Draft persistence, conflict review, duplicate-note protection, and offline outbox recovery.

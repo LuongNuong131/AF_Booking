@@ -111,7 +111,7 @@ const columns = [
     >
       <div v-for="n in 6" :key="n" class="skeleton-line" />
     </div>
-    <table v-else-if="rows.length" class="booking-table">
+    <table v-else-if="rows.length" class="booking-table interactive-booking-table">
       <caption class="sr-only">
         {{
           t('bookingUi.bookingsTable')

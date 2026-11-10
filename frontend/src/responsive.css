@@ -370,18 +370,18 @@ input:not([type='checkbox']):not([type='radio']), select, textarea { max-width: 
   input:not([type='checkbox']):not([type='radio']), select, textarea { font-size: 16px; min-height: 44px; }
   .summary-mode-nav { display: flex; flex-wrap: wrap; gap: 6px; }
   .summary-mode-nav .button { flex: 1 1 auto; min-height: 44px; }
-  .booking-table { display: block; min-width: 0; width: 100%; border: 0; background: transparent; }
-  .booking-table thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
-  .booking-table tbody { display: grid; gap: 14px; }
-  .booking-table tbody tr[data-nav-key] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; padding: 16px; height: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
-  .booking-table tbody tr[data-nav-key] td { display: block; border: 0; padding: 0; height: auto; white-space: normal; min-width: 0; width: auto; overflow-wrap: anywhere; background: transparent; font-size: 13px; }
-  .booking-table td::before { content: attr(data-label); display: block; margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 600; }
-  .booking-table tbody tr[data-nav-key] td:first-child, .booking-table tbody tr[data-nav-key] td:nth-child(2), .booking-table tbody tr[data-nav-key] td:nth-child(10), .booking-table tbody tr[data-nav-key] td:last-child { grid-column: 1 / -1; }
-  .booking-table tbody tr[data-nav-key] td:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .booking-table td:first-child::before { display: none; }
-  .booking-table .table-booking-link { flex: 1 1 100%; min-height: 36px; text-align: left; font-size: 14px; white-space: normal; }
-  .booking-table .table-note span { white-space: normal; max-width: none; }
-  .booking-table-wrap { background: transparent; border: 0; overflow: visible; box-shadow: none; }
+  .interactive-booking-table { display: block; min-width: 0; width: 100%; border: 0; background: transparent; }
+  .interactive-booking-table thead { position: absolute; width: 1px; height: 1px; clip-path: inset(50%); overflow: hidden; }
+  .interactive-booking-table tbody { display: grid; gap: 14px; }
+  .interactive-booking-table tbody tr[data-nav-key] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; padding: 16px; height: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+  .interactive-booking-table tbody tr[data-nav-key] td { display: block; border: 0; padding: 0; height: auto; white-space: normal; min-width: 0; width: auto; overflow-wrap: anywhere; background: transparent; font-size: 13px; }
+  .interactive-booking-table td::before { content: attr(data-label); display: block; margin-bottom: 4px; color: var(--muted); font-size: 11px; font-weight: 600; }
+  .interactive-booking-table tbody tr[data-nav-key] td:first-child, .interactive-booking-table tbody tr[data-nav-key] td:nth-child(2), .interactive-booking-table tbody tr[data-nav-key] td:nth-child(10), .interactive-booking-table tbody tr[data-nav-key] td:last-child { grid-column: 1 / -1; }
+  .interactive-booking-table tbody tr[data-nav-key] td:first-child { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+  .interactive-booking-table td:first-child::before { display: none; }
+  .interactive-booking-table .table-booking-link { flex: 1 1 100%; min-height: 36px; text-align: left; font-size: 14px; white-space: normal; }
+  .interactive-booking-table .table-note span { white-space: normal; max-width: none; }
+  .booking-table-wrap:has(.interactive-booking-table) { background: transparent; border: 0; overflow: visible; box-shadow: none; }
   .page-controls { padding: 16px 0; align-items: center; justify-content: space-between; }
   .page-controls .button { min-height: 44px; }
   .admin-table-wrap table, .daily-report-section table { min-width: 640px; }

@@ -7,7 +7,7 @@ from pydantic import AwareDatetime
 from sqlalchemy import select
 
 from app.core.bounds import KeyPath
-from app.core.deps import get_current_user, require_roles
+from app.core.deps import get_current_user
 from app.core.errors import ApiException
 from app.core.timeouts import DeadlineRoute, timeout
 from app.core.unit_of_work import transaction
@@ -149,7 +149,7 @@ async def patch_folder(
     cw: KeyPath,
     body: FolderPatch,
     request: Request,
-    user: Annotated[CurrentUser, Depends(require_roles("admin", "qc"))],
+    user: UserDep,
 ):
     return await request.app.state.booking_writes.patch_folder(
         cw, body, user, AuditContext.from_request(request)

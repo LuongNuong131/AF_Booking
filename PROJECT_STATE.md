@@ -245,3 +245,20 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
   booking lookup path does not gain an extra request on mount.
 - Verification after the change: backend Ruff/contract/unit gate passed (**180 passed,
   162 skipped**); frontend lint/typecheck/Vitest/build passed (**245 tests passed**).
+
+## Supplier classification and interface completion (2026-11-10)
+
+- Active Agent, QC and Admin users can change Hotel/Transportation inline in the
+  booking workspace, booking detail and supplier folder. The type-only agent patch
+  is enforced against the live role; other supplier administration remains Admin/QC.
+- Folder changes apply to the CW/station and all its months, preserve operational
+  booking fields and drafts, and record before/after supplier values in audit logs.
+- Completed inline editing, report/ticket/note-search styles, request loading and
+  actionable error feedback, filtered administration empty states, and mobile report
+  tables. Existing theme tokens and English/Vietnamese copy are used throughout.
+- Chromium verified all roles, populated reports/tickets, draft preservation and 200
+  route/width combinations with no page errors or document overflow. A separate
+  MySQL/TLS folder suite and frontend/backend checks are recorded in
+  `docs/quality/supplier-classification-verification.json`.
+- See `docs/supplier-classification-ui.md` for workflow scope and repeatable
+  checks. No new migration/dependency or production deployment is included.

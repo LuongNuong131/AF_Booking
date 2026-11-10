@@ -102,6 +102,8 @@
     "errorBody": "Please refresh the page to try again."
   },
   "common": {
+    "noRecords": "No records found",
+    "noRecordsHint": "Try changing your filters or refreshing this view.",
     "retry": "Retry",
     "cancel": "Cancel request",
     "dismiss": "Dismiss notification",
@@ -468,6 +470,13 @@
     "openMonth": "Open month",
     "recent": "Recent folders",
     "noTypeFolders": "No folders of this type on this page.",
+    "editClassification": "Edit classification",
+    "saveClassification": "Save classification",
+    "classificationHint": "Applies to all monthly bookings in this CW/station supplier folder.",
+    "classificationSaved": "Supplier classification updated.",
+    "supplierSaved": "Supplier details updated.",
+    "saving": "Saving…",
+    "cancel": "Cancel",
     "editSupplier": "Edit supplier",
     "saveSupplier": "Save supplier",
     "supplierMinimum": "Enter at least 3 characters for the supplier name.",

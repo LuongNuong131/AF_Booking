@@ -9,6 +9,14 @@ summary, activity and note components. All visible copy is English, including er
 codes and the shared Prompt 1B messages. [frontend.md](frontend.md) covers setup and
 public API/WSS environment variables.
 
+## Supplier classification
+
+All active Agent, QC and Admin users can use **Edit classification** in the booking
+summary or supplier folder to change Hotel/Transportation. This applies to all monthly
+bookings in the same CW/station folder and preserves the note draft and booking
+operational history. See [supplier classification and UI completion](supplier-classification-ui.md)
+for scope and verification.
+
 ## Home workflow
 
 1. Focus **Booking number** (automatic initially, or `/`). Paste a full/display key,

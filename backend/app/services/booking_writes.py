@@ -620,7 +620,11 @@ class BookingWrites:
                     select(User).where(User.id == user.id).with_for_update()
                 )
                 AuthService.require_live_row(live, user)
-                if live.role not in {"admin", "qc"}:
+                if live.role not in {"admin", "qc"} and (
+                    live.role != "agent"
+                    or body.model_fields_set != {"supplier_type"}
+                    or body.supplier_type.value not in {"hotel", "transportation"}
+                ):
                     raise ApiException(ErrorCode.FORBIDDEN)
                 conditions = [BookingGroup.cw_number == cw]
                 if station:
@@ -640,6 +644,11 @@ class BookingWrites:
                 if group is None:
                     raise ApiException(ErrorCode.NOT_FOUND)
                 group_id = group.id
+                before = {
+                    "supplier_name": group.supplier_name,
+                    "supplier_type": group.supplier_type,
+                    "recurring_enabled": group.recurring_enabled,
+                }
                 if "supplier_name" in body.model_fields_set:
                     group.supplier_name = supplier_name(body.supplier_name)
                 if body.supplier_type is not None:
@@ -657,7 +666,16 @@ class BookingWrites:
                     entity_type="booking",
                     entity_id=cw,
                     context=context,
-                    meta={"cw_number": cw},
+                    meta={
+                        "cw_number": cw,
+                        "station_code": group.station_code,
+                        "before": before,
+                        "after": {
+                            "supplier_name": group.supplier_name,
+                            "supplier_type": group.supplier_type,
+                            "recurring_enabled": group.recurring_enabled,
+                        },
+                    },
                 )
             return changed.info
         finally:

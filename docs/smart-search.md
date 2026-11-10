@@ -46,7 +46,7 @@ A new CW without a station requires three letters before lookup can continue. A 
 supplier requires a trimmed 3–255-character name and Hotel/Transportation choice;
 Save stays disabled until those and the status/note requirements are met. Station and
 period come from the key and display read-only. A known folder's supplier is read-only;
-Admin/QC can edit it using the existing `PATCH /folders/{cw}`. Agent sees no Edit action.
+Agent, QC and Admin can use **Edit classification** in the booking workspace or folder to change Hotel/Transportation through `PATCH /folders/{cw}`. The classification applies to all months in that CW/station folder. Admin/QC additionally retain **Edit supplier** for names, unclassified values and recurrence settings.
 A station mismatch shows the expected station and an Apply button, and blocks Save.
 Both lookup metadata and the existing server `STATION_MISMATCH` error are supported.
 

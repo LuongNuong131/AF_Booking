@@ -102,6 +102,8 @@
     "errorBody": "Tải lại trang để thử lại."
   },
   "common": {
+    "noRecords": "Không tìm thấy dữ liệu",
+    "noRecordsHint": "Thử thay đổi bộ lọc hoặc tải lại trang này.",
     "retry": "Thử lại",
     "cancel": "Hủy yêu cầu",
     "dismiss": "Đóng thông báo",
@@ -468,6 +470,13 @@
     "openMonth": "Mở tháng",
     "recent": "Thư mục gần đây",
     "noTypeFolders": "Trang này không có thư mục thuộc loại này.",
+    "editClassification": "Sửa phân loại",
+    "saveClassification": "Lưu phân loại",
+    "classificationHint": "Áp dụng cho tất cả booking tháng trong folder nhà cung cấp CW/trạm này.",
+    "classificationSaved": "Đã cập nhật phân loại nhà cung cấp.",
+    "supplierSaved": "Đã cập nhật thông tin nhà cung cấp.",
+    "saving": "Đang lưu…",
+    "cancel": "Hủy",
     "editSupplier": "Sửa nhà cung cấp",
     "saveSupplier": "Lưu nhà cung cấp",
     "supplierMinimum": "Nhập tên nhà cung cấp ít nhất 3 ký tự.",

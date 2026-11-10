@@ -1,0 +1,73 @@
+/* Shared finishing layer for operational screens and inline booking edits. */
+.supplier-editor { margin: 14px 0; }
+.supplier-editor-triggers { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
+.classification-trigger { color: var(--primary); background: var(--primary-soft); border-color: var(--line); font-size: 12px; }
+.classification-trigger > span { font-size: 18px; line-height: 1; }
+.supplier-edit-form { max-width: 620px; padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.supplier-edit-form fieldset { min-width: 0; padding: 0; margin: 0; border: 0; display: grid; gap: 14px; }
+.supplier-edit-form legend { margin-bottom: 16px; padding: 0; color: var(--ink); font-size: 14px; font-weight: 750; }
+.supplier-edit-form label { display: grid; gap: 7px; color: var(--ink); font-size: 12px; font-weight: 650; }
+.supplier-edit-form input:not([type='checkbox']), .supplier-edit-form select { width: 100%; min-width: 0; min-height: 42px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: var(--surface-soft); font: inherit; }
+.supplier-edit-form .recurring-toggle { display: flex; align-items: center; }
+.supplier-edit-form .supplier-scope-hint { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.supplier-editor-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.supplier-save-success { color: var(--success); font-size: 12px; margin: 10px 0 0; }
+.booking-ticket-panel textarea { width: 100%; min-width: 0; resize: vertical; padding: 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: var(--surface); font: inherit; line-height: 1.6; }
+.booking-ticket-panel summary, .note-images summary { cursor: pointer; }
+.workflow-controls > label { flex: 1 1 160px; }
+.workflow-controls input, .workflow-controls select { width: 100%; font: inherit; }
+.workflow-controls .button { flex: 0 0 auto; }
+.reports-view > .page-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.reports-view > .page-heading h1 { flex: 1 1 240px; }
+.reports-view > .page-heading > p:last-child { flex-basis: 100%; margin-top: 0; }
+.reports-view > .admin-filters, .daily-report-controls, .note-search-view > .summary-filters { padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; margin-block: 22px; }
+.daily-report-view > h2 { margin: 30px 0 14px; }
+.daily-report-view .booking-table-wrap, .personal-daily-report .booking-table-wrap { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.daily-report-view .booking-table, .personal-report-table { width: 100%; }
+.daily-status-list { display: flex; flex-wrap: wrap; gap: 10px; padding: 0; list-style: none; }
+.daily-status-list li { display: flex; gap: 16px; align-items: center; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-size: 13px; }
+.daily-status-list strong { color: var(--primary); }
+.note-search-hit { margin: 16px 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 20px; }
+.note-search-hit > a { font-size: 15px; font-weight: 750; color: var(--primary); overflow-wrap: anywhere; }
+.note-search-hit > p { color: var(--muted); font-size: 12px; }
+.note-search-hit small { display: inline-block; color: var(--muted); margin: 8px; font-size: 11px; }
+.note-search-hit .search-note-text { padding: 14px; color: var(--ink); background: var(--surface-soft); border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.admin-layout > section > h2 { margin-bottom: 18px; }
+.admin-table th { white-space: nowrap; }
+.admin-table td { overflow-wrap: anywhere; }
+.admin-table .text-button { min-height: 36px; }
+.report-metrics > article { min-width: 0; }
+.report-metrics strong { overflow-wrap: anywhere; }
+.ticket-card .table-booking-link { white-space: normal; overflow-wrap: anywhere; }
+.ticket-card .ticket-meta { overflow-wrap: anywhere; }
+.ticket-handle-form textarea { width: 100%; resize: vertical; font: inherit; }
+@media (max-width: 640px) {
+  .supplier-edit-form { padding: 14px; }
+  .supplier-edit-form select, .supplier-edit-form input:not([type='checkbox']) { font-size: 16px; min-height: 44px; }
+  .supplier-editor-actions > .button { flex: 1 1 auto; }
+  .reports-view > .page-heading .button { flex: 1 1 100%; }
+  .daily-report-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; gap: 10px; }
+  .daily-report-controls > label { grid-column: 1 / -1; min-width: 0; }
+  .daily-report-controls input { width: 100%; min-width: 0; }
+  .note-search-view > .summary-filters { padding: 16px; }
+  .booking-table-wrap:not(:has(.interactive-booking-table)) { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); }
+  .booking-table:not(.interactive-booking-table) { display: table; width: 100%; min-width: 580px; }
+  .booking-table:not(.interactive-booking-table) thead { position: static; width: auto; height: auto; clip-path: none; overflow: visible; }
+  .booking-table:not(.interactive-booking-table) tbody { display: table-row-group; }
+  .booking-table:not(.interactive-booking-table) td::before { display: none; }
+  .booking-table:not(.interactive-booking-table) .table-booking-link { white-space: nowrap; }
+  .note-search-hit { padding: 16px; }
+  .note-search-hit small { display: block; margin-inline: 0; }
+  .workflow-controls > label { width: 100%; }
+  .page-controls > span { flex-basis: 100%; font-size: 12px; }
+  .page-controls > div { width: 100%; justify-content: space-between; }
+  .ticket-handle-form .button { width: 100%; }
+}
+@media print {
+  .supplier-editor-triggers, .supplier-edit-form, .workflow-controls, .ticket-handle-form { display: none !important; }
+  .daily-report-view .booking-table-wrap, .personal-daily-report .booking-table-wrap { overflow: visible; border: 0; }
+  .daily-report-view .booking-table { min-width: 0; }
+}
+.request-loading { display: flex; align-items: center; gap: 9px; margin: 12px 0; color: var(--muted); font-size: 12px; }
+.request-spinner { display: inline-block; width: 14px; height: 14px; flex-shrink: 0; border: 2px solid var(--line); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .request-spinner { animation: none; } }

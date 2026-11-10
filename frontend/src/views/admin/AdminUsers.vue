@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
 import { reactive, ref } from 'vue'
 import { ElDialog } from 'element-plus'
 import { useI18n } from 'vue-i18n'
@@ -97,7 +98,8 @@ async function save() {
       :error="list.request.error.value"
       @retry="list.load"
     />
-    <div class="admin-table-wrap">
+    <EmptyState v-if="list.request.state.value === 'success' && !list.items.value.length" :title="t('common.noRecords')" :description="t('common.noRecordsHint')" />
+    <div v-if="list.items.value.length" class="admin-table-wrap">
       <table class="admin-table admin-users-table">
         <thead>
           <tr>
