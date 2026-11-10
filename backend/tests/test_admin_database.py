@@ -1,3 +1,4 @@
+import asyncio
 import csv
 import io
 import os
@@ -108,7 +109,13 @@ async def test_delete_restore_rebuild_and_null_last_snapshot_realtime(live, rig)
         result = await call(
             rig, "delete", f"/admin/notes/{first['id']}", {"reason": "Remove remaining note"}
         )
-        event = await realtime.event(ws, "booking.updated")
+        # Earlier committed updates can still be queued in the realtime batch.
+        # Wait for the version produced by this deletion before inspecting it.
+        async with asyncio.timeout(3):
+            while True:
+                event = await realtime.event(ws, "booking.updated", KEY)
+                if event["version"] >= result.json()["version"]:
+                    break
         assert (
             event["last_agent_id"] is None
             and event["status_code"] is None

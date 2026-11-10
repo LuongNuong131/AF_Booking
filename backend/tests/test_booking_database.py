@@ -749,20 +749,24 @@ async def test_slow_query_504_discards_connection_and_recovers(rig, caplog):
 
     async def slow(request: Request):
         async with transaction(
-            request.app.state.engine, request.app.state.settings, seconds=3
+            request.app.state.engine, request.app.state.settings, seconds=6
         ) as session:
             identifiers.append(await session.scalar(text("SELECT CONNECTION_ID()")))
+            # Start the cancellation budget once SQL setup has completed. Under
+            # coverage a busy runner can spend the old 500 ms budget in setup,
+            # never reaching the sleeping query this test is meant to cancel.
+            request.state.request_timeout_seconds = 0.2
+            request.state.request_deadline.reschedule(asyncio.get_running_loop().time() + 0.2)
             await session.execute(text("SELECT SLEEP(2)"))
         return {"ok": True}
 
-    # Exercise query cancellation, with TLS/session setup outside the short query budget.
-    async with rig.app.state.engine.connect() as first, rig.app.state.engine.connect() as second:
-        await first.scalar(text("SELECT 1"))
-        await second.scalar(text("SELECT 1"))
-    add_route(rig, "/test/slow", slow, seconds=0.5)
+    add_route(rig, "/test/slow", slow, seconds=5)
     result = await rig.client.get("/test/slow", headers={"X-Request-ID": "slow-test"})
     assert (
-        result.status_code == 504 and result.json()["code"] == "REQUEST_TIMEOUT" and invalidations
+        result.status_code == 504
+        and result.json()["code"] == "REQUEST_TIMEOUT"
+        and identifiers
+        and invalidations
     )
     async with rig.app.state.engine.connect() as connection:
         assert await connection.scalar(text("SELECT CONNECTION_ID()")) != identifiers[0]
