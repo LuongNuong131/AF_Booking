@@ -1,6 +1,6 @@
 # Booking backend — Prompt 4
 
-The API now supports lookup, notes/history, mine/overall/stale lists, active statuses and private notifications. It also implements Admin/QC supplier-folder edits needed by cache invalidation. No user endpoint edits or deletes an existing note. Prompt 5 implements WebSocket broadcast/private notifications, advisory locks and stale jobs; [ws-protocol.md](ws-protocol.md) defines the frames. Attachment storage deliberately returns 501. Frontend screens are not part of this backend prompt.
+The API now supports lookup, notes/history, mine/overall/stale lists, active statuses and private notifications. It also implements Admin/QC supplier-folder edits needed by cache invalidation. No user endpoint edits or deletes an existing note. Prompt 5 implements WebSocket broadcast/private notifications, advisory locks and stale jobs; [ws-protocol.md](ws-protocol.md) defines the frames. Authenticated note image uploads use private S3-compatible storage; see [R2 setup](note-images-vi.md). [Personal reports and QC tickets](workflow-release-vi.md) extend these workflows.
 
 ## Add a booking as a normal user
 

@@ -71,7 +71,7 @@ try {
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page.getByLabel('Realtime connection: Live', { exact: true })).toBeVisible()
   await expect(page.getByRole('link', { name: 'Admin', exact: true })).toHaveCount(0)
-  await expect(page.getByRole('link', { name: 'Reports', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Reports', exact: true })).toBeVisible()
   await page.goto('http://localhost:5173/admin/users')
   await expect(page).toHaveURL('http://localhost:5173/')
   await page.getByRole('link', { name: 'Profile', exact: true }).click()

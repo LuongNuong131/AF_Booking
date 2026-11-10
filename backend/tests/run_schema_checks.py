@@ -240,6 +240,7 @@ def main() -> None:
             test_command = [sys.executable, "-m", "pytest", test_file]
             if args.suite == "booking":
                 test_command.append("tests/test_booking_creation_database.py")
+                test_command.append("tests/test_workflow_database.py")
             test_command.extend(["-q", "-x"])
             if args.suite not in {"schema", "search-performance", "integrity-performance", "load"}:
                 test_command.append(f"--junitxml={args.report.resolve()}")

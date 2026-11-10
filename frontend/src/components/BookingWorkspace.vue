@@ -28,6 +28,7 @@ import WatchButton from './WatchButton.vue'
 import AssigneePicker from './AssigneePicker.vue'
 import RequestStatus from './RequestStatus.vue'
 import BaseIcon from './BaseIcon.vue'
+import BookingTicketPanel from './BookingTicketPanel.vue'
 const props = defineProps<{ initialKey?: string; detail?: boolean }>()
 const emit = defineEmits<{ saved: [key: string]; opened: [key: string] }>()
 const { t } = useI18n(),
@@ -486,6 +487,7 @@ defineExpose({
           :booking-key="w.key"
           :watching="w.snapshot?.my_watching"
         />
+        <BookingTicketPanel v-if="w.key && w.current?.exists" :key="w.key" :booking-key="w.key" />
         <BookingTimeline
           :notes="w.notes"
           :cursor="w.cursor"

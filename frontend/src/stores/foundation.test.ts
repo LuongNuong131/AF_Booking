@@ -75,7 +75,7 @@ it.each(['agent', 'qc', 'admin'] as const)(
     await router.push('/admin/users')
     expect(router.currentRoute.value.name).toBe(role === 'admin' ? 'admin-users' : 'home')
     await router.push('/reports')
-    expect(router.currentRoute.value.name).toBe(role === 'agent' ? 'home' : 'reports')
+    expect(router.currentRoute.value.name).toBe('reports')
     await router.push('/summary/CW%202154654-rdu-2609')
     expect(router.currentRoute.value.params.key).toBe('CW2154654-RDU-2609')
     await router.push('/summary/invalid')

@@ -22,6 +22,8 @@ const notificationTypes = new Set([
   'watch_update',
   'assigned',
   'assignment_done',
+  'work_task_created',
+  'work_task_handled',
 ])
 
 export function parseServerFrame(raw: unknown): WebSocketServerFrame | null {

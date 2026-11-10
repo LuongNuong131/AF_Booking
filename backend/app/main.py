@@ -6,6 +6,7 @@ from fastapi.responses import ORJSONResponse
 from starlette.middleware.gzip import GZipMiddleware
 
 from app.api.v1.admin import router as admin_router
+from app.api.v1.attachments import router as attachments_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.bookings import router as bookings_router
 from app.api.v1.collaboration import router as collaboration_router
@@ -18,6 +19,7 @@ from app.api.v1.operations import router as operations_router
 from app.api.v1.realtime import router as realtime_router
 from app.api.v1.snippets import router as snippets_router
 from app.api.v1.tasks import router as tasks_router
+from app.api.v1.workflow import router as workflow_router
 from app.core.config import Settings
 from app.core.db import create_database_engine
 from app.core.errors import ApiCORSMiddleware, ApiErrorMiddleware, register_error_handlers
@@ -40,6 +42,7 @@ from app.services.invoice_service import InvoiceService
 from app.services.key_index import KeyIndex
 from app.services.monthly_bookings import MonthlyBookings
 from app.services.note_search import create_note_search
+from app.services.personal_reports import PersonalReports
 from app.services.push import PushService
 from app.services.reports import ReportService
 from app.services.retention import RetentionService
@@ -50,9 +53,10 @@ from app.services.snapshot_cache import SnapshotCache
 from app.services.snippets import SnippetService
 from app.services.stale_reminders import StaleReminders
 from app.services.stations import StationService
-from app.services.storage import NullStorage
+from app.services.storage import create_storage
 from app.services.tasks import TaskService
 from app.services.telemetry import Telemetry
+from app.services.work_tasks import WorkTasks
 from app.services.ws_manager import WebSocketManager
 
 
@@ -105,7 +109,9 @@ def create_app(
         application.state.ws_manager = ws_manager
         ws_manager.health_status = application.state.telemetry.degraded
         application.state.lock_manager = ws_manager.locks
-        application.state.storage = NullStorage()
+        application.state.storage = create_storage(config)
+        application.state.personal_reports = PersonalReports(application.state.engine, config)
+        application.state.work_tasks = WorkTasks(application.state.engine, config, ws_manager)
         application.state.bookings = BookingReads(application.state.engine, config, index, cache)
         application.state.booking_writes = BookingWrites(
             application.state.engine, config, index, cache, application.state.ws_manager
@@ -277,6 +283,8 @@ def create_app(
     application.include_router(snippets_router, prefix="/api/v1")
     application.include_router(admin_router, prefix="/api/v1")
     application.include_router(operations_router, prefix="/api/v1")
+    application.include_router(workflow_router, prefix="/api/v1")
+    application.include_router(attachments_router, prefix="/api/v1")
     application.include_router(invoices_router, prefix="/api/v1")
     application.include_router(collaboration_router, prefix="/api/v1")
     return application

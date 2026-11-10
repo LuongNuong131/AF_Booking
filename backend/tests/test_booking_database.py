@@ -33,6 +33,7 @@ from app.models import (
     BookingNote,
     BookingTask,
     BookingWatcher,
+    BookingWorkTask,
     DailyReport,
     IntegrityRun,
     Notification,
@@ -304,6 +305,7 @@ async def rig(migrated, password_pair) -> AsyncIterator[Rig]:
                 PushSubscription,
                 BookingAssignment,
                 BookingWatcher,
+                BookingWorkTask,
                 Attachment,
                 Notification,
                 BookingInvoice,
@@ -693,11 +695,20 @@ async def test_fallback_and_unique_lookup_explain(rig):
             assert plan[0]["type"] == "const" and plan[0]["key"] == "booking_key"
 
 
-async def test_storage_placeholder_requires_owned_note(rig):
+async def test_unconfigured_image_storage_requires_owned_note(rig):
     saved = (await rig.save()).json()
-    path = f"/api/v1/notes/{saved['note']['id']}/attachments"
-    assert (await rig.client.post(path, headers=rig.headers["agent"])).status_code == 501
-    assert (await rig.client.post(path, headers=rig.headers["other"])).status_code == 404
+    path = f"/api/v1/notes/{saved['note']['id']}/attachments?file_name=image.png"
+    data = b"\x89PNG\r\n\x1a\nimage"
+    assert (
+        await rig.client.post(
+            path, headers={**rig.headers["agent"], "Content-Type": "image/png"}, content=data
+        )
+    ).status_code == 503
+    assert (
+        await rig.client.post(
+            path, headers={**rig.headers["other"], "Content-Type": "image/png"}, content=data
+        )
+    ).status_code == 404
 
 
 async def test_inline_invoices_validate_and_rollback(rig):

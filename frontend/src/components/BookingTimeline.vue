@@ -11,6 +11,7 @@ import StatusTag from './StatusTag.vue'
 import UserAvatar from './UserAvatar.vue'
 import RequestStatus from './RequestStatus.vue'
 import EmptyState from './EmptyState.vue'
+import NoteImages from './NoteImages.vue'
 const { t } = useI18n(),
   auth = useAuthStore()
 const props = defineProps<{
@@ -80,11 +81,7 @@ const pending = (id: number) => outbox.entries.find((e) => e.note.id === id)
                 · {{ t('invoiceUi.noInvoiceCleared') }}</span
               >
             </p>
-            <ul v-if="item.attachments.length" class="attachment-list">
-              <li v-for="file in item.attachments" :key="file.id">
-                {{ file.file_name }}
-              </li>
-            </ul>
+            <NoteImages v-if="item.id > 0" :note-id="item.id" :files="item.attachments" :can-add="auth.user?.id === item.agent.id || ['qc', 'admin'].includes(auth.user?.role ?? '')" />
             <slot name="note-actions" :note="item" />
           </article>
         </li>

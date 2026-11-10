@@ -143,7 +143,8 @@
     "admin": "Quản trị",
     "reports": "Báo cáo",
     "skip": "Chuyển đến nội dung chính",
-    "toggle": "Đóng/mở điều hướng"
+    "toggle": "Đóng/mở điều hướng",
+    "tickets": "Ticket"
   },
   "pages": {
     "homeTitle": "Trang chủ",
@@ -851,5 +852,52 @@
     "confirmNew": "Tôi đã kiểm tra các booking tương tự. Đây là booking mới.",
     "adding": "Đang thêm…",
     "created": "Đã thêm {key}."
+  },
+  "personalReportUi": {
+    "title": "Báo cáo ngày của tôi",
+    "intro": "Hoạt động booking của bạn trong một ngày làm việc.",
+    "bookings": "Booking đã thao tác",
+    "done": "Done ở cập nhật cuối của tôi",
+    "countHint": "Mỗi booking chỉ tính một lần, kể cả khi bạn ghi nhiều note. Trạng thái lấy từ cập nhật cuối của bạn trong ngày; báo cáo chỉ gồm công việc của bạn.",
+    "empty": "Chưa có cập nhật booking trong ngày này",
+    "emptyHint": "Chọn ngày khác. Booking xuất hiện sau khi bạn lưu cập nhật."
+  },
+  "workTaskUi": {
+    "nav": "Ticket",
+    "qcTitle": "Tổng hợp ticket QC",
+    "myTitle": "Ticket của tôi",
+    "intro": "Gom các vấn đề booking để làm việc với khách hàng.",
+    "bookingTitle": "Ticket gửi QC",
+    "bookingHint": "Báo lỗi booking và thông tin QC cần để làm việc với khách hàng. Nhắc việc cá nhân vẫn nằm ở mục Task.",
+    "issue": "Vấn đề và nội dung cần làm việc với khách hàng",
+    "placeholder": "Mô tả lỗi, thông tin khách hàng và việc cần QC hỗ trợ…",
+    "create": "Tạo ticket",
+    "creating": "Đang tạo ticket…",
+    "created": "Đã tạo ticket và thông báo cho QC.",
+    "viewTickets": "Xem ticket của booking này",
+    "status": "Trạng thái ticket",
+    "pending": "Chờ QC",
+    "handled": "Đã thao tác",
+    "all": "Tất cả ticket",
+    "createdDate": "Ngày tạo (không bắt buộc)",
+    "creator": "Người tạo",
+    "pendingHint": "Chờ QC gồm toàn bộ ticket chưa thao tác, kể cả các ngày trước. Để trống ngày để xem đầy đủ hàng chờ.",
+    "empty": "Không có ticket trong bộ lọc này",
+    "emptyHint": "Đổi bộ lọc hoặc tạo ticket từ trang booking.",
+    "handledBy": "Đã thao tác bởi {user}",
+    "handlingNote": "Nội dung làm việc với khách hàng / kết quả (không bắt buộc)",
+    "markHandled": "Đánh dấu đã thao tác",
+    "notificationCreated": "{user} tạo ticket mới cho {key}",
+    "notificationHandled": "{user} đã thao tác ticket của {key}",
+    "pageOf": "Trang {page}/{pages} · {total} ticket"
+  },
+  "noteImageUi": {
+    "add": "Thêm ảnh vào note này",
+    "view": "Xem ảnh ({count})",
+    "choose": "Chọn hình ảnh",
+    "download": "Tải ảnh",
+    "limits": "Tối đa 5 ảnh/note, mỗi ảnh 5 MB. Hỗ trợ JPEG, PNG, WebP hoặc GIF.",
+    "unavailable": "Quản trị viên chưa bật tính năng đính kèm ảnh.",
+    "afterSave": "Để thêm ảnh, lưu cập nhật rồi chọn “Thêm ảnh vào note này” trong phần Hoạt động."
   }
 }

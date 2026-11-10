@@ -20,5 +20,9 @@ export function notificationText(item: NotificationItem | NotificationNewData): 
       return t('notifications.taskDue', params)
     case 'stale':
       return t('notifications.stale', params)
+    case 'work_task_created':
+      return t('workTaskUi.notificationCreated', params)
+    case 'work_task_handled':
+      return t('workTaskUi.notificationHandled', params)
   }
 }

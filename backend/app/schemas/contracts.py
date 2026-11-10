@@ -97,6 +97,8 @@ class NotificationType(StrEnum):
     WATCH_UPDATE = "watch_update"
     ASSIGNED = "assigned"
     ASSIGNMENT_DONE = "assignment_done"
+    WORK_TASK_CREATED = "work_task_created"
+    WORK_TASK_HANDLED = "work_task_handled"
 
 
 class SearchKind(StrEnum):

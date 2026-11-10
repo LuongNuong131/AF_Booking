@@ -19,6 +19,8 @@ export type AssignmentItem = { "booking_key": string; "display_key": string; "id
 
 export type Attachment = { "id": number; "file_name": string; "mime_type": string; "size_bytes": number }
 
+export type AttachmentStorageInfo = { "enabled": boolean; "max_file_bytes": number; "max_files": number; "mime_types": Array<string> }
+
 export type AuditEntry = { "id": number; "user": AgentSummary | null; "action": string; "entity_type": string | null; "entity_id": string | null; "meta": { [key: string]: JsonValue } | null; "ip": string | null; "created_at": string }
 
 export type BookingCreateRequest = { "booking_key": string; "supplier_name"?: string | null; "supplier_type"?: "hotel" | "transportation" | null; "confirm_new"?: boolean }
@@ -187,7 +189,7 @@ export type NotificationNewData = { "id": number; "merged_count"?: number; "book
 
 export type NotificationNewFrame = { "event": "notification.new"; "data": NotificationNewData }
 
-export type NotificationType = "taken_over" | "stale" | "task_due" | "watch_update" | "assigned" | "assignment_done"
+export type NotificationType = "taken_over" | "stale" | "task_due" | "watch_update" | "assigned" | "assignment_done" | "work_task_created" | "work_task_handled"
 
 export type OperationalErrors = { "window_seconds"?: number; "counts"?: { [key: string]: number }; "threshold"?: number }
 
@@ -196,6 +198,10 @@ export type Page<T> = { "items": Array<T>; "total": number; "page": number; "siz
 export type PerformanceReport = { "date_from": string; "date_to": string; "timezone": string; "generated_at": string; "note_count": number; "done_count": number; "users": Array<PerformanceUser>; "statuses": Array<StatusCount>; "trend": Array<TrendPoint>; "stale_by_user": Array<AgentCount>; "stale_by_status": Array<StatusCount>; "overdue_tasks_by_user": Array<AgentCount> }
 
 export type PerformanceUser = { "agent": AgentSummary | null; "note_count"?: number; "done_count"?: number }
+
+export type PersonalBookingRow = { "booking_key": string; "display_key": string; "supplier_name": string; "station_code": string; "note_count": number; "last_status": StatusSummary; "last_note": string | null; "updated_at": string; "is_done": boolean }
+
+export type PersonalDailyReport = { "report_date": string; "timezone": string; "agent": AgentSummary; "booking_count": number; "note_count": number; "done_count": number; "items": Array<PersonalBookingRow>; "total": number; "page": number; "size": number }
 
 export type PoolMetrics = { "size": number; "checked_out": number; "overflow": number }
 
@@ -302,5 +308,11 @@ export type WatchState = { "watching": boolean }
 export type WebSocketClientFrame = LockCommandFrame | HeartbeatFrame
 
 export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | TaskDueFrame | ForceLogoutFrame | HeartbeatFrame | CatalogFrame | SystemHealthFrame
+
+export type WorkTaskCreate = { "message": string; "client_request_id": string }
+
+export type WorkTaskHandle = { "handling_note"?: string | null }
+
+export type WorkTaskItem = { "booking_key": string; "display_key": string; "id": number; "supplier_name": string; "creator": AgentSummary; "message": string; "status": string; "created_at": string; "handled_by": AgentSummary | null; "handled_at": string | null; "handling_note": string | null }
 
 export const ERROR_CODES = ["PASSWORD_CHANGE_REQUIRED", "PAYLOAD_TOO_LARGE", "UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "BOOKING_EXISTS", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]

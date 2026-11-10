@@ -15,7 +15,7 @@ export function buildCsp(apiUrl: string, wsUrl: string, sentryDsn?: string): str
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
+    "img-src 'self' data: blob:",
     "font-src 'self'",
     `connect-src 'self' ${api.origin} ${ws.origin}${sentryOrigin(sentryDsn) ? ' ' + sentryOrigin(sentryDsn) : ''}`,
     "object-src 'none'",

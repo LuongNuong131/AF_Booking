@@ -209,7 +209,11 @@ class NoteSnippet(Timestamps, Base):
 
 class Attachment(CreatedAt, Base):
     __tablename__ = "attachments"
-    __table_args__ = (Index("ix_attachments_note_id", "note_id"), TABLE_OPTIONS)
+    __table_args__ = (
+        Index("ix_attachments_note_id", "note_id"),
+        UniqueConstraint("note_id", "storage_key", name="uq_attachment_note_storage"),
+        TABLE_OPTIONS,
+    )
 
     id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
     note_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
@@ -217,6 +221,26 @@ class Attachment(CreatedAt, Base):
     mime_type: Mapped[str] = mapped_column(mysql.VARCHAR(100), nullable=False)
     size_bytes: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
     storage_key: Mapped[str] = mapped_column(mysql.VARCHAR(512), nullable=False)
+
+
+class BookingWorkTask(CreatedAt, Base):
+    __tablename__ = "booking_work_tasks"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_work_task_request"),
+        Index("ix_work_tasks_status_created", "status", "created_at", "id"),
+        Index("ix_work_tasks_creator_created", "created_by", "created_at", "id"),
+        Index("ix_work_tasks_booking", "booking_id", "id"),
+        TABLE_OPTIONS,
+    )
+    id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    booking_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    created_by: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    message: Mapped[str] = mapped_column(mysql.VARCHAR(2000), nullable=False)
+    status: Mapped[str] = mapped_column(mysql.ENUM("pending", "handled"), server_default="pending")
+    client_request_id: Mapped[str] = mapped_column(ascii_char(36), nullable=False)
+    handled_by: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
+    handled_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    handling_note: Mapped[str | None] = mapped_column(mysql.VARCHAR(2000))
 
 
 class Notification(CreatedAt, Base):
@@ -238,7 +262,14 @@ class Notification(CreatedAt, Base):
     booking_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
     type: Mapped[str] = mapped_column(
         mysql.ENUM(
-            "taken_over", "stale", "task_due", "watch_update", "assigned", "assignment_done"
+            "taken_over",
+            "stale",
+            "task_due",
+            "watch_update",
+            "assigned",
+            "assignment_done",
+            "work_task_created",
+            "work_task_handled",
         ),
         server_default="taken_over",
     )

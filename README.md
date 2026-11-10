@@ -82,7 +82,7 @@ The product supports Agent, QC, and Admin roles, with authorization enforced on 
 - Bounded request, database, WebSocket, and scheduler deadlines.
 - Optional Sentry integration, retention controls, encrypted backup tooling, and PWA/Web Push support.
 
-> Attachment storage is intentionally left behind a `501` interface until an S3-compatible provider is configured. Redis-backed multi-instance coordination and external Telegram/email notifications are not part of the current deployment model.
+> Note images use private S3-compatible storage (including Cloudflare R2). Follow [the R2 setup guide](docs/note-images-vi.md) to enable uploads. [Agent reports and QC tickets](docs/workflow-release-vi.md) require migration `0014`. Redis-backed multi-instance coordination and external Telegram/email notifications are not part of the current deployment model.
 
 ## Architecture
 

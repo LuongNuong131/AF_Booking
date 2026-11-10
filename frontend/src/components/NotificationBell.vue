@@ -54,7 +54,9 @@ async function open(item: NotificationItem) {
     if (!ok && notifications.actionError)
       ui.notify(errorMessage(notifications.actionError), 'error')
   })
-  await router.push({ name: 'booking', params: { key: item.booking_key } })
+  if (item.type === 'work_task_created' || item.type === 'work_task_handled')
+    await router.push({ name: 'tickets', query: { booking_key: item.booking_key, status: item.type === 'work_task_created' ? 'pending' : 'handled' } })
+  else await router.push({ name: 'booking', params: { key: item.booking_key } })
 }
 async function readAll() {
   if (!(await notifications.markAllRead()) && notifications.actionError)

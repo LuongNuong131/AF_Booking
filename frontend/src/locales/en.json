@@ -143,7 +143,8 @@
     "admin": "Admin",
     "reports": "Reports",
     "skip": "Skip to main content",
-    "toggle": "Toggle navigation"
+    "toggle": "Toggle navigation",
+    "tickets": "Tickets"
   },
   "pages": {
     "homeTitle": "Home",
@@ -851,5 +852,52 @@
     "confirmNew": "I checked the similar bookings. This is a new booking.",
     "adding": "Adding…",
     "created": "Added {key}."
+  },
+  "personalReportUi": {
+    "title": "My daily report",
+    "intro": "Your booking activity for one business day.",
+    "bookings": "Bookings worked",
+    "done": "Done in my final update",
+    "countHint": "Each booking counts once, even if you wrote several updates. Status reflects your final update that day; the report only includes your own work.",
+    "empty": "No booking updates for this day",
+    "emptyHint": "Choose another date. Bookings appear after you save an update."
+  },
+  "workTaskUi": {
+    "nav": "Tickets",
+    "qcTitle": "QC ticket desk",
+    "myTitle": "My tickets",
+    "intro": "Booking issues to collect and work through with the customer.",
+    "bookingTitle": "Tickets for QC",
+    "bookingHint": "Report the booking issue and the information QC needs to work with the customer. Personal reminders remain in Tasks.",
+    "issue": "Issue and customer follow-up required",
+    "placeholder": "Describe the problem, customer context and action required…",
+    "create": "Create ticket",
+    "creating": "Creating ticket…",
+    "created": "Ticket created. QC has been notified.",
+    "viewTickets": "View tickets for this booking",
+    "status": "Ticket status",
+    "pending": "Awaiting QC",
+    "handled": "Handled",
+    "all": "All tickets",
+    "createdDate": "Created on (optional)",
+    "creator": "Created by",
+    "pendingHint": "Awaiting QC includes all unhandled tickets, including earlier days. Leave the date empty to keep the full queue.",
+    "empty": "No tickets in this view",
+    "emptyHint": "Change the filters, or create a ticket from the booking workspace.",
+    "handledBy": "Handled by {user}",
+    "handlingNote": "Customer follow-up / handling result (optional)",
+    "markHandled": "Mark as handled",
+    "notificationCreated": "{user} created a ticket for {key}",
+    "notificationHandled": "{user} handled a ticket for {key}",
+    "pageOf": "Page {page} of {pages} · {total} ticket(s)"
+  },
+  "noteImageUi": {
+    "add": "Add images to this note",
+    "view": "View images ({count})",
+    "choose": "Choose images",
+    "download": "Download",
+    "limits": "Up to 5 images per note, 5 MB each. JPEG, PNG, WebP or GIF.",
+    "unavailable": "Image attachments have not been enabled by your administrator yet.",
+    "afterSave": "To add images, save your update, then choose “Add images to this note” in Activity."
   }
 }
