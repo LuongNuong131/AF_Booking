@@ -4,9 +4,11 @@ import { useI18n } from 'vue-i18n'
 import { api } from '../api/client'
 import { useRequest } from '../composables/useRequest'
 import { timeouts } from '../config/timeouts'
+import { useBookingsStore } from '../stores/bookings'
 import type { Attachment, AttachmentStorageInfo } from '../types/api.generated'
 import RequestStatus from './RequestStatus.vue'
 const props = defineProps<{ noteId: number; files: Attachment[]; canAdd: boolean }>()
+const bookings = useBookingsStore()
 const { t } = useI18n(), files = ref([...props.files]), urls = ref<Record<number, string>>({}),
   selected = ref<File[]>([]), validation = ref(''), expanded = ref(false)
 watch(() => props.files, value => { files.value = [...value] })
@@ -25,6 +27,7 @@ const upload = useRequest(async ({ signal, timeoutMs }) => {
     const result = (await api.post<Attachment>(`/notes/${props.noteId}/attachments`, file, {
       params: { file_name: file.name }, headers: { 'Content-Type': file.type }, signal, timeout: timeoutMs,
     })).data
+    bookings.invalidate()
     if (!files.value.some(f => f.id === result.id)) files.value.push(result)
     selected.value = selected.value.filter(f => f !== file)
   }
