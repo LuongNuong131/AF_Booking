@@ -163,6 +163,7 @@ it('shows typo suggestions with keyboard navigation and requires a deliberate ne
   expect(document.activeElement).toBe(suggestion.element)
   await suggestion.trigger('click')
   await flushPromises()
-  expect((get.mock.calls.at(-1)?.[1]?.params as { key?: string } | undefined)?.key).toBe(KEY)
+  const lastLookup = get.mock.calls.filter(call => call[0] === '/bookings/lookup').at(-1)
+  expect((lastLookup?.[1]?.params as { key?: string } | undefined)?.key).toBe(KEY)
   expect(wrapper!.find('.booking-new-confirm').exists()).toBe(false)
 })

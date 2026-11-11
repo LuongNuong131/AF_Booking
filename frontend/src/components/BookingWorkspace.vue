@@ -29,6 +29,9 @@ import AssigneePicker from './AssigneePicker.vue'
 import RequestStatus from './RequestStatus.vue'
 import BaseIcon from './BaseIcon.vue'
 import BookingTicketPanel from './BookingTicketPanel.vue'
+import BookingTicketHistory from './BookingTicketHistory.vue'
+const ticketPanel = ref<InstanceType<typeof BookingTicketPanel> | null>(null)
+const ticketHistory = ref<InstanceType<typeof BookingTicketHistory> | null>(null)
 const props = defineProps<{ initialKey?: string; detail?: boolean }>()
 const emit = defineEmits<{ saved: [key: string]; opened: [key: string] }>()
 const { t } = useI18n(),
@@ -487,7 +490,8 @@ defineExpose({
           :booking-key="w.key"
           :watching="w.snapshot?.my_watching"
         />
-        <BookingTicketPanel v-if="w.key && w.current?.exists" :key="w.key" :booking-key="w.key" />
+        <BookingTicketHistory v-if="w.key && w.current?.exists" :key="`tickets-${w.key}`" ref="ticketHistory" :booking-key="w.key" @create="ticketPanel?.open()" />
+        <BookingTicketPanel v-if="w.key && w.current?.exists" :key="w.key" ref="ticketPanel" :booking-key="w.key" @created="ticketHistory?.showCreated()" />
         <BookingTimeline
           :notes="w.notes"
           :cursor="w.cursor"

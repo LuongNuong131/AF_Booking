@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../api/client'
 import { useRequest } from '../composables/useRequest'
 import { timeouts } from '../config/timeouts'
 import { ticketTitles, englishTicket, type IssueType } from '../utils/ticket'
-import type { Attachment, Page, WorkTaskItem } from '../types/api.generated'
+import type { Attachment, WorkTaskItem } from '../types/api.generated'
 import RequestStatus from './RequestStatus.vue'
 import StagedImages from './StagedImages.vue'
 import TicketTranslation from './TicketTranslation.vue'
 const props = defineProps<{ bookingKey: string }>()
+const emit = defineEmits<{ created: [ticket: WorkTaskItem] }>()
+const root = ref<HTMLDetailsElement | null>(null)
 const { t } = useI18n(), message = ref(''), issue = ref<IssueType>('contract'), requestId = ref(crypto.randomUUID()), images = ref<File[]>([])
 const savedTicket = ref<WorkTaskItem | null>(null)
 const title = computed(() => `${ticketTitles[issue.value]} - ${props.bookingKey}`)
 const valid = computed(() => englishTicket(message.value.trim()))
-const list = useRequest(async ({ signal, timeoutMs }) => (await api.get<Page<WorkTaskItem>>('/work-tasks', {
-  params: { booking_key: props.bookingKey, status: 'pending', size: 5 }, signal, timeout: timeoutMs,
-})).data, { timeoutMs: timeouts.list })
 const create = useRequest(async ({ signal, timeoutMs }) => {
   if (!savedTicket.value) savedTicket.value = (await api.post<WorkTaskItem>(`/bookings/${props.bookingKey}/work-tasks`, {
     issue_type: issue.value, message: message.value.trim(), client_request_id: requestId.value,
@@ -32,14 +31,21 @@ const create = useRequest(async ({ signal, timeoutMs }) => {
 function edited() { if (!savedTicket.value) requestId.value = crypto.randomUUID() }
 async function submit() {
   if (!valid.value || create.pending.value) return
-  if (await create.run()) {
-    savedTicket.value = null; message.value = ''; images.value = []; edited(); await list.run()
+  const result = await create.run()
+  if (result) {
+    savedTicket.value = null; message.value = ''; images.value = []; edited(); emit('created', result)
   }
 }
-function toggle(event: Event) { if ((event.target as HTMLDetailsElement).open) void list.run() }
+async function open() {
+  if (!root.value) return
+  root.value.open = true
+  await nextTick()
+  root.value?.querySelector('select')?.focus()
+}
+defineExpose({ open })
 </script>
 <template>
-  <details class="booking-ticket-panel" @toggle="toggle">
+  <details ref="root" class="booking-ticket-panel">
     <summary>{{ t('workTaskUi.bookingTitle') }}</summary>
     <p class="muted">{{ t('workTaskUi.bookingHint') }}</p>
     <form @submit.prevent="submit">
@@ -59,8 +65,5 @@ function toggle(event: Event) { if ((event.target as HTMLDetailsElement).open) v
     </form>
     <RequestStatus :state="create.state.value" :error="create.error.value" @retry="submit" />
     <p v-if="create.state.value === 'success'" role="status" class="ticket-success">{{ t('workTaskUi.created') }}</p>
-    <RequestStatus :state="list.state.value" :error="list.error.value" @retry="list.run" />
-    <ul v-if="list.data.value?.items.length" class="ticket-mini-list"><li v-for="item in list.data.value.items" :key="item.id"><RouterLink :to="{ name: 'tickets', query: { booking_key: bookingKey, ticket_id: item.id } }">#{{ item.id }} {{ item.title }}</RouterLink></li></ul>
-    <RouterLink class="text-button" :to="{ name: 'tickets', query: { booking_key: bookingKey } }">{{ t('workTaskUi.viewTickets') }}</RouterLink>
   </details>
 </template>

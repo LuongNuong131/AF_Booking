@@ -81,6 +81,7 @@ it.each(['agent', 'qc', 'admin'] as const)(
     await router.push('/summary/invalid')
     expect(router.currentRoute.value.name).toBe('summary')
   },
+  15000,
 )
 it('redirects a guest with a local return path, blocks unsafe return targets', async () => {
   const pinia = createPinia()

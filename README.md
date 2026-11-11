@@ -315,6 +315,8 @@ High-level release flow:
 
 For [Admin ticket management and Excel charts](docs/admin-tickets-excel-charts-vi.md), see the Vietnamese feature guide.
 
+See [booking ticket history and the redesigned note search](docs/booking-ticket-history-note-search-vi.md) for status tabs, handling results, searchable notes and shareable filters.
+
 For initial booking imports, English/Vietnamese switching, and a team acceptance checklist, see [docs/acceptance-test-vi.md](docs/acceptance-test-vi.md).
 For the CSV template, reviewed station/supplier corrections, day-25 monthly generation, and Render Free scheduling, see [docs/monthly-bookings-vi.md](docs/monthly-bookings-vi.md).
 

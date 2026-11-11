@@ -1,5 +1,12 @@
 # Project state
 
+## Implemented: Booking ticket history and note-search UX
+
+- Booking information includes paginated pending/handled ticket lists with counts, creator, attachment count, QC result and links to the correct ticket. Agent visibility remains limited to their own tickets; QC/Admin retain booking-wide access.
+- The create action opens/focuses the composer; successful creation refreshes both status lists. Notification and workspace refreshes also update history.
+- Summary note search has responsive themed filters/results, business-date presets, safe highlighted excerpts, expand/collapse, explicit applied-filter context, URL persistence and page correction. Draft edits do not silently change pagination queries.
+- Existing API/role rules and database schema are unchanged. See `docs/booking-ticket-history-note-search-vi.md`.
+
 ## Implemented: Prompt 1 deployment foundation
 
 - Vue 3 strict-TypeScript workspace with Pinia, lazy routing, Element Plus, VueUse, Axios timeouts, date-fns, and English vue-i18n messages.
