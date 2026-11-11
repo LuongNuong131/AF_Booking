@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from fastapi.encoders import jsonable_encoder
 from pydantic import AwareDatetime, Field, ValidationError, create_model
-from sqlalchemy import delete, func, inspect, select, update
+from sqlalchemy import delete, func, inspect, or_, select, update
 from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.exc import IntegrityError
 
@@ -838,6 +838,12 @@ class Management:
         selected_notes = {int(e.record_id) for e in entries if e.resource == "notes"}
         for e in entries:
             counts[e.resource] = counts.get(e.resource, 0) + 1
+            if e.resource == "tickets":
+                counts["attachments"] = counts.get("attachments", 0) + await session.scalar(
+                    select(func.count())
+                    .select_from(Attachment)
+                    .where(Attachment.work_task_id == int(e.record_id))
+                )
             if e.resource == "bookings":
                 booking_ids.add(int(e.record_id))
             if e.resource == "suppliers":
@@ -921,7 +927,16 @@ class Management:
             notes = select(BookingNote.id).where(BookingNote.booking_id.in_(booking_ids))
             for cls in BOOKING_CHILDREN:
                 condition = (
-                    cls.note_id.in_(notes) if cls is Attachment else cls.booking_id.in_(booking_ids)
+                    or_(
+                        cls.note_id.in_(notes),
+                        cls.work_task_id.in_(
+                            select(BookingWorkTask.id).where(
+                                BookingWorkTask.booking_id.in_(booking_ids)
+                            )
+                        ),
+                    )
+                    if cls is Attachment
+                    else cls.booking_id.in_(booking_ids)
                 )
                 counts[cls.__tablename__] = await session.scalar(
                     select(func.count()).select_from(cls).where(condition)
@@ -979,18 +994,22 @@ class Management:
                         )
                     ).all()
                 )
-                keys = (
-                    await session.scalars(
-                        select(Attachment.storage_key).where(Attachment.note_id.in_(notes))
-                    )
-                ).all()
+                images = or_(
+                    Attachment.note_id.in_(notes),
+                    Attachment.work_task_id.in_(
+                        select(BookingWorkTask.id).where(
+                            BookingWorkTask.booking_id.in_(booking_ids)
+                        )
+                    ),
+                )
+                keys = (await session.scalars(select(Attachment.storage_key).where(images))).all()
                 for key in keys:
                     await session.execute(
                         insert(StorageGarbage)
                         .values(storage_key=key)
                         .on_duplicate_key_update(storage_key=key)
                     )
-                await session.execute(delete(Attachment).where(Attachment.note_id.in_(notes)))
+                await session.execute(delete(Attachment).where(images))
                 await session.execute(
                     delete(RecycleEntry).where(
                         RecycleEntry.resource == "notes",
@@ -1006,6 +1025,18 @@ class Management:
             if station_ids:
                 await session.execute(delete(Station).where(Station.code.in_(station_ids)))
             for e in entries:
+                if e.resource == "tickets":
+                    images = Attachment.work_task_id == int(e.record_id)
+                    keys = (
+                        await session.scalars(select(Attachment.storage_key).where(images))
+                    ).all()
+                    for key in keys:
+                        await session.execute(
+                            insert(StorageGarbage)
+                            .values(storage_key=key)
+                            .on_duplicate_key_update(storage_key=key)
+                        )
+                    await session.execute(delete(Attachment).where(images))
                 if e.resource in {"users", "statuses", "notes"}:
                     model = spec(e.resource)[0]
                     if e.resource == "notes":

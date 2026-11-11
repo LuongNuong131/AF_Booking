@@ -103,6 +103,7 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
         from test_workflow_database import MemoryStorage
 
         rig.app.state.storage = MemoryStorage()
+        await rig.save(key="CW9997777-YUL-2610", user="other", note="Other booking")
     async with rig.app.state.engine.begin() as connection:
         await connection.execute(
             User.__table__.insert(),

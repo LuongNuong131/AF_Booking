@@ -7,8 +7,10 @@ import { useRequest } from '../composables/useRequest'
 import { timeouts } from '../config/timeouts'
 import { readStorage, writeStorage } from '../utils/storage'
 import { parseBookingKey } from '../utils/bookingKey'
+import { loadImages, removeImages, imageBatchKey } from '../utils/imageOutbox'
 import type { RequestFailure } from '../api/errors'
 import type {
+  Attachment,
   BookingLookup,
   BookingItem,
   Note,
@@ -23,6 +25,8 @@ export type OutgoingResult = NoteSaveResponse | InvoiceResult
 export interface OutgoingNote {
   operation?: 'note' | 'invoice'
   invoices?: Invoice[]
+  hasImages?: boolean
+  savedNote?: NoteSaveResponse
   id: string
   key: string
   payload: NoteSaveRequest
@@ -56,22 +60,31 @@ export const useOutboxStore = defineStore('outbox', () => {
   let timer: ReturnType<typeof setTimeout> | undefined
   const listeners = new Set<(entry: OutgoingNote, result: OutgoingResult | null) => void>()
   const request = useRequest(
-    async ({ signal, timeoutMs }, entry: OutgoingNote): Promise<OutgoingResult> =>
-      entry.operation === 'invoice'
-        ? (
-            await api.put<InvoiceResult>(
-              `/bookings/${entry.key}/invoices`,
-              entry.payload.invoices,
-              { signal, timeout: timeoutMs },
-            )
-          ).data
-        : (
-            await api.post<NoteSaveResponse>(`/bookings/${entry.key}/notes`, entry.payload, {
-              signal,
-              timeout: timeoutMs,
-            })
-          ).data,
-    { timeoutMs: timeouts.noteSave },
+    async ({ signal, timeoutMs }, entry: OutgoingNote): Promise<OutgoingResult> => {
+      if (entry.operation === 'invoice') return (await api.put<InvoiceResult>(
+        `/bookings/${entry.key}/invoices`, entry.payload.invoices, { signal, timeout: timeoutMs },
+      )).data
+      const batchKey = imageBatchKey(entry.note.agent.id, entry.id)
+      const files = entry.hasImages ? await loadImages(batchKey) : []
+      if (signal.aborted) throw signal.reason
+      if (entry.hasImages && !files) throw new Error('Selected images are missing from browser storage. Retry from the original browser.')
+      const result = entry.savedNote ?? (await api.post<NoteSaveResponse>(`/bookings/${entry.key}/notes`, entry.payload, {
+        signal, timeout: timeouts.noteSave,
+      })).data
+      if (signal.aborted) throw signal.reason
+      if (entry.hasImages) {
+        entry.savedNote = result
+        changed()
+        for (const file of files ?? []) {
+          const image = (await api.post<Attachment>(`/notes/${result.note.id}/attachments`, file, {
+            params: { file_name: file.name }, headers: { 'Content-Type': file.type }, signal, timeout: timeouts.noteSave,
+          })).data
+          if (!result.note.attachments.some(a => a.id === image.id)) result.note.attachments.push(image)
+        }
+      }
+      return result
+    },
+    { timeoutMs: 6 * timeouts.noteSave },
   )
   const storageKey = () => `booking.outbox.v1.${owner}`
   function persist(): boolean {
@@ -142,6 +155,7 @@ export const useOutboxStore = defineStore('outbox', () => {
     base: BookingLookup,
     payload: NoteSaveRequest,
     operation: 'note' | 'invoice' = 'note',
+    hasImages = false,
   ): OutgoingNote | null {
     if (
       !auth.user ||
@@ -225,6 +239,7 @@ export const useOutboxStore = defineStore('outbox', () => {
     }
     const entry: OutgoingNote = {
       operation,
+      hasImages,
       invoices,
       id: payload.client_request_id,
       key: parsed.key,
@@ -293,12 +308,7 @@ export const useOutboxStore = defineStore('outbox', () => {
     if (generation !== epoch || stopped) return
     running = false
     if (result) {
-      entries.value = entries.value.filter((e) => e.id !== entry.id)
-      const next = entries.value.find((e) => e.key === entry.key)
-      if (next && next.attempts === 0) next.payload.expected_version = result.snapshot.version
-      changed()
-      bookings.committed(result)
-      for (const listener of listeners) listener(entry, result)
+      complete(entry, result)
     } else {
       entry.error = request.error.value ?? {
         code: 'REQUEST_TIMEOUT',
@@ -314,15 +324,33 @@ export const useOutboxStore = defineStore('outbox', () => {
           )
       } else {
         entry.state = 'blocked'
-        for (const listener of listeners) listener(entry, null)
+        if (!entry.savedNote) for (const listener of listeners) listener(entry, null)
       }
       changed()
     }
     void flush()
   }
+  function complete(entry: OutgoingNote, result: OutgoingResult) {
+    entries.value = entries.value.filter((e) => e.id !== entry.id)
+    const next = entries.value.find((e) => e.key === entry.key)
+    if (next && next.attempts === 0) next.payload.expected_version = result.snapshot.version
+    changed()
+    if (entry.hasImages) void removeImages(imageBatchKey(entry.note.agent.id, entry.id)).catch(() => undefined)
+    bookings.committed(result)
+    for (const listener of listeners) listener(entry, result)
+  }
+  function finishWithoutImages(id: string) {
+    const entry = entries.value.find(e => e.id === id)
+    if (!entry?.savedNote || entry.state === 'sending') return
+    complete(entry, entry.savedNote)
+    void flush()
+  }
   function retry(id?: string) {
     for (const entry of entries.value)
-      if ((!id || entry.id === id) && entry.state !== 'blocked') entry.nextAt = 0
+      if ((!id || entry.id === id) && (entry.state !== 'blocked' || entry.savedNote)) {
+        entry.nextAt = 0
+        if (entry.savedNote) entry.state = 'queued'
+      }
     changed()
     void flush()
   }
@@ -361,6 +389,7 @@ export const useOutboxStore = defineStore('outbox', () => {
     start,
     stop,
     retry,
+    finishWithoutImages,
     flush,
     take,
     subscribe,

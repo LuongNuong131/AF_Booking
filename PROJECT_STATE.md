@@ -287,3 +287,12 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
   provider credentials and production deployment were not changed. Current workflow,
   limits and verification are documented in `docs/admin-report-center.md` and the
   accompanying quality verification results.
+
+## Structured tickets and image composition — migration 0016
+
+- Booking tickets support the two issue suggestions (`contract`, `cannot_send_rejection_letters`), server-derived subjects with canonical booking suffixes, required English content, and up to five private images using the existing S3/R2 storage.
+- QC/Admin can open full details, copy the subject/body, and combine up to 100 rejection-letter tickets into the agreed TIM Tool text with distinct booking keys in selection order. Combining produces a copyable draft while preserving source tickets and their handling state.
+- The optional Vietnamese-to-English helper offers an explicit Google Translate link plus review/apply, or official Google Cloud Translation v2 when `GOOGLE_TRANSLATE_API_KEY` is configured on the backend. No new frontend secret or dependency is required.
+- Notes accept image selection and previews before saving. Submitted image batches persist in IndexedDB; the durable outbox checkpoints the saved note and resumes image uploads after network errors/reloads. A failed image batch can be discarded while keeping the saved note. Unsubmitted selected images remain in memory.
+- Existing ticket bodies remain readable. Legacy clients can continue to create unclassified tickets; those tickets cannot be included in structured rejection-letter bundles. Language validation is a Vietnamese-character/Latin-text guard, not comprehensive language identification.
+- Apply `alembic upgrade head` before API startup. Migration 0016 is additive except for making attachment `note_id` nullable. The current Render AF_Booking service follows `main` with commit auto-deploy and runs `alembic upgrade head` in its start command before uvicorn. Ticket images are retained across recycling and queued for private storage cleanup on permanent removal.

@@ -180,3 +180,46 @@ it.each(['NEW_BOOKING_NEEDS_CONFIRM', 'DUPLICATE_RECENT_NOTE'])(
     expect(post).toHaveBeenCalledTimes(1)
   },
 )
+
+it('resumes image upload after a failed upload and reload without resubmitting the saved note', async () => {
+  const images = await import('../utils/imageOutbox')
+  const file = new File(['evidence'], 'booking.png', { type: 'image/png' })
+  vi.spyOn(images, 'loadImages').mockResolvedValue([file])
+  const cleanup = vi.spyOn(images, 'removeImages').mockResolvedValue()
+  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const post = vi.spyOn(api, 'post')
+    .mockResolvedValueOnce({ data: saved() })
+    .mockRejectedValueOnce(new AxiosError('offline', 'ERR_NETWORK', config))
+    .mockResolvedValueOnce({ data: { id: 88, file_name: 'booking.png', mime_type: 'image/png', size_bytes: 8 } })
+  const outbox = useOutboxStore(), entry = outbox.enqueue(lookup(), payload(), 'note', true)!
+  await settle()
+  expect(entry.savedNote?.note.id).toBe(saved().note.id)
+  expect(entry.state).toBe('retrying')
+  expect(JSON.parse(localStorage.getItem('booking.outbox.v1.3')!)[0].savedNote.note.id).toBe(saved().note.id)
+  outbox.stop()
+  outbox.start(3)
+  outbox.retry(entry.id)
+  await settle()
+  expect(outbox.count).toBe(0)
+  expect(post.mock.calls.filter(call => call[0].endsWith('/notes'))).toHaveLength(1)
+  expect(post.mock.calls.filter(call => call[0].endsWith('/attachments'))).toHaveLength(2)
+  expect(cleanup).toHaveBeenCalled()
+})
+
+it('can discard failed pending images while keeping the committed note', async () => {
+  const images = await import('../utils/imageOutbox')
+  vi.spyOn(images, 'loadImages').mockResolvedValue([new File(['evidence'], 'image.png', { type: 'image/png' })])
+  const cleanup = vi.spyOn(images, 'removeImages').mockResolvedValue()
+  const config = { method: 'post', headers: new AxiosHeaders() } as InternalAxiosRequestConfig
+  const post = vi.spyOn(api, 'post').mockResolvedValueOnce({ data: saved() }).mockRejectedValueOnce(new AxiosError('offline', 'ERR_NETWORK', config))
+  const outbox = useOutboxStore(), listener = vi.fn(), stop = outbox.subscribe(listener)
+  const entry = outbox.enqueue(lookup(), payload(), 'note', true)!
+  await settle()
+  expect(entry.savedNote).toBeDefined()
+  outbox.finishWithoutImages(entry.id)
+  expect(outbox.count).toBe(0)
+  expect(listener).toHaveBeenCalledWith(entry, expect.objectContaining({ note: expect.objectContaining({ id: saved().note.id }) }))
+  expect(post).toHaveBeenCalledTimes(2)
+  expect(cleanup).toHaveBeenCalled()
+  stop()
+})

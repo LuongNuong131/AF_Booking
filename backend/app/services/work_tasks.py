@@ -10,10 +10,11 @@ from sqlalchemy.orm import aliased
 
 from app.core.errors import ApiException
 from app.core.unit_of_work import transaction
-from app.models import Booking, BookingGroup, BookingWorkTask, Notification, User
+from app.models import Attachment, Booking, BookingGroup, BookingWorkTask, Notification, User
+from app.schemas.contracts import Attachment as AttachmentDTO
 from app.schemas.contracts import ErrorCode, Page
 from app.schemas.realtime import NotificationNewData
-from app.schemas.workflow import WorkTaskItem
+from app.schemas.workflow import WorkTaskBundle, WorkTaskItem
 from app.services.audit import record_audit
 from app.services.auth import AuthService
 from app.services.exports import date_text, safe_cell
@@ -21,6 +22,7 @@ from app.services.reports import day_bounds
 from app.services.workflow_xlsx import WorkflowWorkbook
 from app.utils.booking_key import ParsedKey, parse, to_display
 from app.utils.text import clean_note
+from app.utils.ticket_text import REJECTION_MESSAGE, TITLES, ticket_title
 
 
 class WorkTasks:
@@ -41,6 +43,7 @@ class WorkTasks:
             .join(BookingGroup, BookingGroup.id == Booking.group_id)
             .join(creator, creator.id == BookingWorkTask.created_by)
             .outerjoin(handler, handler.id == BookingWorkTask.handled_by)
+            .where(Booking.deleted_at.is_(None), BookingGroup.deleted_at.is_(None))
         )
         if user.role not in {"qc", "admin"}:
             query = query.where(BookingWorkTask.created_by == user.id)
@@ -65,12 +68,64 @@ class WorkTasks:
             supplier_name=supplier,
             creator={"id": task.created_by, "full_name": creator},
             message=task.message,
+            title=task.title or ticket_title(task.issue_type, key),
+            issue_type=task.issue_type,
             status=task.status,
             created_at=task.created_at,
             handled_by={"id": task.handled_by, "full_name": handler} if task.handled_by else None,
             handled_at=task.handled_at,
             handling_note=task.handling_note,
         )
+
+    async def with_images(self, session, items):
+        if items:
+            by_id = {item.id: item for item in items}
+            images = await session.scalars(
+                select(Attachment).where(Attachment.work_task_id.in_(by_id)).order_by(Attachment.id)
+            )
+            for image in images:
+                by_id[image.work_task_id].attachments.append(
+                    AttachmentDTO.model_validate(image, from_attributes=True)
+                )
+        return items
+
+    async def detail(self, identifier, user):
+        async with transaction(self.engine, self.settings) as session:
+            row = (
+                await session.execute(
+                    self.query(user, "all").where(BookingWorkTask.id == identifier)
+                )
+            ).one_or_none()
+            if row is None:
+                raise ApiException(ErrorCode.NOT_FOUND)
+            return (await self.with_images(session, [self.dto(row)]))[0]
+
+    async def merge(self, body, user):
+        if user.role not in {"qc", "admin"}:
+            raise ApiException(ErrorCode.FORBIDDEN)
+        ids = list(dict.fromkeys(body.ids))
+        if len(ids) < 2:
+            raise ApiException(ErrorCode.VALIDATION_ERROR)
+        async with transaction(self.engine, self.settings) as session:
+            rows = (
+                await session.execute(self.query(user, "all").where(BookingWorkTask.id.in_(ids)))
+            ).all()
+            if len(rows) != len(ids):
+                raise ApiException(ErrorCode.NOT_FOUND)
+            items = await self.with_images(session, [self.dto(row) for row in rows])
+            if any(item.issue_type != "cannot_send_rejection_letters" for item in items):
+                raise ApiException(
+                    ErrorCode.VALIDATION_ERROR,
+                    message="Only Cannot send rejection letters tickets can be combined.",
+                )
+            by_id = {item.id: item for item in items}
+            keys = list(dict.fromkeys(by_id[i].booking_key for i in ids))
+            return WorkTaskBundle(
+                title=TITLES["cannot_send_rejection_letters"],
+                message=REJECTION_MESSAGE + "\n\n" + "\n".join(keys),
+                booking_keys=keys,
+                attachments=[image for i in ids for image in by_id[i].attachments],
+            )
 
     async def listing(
         self, user, status="pending", day=None, booking_key=None, creator_id=None, page=1, size=20
@@ -86,7 +141,10 @@ class WorkTasks:
                 )
             ).all()
             return Page[WorkTaskItem](
-                items=[self.dto(r) for r in rows], total=total, page=page, size=size
+                items=await self.with_images(session, [self.dto(r) for r in rows]),
+                total=total,
+                page=page,
+                size=size,
             )
 
     async def notify(self, session, task, key, actor, kind, targets):
@@ -147,7 +205,13 @@ class WorkTasks:
                         )
                     )
                     booking = await session.scalar(
-                        select(Booking).where(Booking.booking_key == parsed.key)
+                        select(Booking)
+                        .join(BookingGroup, BookingGroup.id == Booking.group_id)
+                        .where(
+                            Booking.booking_key == parsed.key,
+                            Booking.deleted_at.is_(None),
+                            BookingGroup.deleted_at.is_(None),
+                        )
                     )
                     if booking is None:
                         raise ApiException(ErrorCode.NOT_FOUND)
@@ -156,6 +220,7 @@ class WorkTasks:
                             existing.created_by != user.id
                             or existing.booking_id != booking.id
                             or existing.message != body.message
+                            or existing.issue_type != body.issue_type
                         ):
                             raise ApiException(ErrorCode.VALIDATION_ERROR)
                         task = existing
@@ -164,6 +229,8 @@ class WorkTasks:
                             booking_id=booking.id,
                             created_by=user.id,
                             message=body.message,
+                            issue_type=body.issue_type,
+                            title=ticket_title(body.issue_type, parsed.key),
                             client_request_id=str(body.client_request_id),
                             created_at=datetime.now(UTC),
                         )
@@ -193,7 +260,7 @@ class WorkTasks:
                             self.query(user, "all").where(BookingWorkTask.id == task.id)
                         )
                     ).one()
-                    result = self.dto(row)
+                    result = (await self.with_images(session, [self.dto(row)]))[0]
                 return result
             except IntegrityError:
                 if attempt:
@@ -212,7 +279,15 @@ class WorkTasks:
             if live.role not in {"qc", "admin"}:
                 raise ApiException(ErrorCode.FORBIDDEN)
             task = await session.scalar(
-                select(BookingWorkTask).where(BookingWorkTask.id == identifier).with_for_update()
+                select(BookingWorkTask)
+                .join(Booking, Booking.id == BookingWorkTask.booking_id)
+                .join(BookingGroup, BookingGroup.id == Booking.group_id)
+                .where(
+                    BookingWorkTask.id == identifier,
+                    Booking.deleted_at.is_(None),
+                    BookingGroup.deleted_at.is_(None),
+                )
+                .with_for_update()
             )
             if task is None:
                 raise ApiException(ErrorCode.NOT_FOUND)
@@ -250,7 +325,7 @@ class WorkTasks:
                     self.query(user, "all").where(BookingWorkTask.id == identifier)
                 )
             ).one()
-            return self.dto(row)
+            return (await self.with_images(session, [self.dto(row)]))[0]
 
     async def export(self, user, status, day, booking_key, creator_id, context):
         with WorkflowWorkbook() as document:
@@ -267,6 +342,7 @@ class WorkTasks:
                     "Handled by",
                     "Handled at",
                     "Handling note",
+                    "Title",
                 ]
             )
             async with transaction(
@@ -294,6 +370,7 @@ class WorkTasks:
                                     r.handled_by.full_name if r.handled_by else "",
                                     date_text(r.handled_at, zone) if r.handled_at else "",
                                     r.handling_note,
+                                    r.title,
                                 )
                             ]
                         )

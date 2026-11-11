@@ -22,9 +22,10 @@ function review(id: string, key: string) {
       <li v-for="entry in outbox.entries" :key="entry.id">
         <strong>{{ entry.preview.display_key }}</strong> ·
         {{ t(`outboxUi.${entry.state}`) }}
+        <p v-if="entry.savedNote">{{ t('ticketCompose.noteImagesPending') }}</p>
         <p v-if="entry.error">{{ errorMessage(entry.error) }}</p>
         <button
-          v-if="entry.state === 'blocked'"
+          v-if="entry.state === 'blocked' && !entry.savedNote"
           class="text-button"
           @click="review(entry.id, entry.key)"
         >
@@ -38,6 +39,7 @@ function review(id: string, key: string) {
         >
           {{ t('request_retry') }}
         </button>
+        <button v-if="entry.savedNote && entry.state !== 'sending'" type="button" class="text-button" @click="outbox.finishWithoutImages(entry.id)">{{ t('ticketCompose.skipPendingImages') }}</button>
       </li>
     </ul>
   </details>

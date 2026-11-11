@@ -504,8 +504,9 @@ defineExpose({
           <NoteForm
             v-model:status-code="w.statusCode"
             v-model:note="w.note"
+            v-model:images="w.images"
             :statuses="store.statuses"
-            :pending="w.saveRequest.pending"
+            :pending="w.saveRequest.pending || w.imageSaving"
             :can-save="w.canSave"
             :online="w.online"
             :state="w.saveRequest.state"

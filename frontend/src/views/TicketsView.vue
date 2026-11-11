@@ -11,15 +11,24 @@ import { timeouts } from '../config/timeouts'
 import { formatDateTime } from '../utils/dateTime'
 import { downloadReport, saveDownload } from '../utils/download'
 import { normalizeBookingKey } from '../utils/bookingKey'
-import type { Page, WorkTaskItem, AgentSummary } from '../types/api.generated'
+import type { Page, WorkTaskItem, AgentSummary, WorkTaskBundle } from '../types/api.generated'
 import RequestStatus from '../components/RequestStatus.vue'
 import PageControls from '../components/PageControls.vue'
 import EmptyState from '../components/EmptyState.vue'
+import AttachmentGallery from '../components/AttachmentGallery.vue'
+import TicketCopy from '../components/TicketCopy.vue'
 const { t } = useI18n(), route = useRoute(), auth = useAuthStore(), notifications = useNotificationsStore()
 const supervisor = computed(() => ['admin', 'qc'].includes(auth.user?.role ?? ''))
 const status = ref<'pending' | 'handled' | 'all'>(route.query.status === 'handled' ? 'handled' : 'pending'), day = ref(''), creator = ref(''),
   bookingKey = ref(String(route.query.booking_key ?? '')), page = ref(1), handling = ref<number | null>(null),
   handlingNote = ref<Record<number, string>>({}), agents = ref<AgentSummary[]>([])
+const selected = ref<number[]>([]), detailId = ref<number | null>(null)
+const detail = useRequest(async ({ signal, timeoutMs }, id: number) => (await api.get<WorkTaskItem>(`/work-tasks/${id}`, { signal, timeout: timeoutMs })).data, { timeoutMs: timeouts.list })
+const merge = useRequest(async ({ signal, timeoutMs }, ids: number[]) => (await api.post<WorkTaskBundle>('/work-tasks/merge', { ids }, { signal, timeout: timeoutMs })).data, { timeoutMs: timeouts.task })
+async function openTicket(id: number) { detailId.value = id; await detail.run(id) }
+async function combine() { if (selected.value.length >= 2) { merge.data.value = undefined; await merge.run([...selected.value]) } }
+function clearSelection() { selected.value = []; merge.data.value = undefined; merge.cancel() }
+function closeDetail() { detailId.value = null; detail.cancel(); detail.data.value = undefined }
 const params = computed(() => ({ status: status.value, date: day.value || undefined,
   creator_id: supervisor.value && creator.value ? Number(creator.value) : undefined,
   booking_key: bookingKey.value.trim() ? normalizeBookingKey(bookingKey.value) : undefined }))
@@ -30,12 +39,12 @@ const handle = useRequest(async ({ signal, timeoutMs }, item: WorkTaskItem) => (
   handling_note: handlingNote.value[item.id]?.trim() || null,
 }, { signal, timeout: timeoutMs })).data, { timeoutMs: timeouts.task })
 const exporting = useRequest(ctx => downloadReport(ctx, '/work-tasks/export', Object.fromEntries(Object.entries(params.value).filter(([, value]) => value !== undefined).map(([key, value]) => [key, String(value)]))), { timeoutMs: timeouts.export })
-async function load(reset = false) { if (reset) page.value = 1; await request.run() }
+async function load(reset = false) { if (reset) { page.value = 1; clearSelection() }; await request.run() }
 async function changePage(value: number) { page.value = value; await load() }
 async function markHandled(item: WorkTaskItem) {
   if (handling.value !== null) return
   handling.value = item.id
-  try { if (await handle.run(item)) await load() } finally { handling.value = null }
+  try { const updated = await handle.run(item); if (updated) { if (detailId.value === item.id) detail.data.value = updated; await load() } } finally { handling.value = null }
 }
 async function download() { const value = await exporting.run(); if (value) saveDownload(value, 'qc-tickets.xlsx') }
 watch(() => notifications.unread, () => void load())
@@ -47,6 +56,8 @@ watch(() => [route.query.booking_key, route.query.status], () => {
 useViewRefresh(() => load())
 onMounted(() => {
   void load()
+  const requestedTicket = Number(route.query.ticket_id)
+  if (Number.isSafeInteger(requestedTicket) && requestedTicket > 0) void openTicket(requestedTicket)
   if (supervisor.value) void api.get<AgentSummary[]>('/users/lookup', { params: { limit: 50 } }).then(r => { agents.value = r.data }).catch(() => undefined)
 })
 </script>
@@ -66,13 +77,44 @@ onMounted(() => {
     <RequestStatus :state="request.state.value" :error="request.error.value" @retry="load()" />
     <RequestStatus :state="handle.state.value" :error="handle.error.value" />
     <RequestStatus :state="exporting.state.value" :error="exporting.error.value" @retry="download" />
+    <div v-if="supervisor && selected.length" class="ticket-merge-toolbar" role="region" :aria-label="t('ticketCompose.merge')">
+      <span>{{ t('ticketCompose.selected', { count: selected.length }) }}</span>
+      <button type="button" class="button primary" :disabled="selected.length < 2 || merge.pending.value" @click="combine">{{ t('ticketCompose.merge') }}</button>
+      <button type="button" class="text-button" @click="clearSelection">{{ t('ticketCompose.clearSelection') }}</button>
+    </div>
+    <RequestStatus :state="merge.state.value" :error="merge.error.value" @retry="combine" />
+    <section v-if="merge.data.value" class="ticket-detail ticket-bundle" :aria-label="t('ticketCompose.merged')">
+      <h2>{{ t('ticketCompose.merged') }}</h2>
+      <p class="input-hint">{{ t('ticketCompose.mergeHint') }}</p>
+      <h3>{{ merge.data.value.title }}</h3><p class="ticket-message">{{ merge.data.value.message }}</p>
+      <TicketCopy :title="merge.data.value.title" :message="merge.data.value.message" />
+      <AttachmentGallery :files="merge.data.value.attachments" />
+    </section>
+    <section v-if="detailId !== null" class="ticket-detail" :aria-label="t('ticketCompose.detail')" aria-live="polite">
+      <header class="ticket-actions"><h2>{{ t('ticketCompose.detail') }} #{{ detailId }}</h2><button type="button" class="text-button" @click="closeDetail">{{ t('ticketCompose.close') }}</button></header>
+      <RequestStatus :state="detail.state.value" :error="detail.error.value" @retry="openTicket(detailId!)" />
+      <template v-if="detail.data.value?.id === detailId">
+        <h3>{{ detail.data.value.title }}</h3>
+        <RouterLink class="table-booking-link" :to="{ name: 'booking', params: { key: detail.data.value.booking_key } }">{{ detail.data.value.display_key }}</RouterLink>
+        <p>{{ detail.data.value.supplier_name }}</p>
+        <p class="ticket-meta">{{ detail.data.value.creator.full_name }} · {{ formatDateTime(detail.data.value.created_at, auth.timezone) }} · {{ t(`workTaskUi.${detail.data.value.status}`) }}</p>
+        <p class="ticket-message">{{ detail.data.value.message }}</p>
+        <TicketCopy :title="detail.data.value.title" :message="detail.data.value.message" />
+        <h3>{{ t('ticketCompose.images') }}</h3>
+        <AttachmentGallery v-if="detail.data.value.attachments?.length" :files="detail.data.value.attachments ?? []" />
+        <p v-else class="muted">{{ t('ticketCompose.noImages') }}</p>
+        <div v-if="detail.data.value.handled_by" class="ticket-handled"><strong>{{ t('workTaskUi.handledBy', { user: detail.data.value.handled_by.full_name }) }}</strong><time v-if="detail.data.value.handled_at">{{ formatDateTime(detail.data.value.handled_at, auth.timezone) }}</time><p v-if="detail.data.value.handling_note">{{ detail.data.value.handling_note }}</p></div>
+        <form v-else-if="supervisor" class="ticket-handle-form" @submit.prevent="markHandled(detail.data.value)"><label :for="`handling-${detailId}`">{{ t('workTaskUi.handlingNote') }}</label><textarea :id="`handling-${detailId}`" v-model="handlingNote[detailId]" maxlength="2000" rows="2" :disabled="handling !== null" /><button class="button primary" type="submit" :disabled="handling !== null">{{ t('workTaskUi.markHandled') }}</button></form>
+      </template>
+    </section>
     <div class="ticket-list" v-if="request.data.value?.items.length">
       <article v-for="item in request.data.value.items" :key="item.id" class="ticket-card">
         <header><div><span class="ticket-number">#{{ item.id }}</span><RouterLink class="table-booking-link" :to="{ name: 'booking', params: { key: item.booking_key } }">{{ item.display_key }}</RouterLink></div><span class="ticket-status" :class="item.status">{{ t(`workTaskUi.${item.status}`) }}</span></header>
-        <p class="ticket-supplier">{{ item.supplier_name }}</p><p class="ticket-message">{{ item.message }}</p>
-        <p class="ticket-meta">{{ item.creator.full_name }} · {{ formatDateTime(item.created_at, auth.timezone) }}</p>
-        <div v-if="item.handled_by" class="ticket-handled"><strong>{{ t('workTaskUi.handledBy', { user: item.handled_by.full_name }) }}</strong><time v-if="item.handled_at">{{ formatDateTime(item.handled_at, auth.timezone) }}</time><p v-if="item.handling_note">{{ item.handling_note }}</p></div>
-        <form v-else-if="supervisor" class="ticket-handle-form" @submit.prevent="markHandled(item)"><label :for="`handling-${item.id}`">{{ t('workTaskUi.handlingNote') }}</label><textarea :id="`handling-${item.id}`" v-model="handlingNote[item.id]" maxlength="2000" rows="2" :disabled="handling !== null" /><button class="button primary" type="submit" :disabled="handling !== null">{{ t('workTaskUi.markHandled') }}</button></form>
+        <label v-if="supervisor && item.issue_type === 'cannot_send_rejection_letters'" class="ticket-select"><input v-model="selected" :value="item.id" type="checkbox" :disabled="!selected.includes(item.id) && selected.length >= 100" />{{ t('ticketCompose.selectMerge') }}</label>
+        <h2 class="ticket-card-title"><button type="button" class="text-button" @click="openTicket(item.id)">{{ item.title }}</button></h2>
+        <p class="ticket-supplier">{{ item.supplier_name }}</p><p class="ticket-message ticket-excerpt">{{ item.message }}</p>
+        <p class="ticket-meta">{{ item.creator.full_name }} · {{ formatDateTime(item.created_at, auth.timezone) }} · {{ t('ticketCompose.imageCount', { count: item.attachments?.length ?? 0 }) }}</p>
+        <button type="button" class="button" @click="openTicket(item.id)">{{ t('ticketCompose.open') }}</button>
       </article>
     </div>
     <EmptyState v-else-if="request.state.value === 'success'" :title="t('workTaskUi.empty')" :description="t('workTaskUi.emptyHint')" />

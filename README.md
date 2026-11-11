@@ -86,7 +86,7 @@ The product supports Agent, QC, and Admin roles, with authorization enforced on 
 - Bounded request, database, WebSocket, and scheduler deadlines.
 - Optional Sentry integration, retention controls, encrypted backup tooling, and PWA/Web Push support.
 
-> Note images use private S3-compatible storage (including Cloudflare R2). Follow [the R2 setup guide](docs/note-images-vi.md) to enable uploads. [Agent reports and QC tickets](docs/workflow-release-vi.md) require migration `0014`. Redis-backed multi-instance coordination and external Telegram/email notifications are not part of the current deployment model.
+> Note images use private S3-compatible storage (including Cloudflare R2). Follow [the R2 setup guide](docs/note-images-vi.md) to enable uploads. [Agent reports and QC tickets](docs/workflow-release-vi.md) require migration `0014`. [Structured tickets, image composition and QC merging](docs/tickets-images-vi.md) require migration `0016`. Redis-backed multi-instance coordination and external Telegram/email notifications are not part of the current deployment model.
 
 ## Architecture
 

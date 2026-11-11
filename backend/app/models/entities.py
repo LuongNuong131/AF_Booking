@@ -219,12 +219,15 @@ class Attachment(CreatedAt, Base):
     __tablename__ = "attachments"
     __table_args__ = (
         Index("ix_attachments_note_id", "note_id"),
+        Index("ix_attachments_work_task_id", "work_task_id"),
+        UniqueConstraint("work_task_id", "storage_key", name="uq_attachment_work_task_storage"),
         UniqueConstraint("note_id", "storage_key", name="uq_attachment_note_storage"),
         TABLE_OPTIONS,
     )
 
     id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
-    note_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
+    note_id: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
+    work_task_id: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))
     file_name: Mapped[str] = mapped_column(mysql.VARCHAR(255), nullable=False)
     mime_type: Mapped[str] = mapped_column(mysql.VARCHAR(100), nullable=False)
     size_bytes: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
@@ -244,6 +247,8 @@ class BookingWorkTask(CreatedAt, Base):
     booking_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
     created_by: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), nullable=False)
     message: Mapped[str] = mapped_column(mysql.VARCHAR(2000), nullable=False)
+    issue_type: Mapped[str | None] = mapped_column(mysql.VARCHAR(40))
+    title: Mapped[str | None] = mapped_column(mysql.VARCHAR(255))
     status: Mapped[str] = mapped_column(mysql.ENUM("pending", "handled"), server_default="pending")
     client_request_id: Mapped[str] = mapped_column(ascii_char(36), nullable=False)
     handled_by: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True))

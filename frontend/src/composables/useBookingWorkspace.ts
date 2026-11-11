@@ -20,6 +20,7 @@ import {
 import { useRecentBookingsStore } from '../stores/recentBookings'
 import { draftStorage } from '../utils/bookingDrafts'
 import { i18n } from '../i18n'
+import { storeImages, loadImages, removeImages, imageBatchKey } from '../utils/imageOutbox'
 import type {
   BookingLookup,
   Note,
@@ -44,6 +45,7 @@ export function useBookingWorkspace() {
   const resolution = shallowRef<BookingLookup | null>(null),
     notes = shallowRef<Note[]>([]),
     cursor = ref<string | null>(null)
+  const images = ref<File[]>([]), imageSaving = ref(false)
   const statusCode = ref(''),
     note = ref(''),
     supplierName = ref(''),
@@ -238,6 +240,7 @@ export function useBookingWorkspace() {
       (!needsSupplier.value || supplierName.value.trim().length >= 3) &&
       (!showInvoice.value || invoiceValid.value) &&
       !saveRequest.pending.value &&
+      !imageSaving.value &&
       !conflict.value,
   )
 
@@ -276,6 +279,7 @@ export function useBookingWorkspace() {
   )
   function restoreDraft(value: string) {
     restoringDraft = true
+    images.value = []
     const saved = draft.get(value)
     statusCode.value = saved?.status_code ?? ''
     note.value = saved?.note ?? ''
@@ -296,6 +300,7 @@ export function useBookingWorkspace() {
     restoringDraft = true
     statusCode.value = ''
     note.value = ''
+    images.value = []
     invoiceRemoveIds.value = []
     invoiceText.value = ''
     noInvoice.value = snapshot.value?.invoice_state === 'no_invoice'
@@ -375,6 +380,7 @@ export function useBookingWorkspace() {
     restoringDraft = true
     statusCode.value = ''
     note.value = ''
+    images.value = []
     invoiceRemoveIds.value = []
     invoiceText.value = ''
     noInvoice.value = snapshot.value?.invoice_state === 'no_invoice'
@@ -484,17 +490,29 @@ export function useBookingWorkspace() {
           }
         : {}),
     }
-    const entry = outbox.enqueue(
-      { ...current.value!, invoices: invoiceItems.value },
-      {
-        ...payloadBase,
-        client_request_id: crypto.randomUUID(),
-      },
-    )
-    if (!entry) {
+    const requestId = crypto.randomUUID(), submittedKey = key.value
+    const batchKey = imageBatchKey(auth.user!.id, requestId), selectedImages = [...images.value]
+    const submittedBase = { ...current.value!, invoices: invoiceItems.value }
+    imageSaving.value = true
+    try {
+      if (selectedImages.length) await storeImages(batchKey, selectedImages)
+      if (disposed || key.value !== submittedKey) {
+        if (selectedImages.length) void removeImages(batchKey)
+        return false
+      }
+      const payload = { ...payloadBase, client_request_id: requestId }
+      const entry = selectedImages.length
+        ? outbox.enqueue(submittedBase, payload, 'note', true)
+        : outbox.enqueue(submittedBase, payload)
+      if (!entry) {
+        if (selectedImages.length) void removeImages(batchKey)
+        validation.value = i18n.global.t('outboxUi.cannotQueue')
+        return false
+      }
+    } catch {
       validation.value = i18n.global.t('outboxUi.cannotQueue')
       return false
-    }
+    } finally { imageSaving.value = false }
     discardDraft()
     realtime.release()
     return true
@@ -505,6 +523,12 @@ export function useBookingWorkspace() {
       assignMessage.value = entry.payload.assign_message ?? ''
       statusCode.value = entry.payload.status_code
       note.value = entry.payload.note ?? ''
+      if (entry.hasImages) {
+        const restoredKey = key.value
+        void loadImages(imageBatchKey(entry.note.agent.id, entry.id)).then(files => {
+          if (!disposed && key.value === restoredKey && !images.value.length) images.value = files ?? []
+        }).catch(() => { validation.value = i18n.global.t('outboxUi.cannotQueue') })
+      }
     }
     invoiceText.value = entry.payload.invoices?.add?.join(', ') ?? ''
     noInvoice.value = entry.payload.invoices?.no_invoice ?? false
@@ -601,6 +625,7 @@ export function useBookingWorkspace() {
     restoringDraft = true
     statusCode.value = ''
     note.value = ''
+    images.value = []
     invoiceRemoveIds.value = []
     invoiceText.value = ''
     noInvoice.value = snapshot.value?.invoice_state === 'no_invoice'
@@ -669,6 +694,8 @@ export function useBookingWorkspace() {
     stopOutbox()
   })
   return {
+    images,
+    imageSaving,
     invoiceChange,
     setInvoiceChange,
     saveInvoices,

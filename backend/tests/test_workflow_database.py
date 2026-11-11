@@ -262,3 +262,174 @@ async def test_notification_enum_migration_preserves_existing_watch_feed_and_uni
                 Notification.__table__.insert(),
                 {"user_id": 3, "booking_id": booking_id, "type": "watch_update"},
             )
+
+
+async def structured_ticket(rig, key=KEY, issue="cannot_send_rejection_letters", request_id=None):
+    return await rig.client.post(
+        f"/api/v1/bookings/{key}/work-tasks",
+        headers=rig.headers["agent"],
+        json={
+            "issue_type": issue,
+            "message": "The rejection letter could not be sent on TIM Tool.",
+            "client_request_id": request_id or str(uuid4()),
+        },
+    )
+
+
+async def test_structured_titles_images_details_privacy_and_exact_merge(rig):
+    from app.utils.ticket_text import REJECTION_MESSAGE, TITLES
+
+    await rig.save()
+    key2 = "CW9997777-YUL-2610"
+    await rig.save(key=key2, note="Second booking")
+    first = (await structured_ticket(rig)).json()
+    second = (await structured_ticket(rig, key=key2)).json()
+    contract = (await structured_ticket(rig, issue="contract")).json()
+    assert first["title"] == f"{TITLES['cannot_send_rejection_letters']} - {KEY}"
+    assert contract["title"] == f"{TITLES['contract']} - {KEY}"
+    rig.app.state.storage = MemoryStorage()
+    endpoint = f"/api/v1/work-tasks/{first['id']}/attachments"
+    image_ids = []
+    for number in range(2):
+        response = await rig.client.post(
+            endpoint,
+            headers={**rig.headers["agent"], "Content-Type": "image/png"},
+            params={"file_name": f"evidence-{number}.png"},
+            content=PNG + bytes([number]),
+        )
+        assert response.status_code == 201, response.text
+        image_ids.append(response.json()["id"])
+    again = await rig.client.post(
+        endpoint,
+        headers={**rig.headers["agent"], "Content-Type": "image/png"},
+        params={"file_name": "evidence-0.png"},
+        content=PNG + b"\x00",
+    )
+    assert again.json()["id"] == image_ids[0]
+    assert rig.app.state.storage.writes == 2
+    assert (await rig.get(f"/work-tasks/{first['id']}", user="other")).status_code == 404
+    assert (await rig.get(f"/attachments/{image_ids[0]}/content", user="other")).status_code == 404
+    assert (
+        await rig.get(f"/attachments/{image_ids[0]}/content", user="admin")
+    ).content == PNG + b"\x00"
+    detail = (await rig.get(f"/work-tasks/{first['id']}", user="admin")).json()
+    assert [f["id"] for f in detail["attachments"]] == image_ids
+    assert "storage_key" not in str(detail)
+    # Repeated IDs/bookings appear only once; selection order is preserved.
+    merge = await rig.client.post(
+        "/api/v1/work-tasks/merge",
+        headers=rig.headers["admin"],
+        json={"ids": [second["id"], first["id"], first["id"]]},
+    )
+    assert merge.status_code == 200, merge.text
+    assert merge.json()["title"] == TITLES["cannot_send_rejection_letters"]
+    assert merge.json()["message"] == REJECTION_MESSAGE + f"\n\n{key2}\n{KEY}"
+    assert len(merge.json()["attachments"]) == 2
+    assert (await rig.get("/work-tasks", user="admin")).json()["total"] == 3
+    for ids, actor, expected in [
+        ([first["id"], contract["id"]], "admin", 422),
+        ([first["id"], 999999], "admin", 404),
+        ([first["id"], second["id"]], "agent", 403),
+        ([first["id"], first["id"]], "admin", 422),
+    ]:
+        assert (
+            await rig.client.post(
+                "/api/v1/work-tasks/merge", headers=rig.headers[actor], json={"ids": ids}
+            )
+        ).status_code == expected
+
+
+async def test_ticket_english_validation_retry_mismatch_and_image_limits(rig):
+    await rig.save()
+    request_id = str(uuid4())
+    first = await structured_ticket(rig, request_id=request_id)
+    assert first.status_code == 201
+    assert (await structured_ticket(rig, request_id=request_id)).json()["id"] == first.json()["id"]
+    assert (
+        await structured_ticket(rig, request_id=request_id, issue="contract")
+    ).status_code == 422
+    invalid = await rig.client.post(
+        f"/api/v1/bookings/{KEY}/work-tasks",
+        headers=rig.headers["agent"],
+        json={
+            "issue_type": "contract",
+            "message": "Không thể gửi thư từ chối",
+            "client_request_id": str(uuid4()),
+        },
+    )
+    assert invalid.status_code == 422
+    rig.app.state.storage = storage = MemoryStorage()
+    endpoint = f"/api/v1/work-tasks/{first.json()['id']}/attachments"
+
+    async def send(content=PNG, mime="image/png", actor="agent"):
+        return await rig.client.post(
+            endpoint,
+            headers={**rig.headers[actor], "Content-Type": mime},
+            params={"file_name": "image.png"},
+            content=content,
+        )
+
+    assert (await send(actor="other")).status_code == 404
+    assert (await send(content=b"not an image")).status_code == 422
+    storage.fail = True
+    assert (await send()).status_code == 503
+    storage.fail = False
+    # Verify the middleware permits images over the normal JSON body limit.
+    assert (await send(content=PNG + b"0" * (2 * 1024 * 1024))).status_code == 201
+    for n in range(4):
+        assert (await send(content=PNG + bytes([n]))).status_code == 201
+    assert (await send()).status_code == 422
+    assert (await send(content=PNG + b"0" * (5 * 1024 * 1024))).status_code == 413
+    assert (await rig.get("/work-tasks/translation/config")).json() == {"enabled": False}
+    assert (
+        await rig.client.post(
+            "/api/v1/work-tasks/translate",
+            headers=rig.headers["agent"],
+            json={"text": "Không thể gửi thư"},
+        )
+    ).status_code == 503
+
+
+async def test_ticket_recycle_restore_and_purge_preserve_then_queue_images(rig):
+    from test_management_database import entries, recycle
+
+    from app.models import StorageGarbage
+
+    await rig.save()
+    task = (await structured_ticket(rig)).json()
+    rig.app.state.storage = MemoryStorage()
+    image = await rig.client.post(
+        f"/api/v1/work-tasks/{task['id']}/attachments",
+        headers={**rig.headers["agent"], "Content-Type": "image/png"},
+        params={"file_name": "evidence.png"},
+        content=PNG,
+    )
+    assert image.status_code == 201
+    image_id = image.json()["id"]
+    assert (await recycle(rig, "tickets", task["id"])).status_code == 200
+    assert (await rig.get(f"/attachments/{image_id}/content")).status_code == 404
+    trash = (await entries(rig))[0]
+    assert (
+        await rig.client.post(
+            f"/api/v1/admin/data/trash/{trash['id']}/restore", headers=rig.headers["admin"]
+        )
+    ).status_code == 200
+    assert (await rig.get(f"/attachments/{image_id}/content")).status_code == 200
+    assert (await recycle(rig, "tickets", task["id"])).status_code == 200
+    ids = [item["id"] for item in await entries(rig)]
+    preview = (
+        await rig.client.post(
+            "/api/v1/admin/data/trash/preview", headers=rig.headers["admin"], json=ids
+        )
+    ).json()
+    purged = await rig.client.post(
+        "/api/v1/admin/data/trash/purge",
+        headers=rig.headers["admin"],
+        json={"ids": ids, "confirmation": "DELETE", "preview_token": preview["token"]},
+    )
+    assert purged.status_code == 200, purged.text
+    async with rig.app.state.engine.connect() as connection:
+        assert (
+            await connection.scalar(select(Attachment.id).where(Attachment.id == image_id)) is None
+        )
+        assert (await connection.scalar(select(StorageGarbage.storage_key))).startswith("tickets/")

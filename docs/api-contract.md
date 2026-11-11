@@ -698,3 +698,15 @@ Daily report JSON may be served from a cached gzip representation according to
 Accept-Encoding; decoded JSON fields and access rules remain unchanged.
 Optional monitoring and retention environment variables are documented in
 [observability.md](observability.md); backup settings in [backup.md](backup.md).
+
+## Structured QC tickets and translation (migration 0016)
+
+`POST /bookings/{key}/work-tasks` accepts `message` (required English content, 1–2000 characters), `client_request_id` (UUID), and optional `issue_type`: `contract` or `cannot_send_rejection_letters`. The server derives `title` from the issue and canonical booking key; clients cannot supply or spoof the title. UUID replay must match booking, creator, message and issue type. The language guard rejects characteristic Vietnamese Unicode and content without Latin words, rather than claiming complete language identification.
+
+Ticket responses include `title`, nullable `issue_type`, and `attachments` (safe metadata only). `GET /work-tasks/{id}` returns complete details with the same creator/QC/Admin visibility rules as the list. Legacy unclassified tickets remain readable.
+
+`POST /work-tasks/{id}/attachments?file_name=...` takes raw image bytes with a supported image Content-Type, up to 5 MiB and 5 images per ticket. Creator/QC/Admin may upload; content hashes make retries idempotent. `GET /attachments/{id}/content` authenticates reads and enforces ticket visibility. Note attachments keep their existing routes and visibility. S3 keys are never returned to clients.
+
+`POST /work-tasks/merge` is QC/Admin-only, with `{ "ids": [1, 2] }` (2–100 positive IDs). It returns `{title, message, booking_keys, attachments}` for rejection-letter tickets, removing duplicate bookings in selection order and using the agreed TIM Tool template. It neither deletes nor handles source tickets. Missing IDs and mixed ticket types are rejected.
+
+`GET /work-tasks/translation/config` reports whether direct translation is configured. `POST /work-tasks/translate` accepts `{ "text": "Vietnamese description" }` (1–2000 characters), returning `{ "text": "English translation" }`. Both require authentication. `GOOGLE_TRANSLATE_API_KEY` enables the official Google Cloud Translation v2 endpoint; failures return a bounded service error without exposing provider details or secrets. The UI also offers an explicit Google Translate link and a review/apply step.

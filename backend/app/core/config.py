@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     login_lockout_seconds: int = Field(default=300, ge=1, le=3600)
     auth_hash_concurrency: int = Field(default=2, ge=1, le=8)
     max_request_body_bytes: int = Field(default=1048576, ge=1, le=1048576)
+    google_translate_api_key: SecretStr | None = None
     s3_endpoint: str | None = None
     s3_bucket: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
     s3_region: str = "auto"

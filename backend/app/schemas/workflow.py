@@ -1,10 +1,12 @@
 from datetime import date
+from typing import Annotated, Literal
 from uuid import UUID
 
 from pydantic import Field, field_validator
 
 from app.schemas.contracts import (
     AgentSummary,
+    Attachment,
     BookingIdentity,
     ContractModel,
     StatusSummary,
@@ -36,7 +38,11 @@ class PersonalDailyReport(ContractModel):
     size: int
 
 
+IssueType = Literal["contract", "cannot_send_rejection_letters"]
+
+
 class WorkTaskCreate(ContractModel):
+    issue_type: IssueType | None = None
     message: str = Field(min_length=1, max_length=2000)
     client_request_id: UUID
 
@@ -46,6 +52,9 @@ class WorkTaskCreate(ContractModel):
         value = (clean_note(value) or "").strip()
         if not value:
             raise ValueError("Describe the work required.")
+        from app.utils.ticket_text import validate_english
+
+        validate_english(value)
         return value
 
 
@@ -54,6 +63,9 @@ class WorkTaskHandle(ContractModel):
 
 
 class WorkTaskItem(BookingIdentity):
+    issue_type: IssueType | None = None
+    title: str
+    attachments: list[Attachment] = Field(default_factory=list)
     id: int
     supplier_name: str
     creator: AgentSummary
@@ -72,7 +84,43 @@ class AttachmentStorageInfo(ContractModel):
     mime_types: list[str]
 
 
+class WorkTaskMerge(ContractModel):
+    ids: list[Annotated[int, Field(gt=0)]] = Field(min_length=2, max_length=100)
+
+
+class WorkTaskBundle(ContractModel):
+    title: str
+    message: str
+    booking_keys: list[str]
+    attachments: list[Attachment]
+
+
+class TranslationConfig(ContractModel):
+    enabled: bool
+
+
+class TranslationRequest(ContractModel):
+    text: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("text")
+    @classmethod
+    def clean(cls, value):
+        value = (clean_note(value) or "").strip()
+        if not value:
+            raise ValueError("Enter text to translate.")
+        return value
+
+
+class TranslationResult(ContractModel):
+    text: str
+
+
 WORKFLOW_MODELS = (
+    WorkTaskMerge,
+    WorkTaskBundle,
+    TranslationConfig,
+    TranslationRequest,
+    TranslationResult,
     PersonalDailyReport,
     WorkTaskCreate,
     WorkTaskHandle,

@@ -8,7 +8,17 @@ from app.core.bounds import Identifier, KeyPath
 from app.core.deps import get_current_user, require_roles
 from app.core.timeouts import DeadlineRoute, timeout
 from app.schemas.contracts import Page
-from app.schemas.workflow import PersonalDailyReport, WorkTaskCreate, WorkTaskHandle, WorkTaskItem
+from app.schemas.workflow import (
+    PersonalDailyReport,
+    TranslationConfig,
+    TranslationRequest,
+    TranslationResult,
+    WorkTaskBundle,
+    WorkTaskCreate,
+    WorkTaskHandle,
+    WorkTaskItem,
+    WorkTaskMerge,
+)
 from app.services.audit import AuditContext
 from app.services.session_cache import CurrentUser
 
@@ -82,3 +92,26 @@ async def handle_work_task(
     return await request.app.state.work_tasks.handle(
         id, body, user, AuditContext.from_request(request)
     )
+
+
+@router.get("/work-tasks/translation/config", response_model=TranslationConfig)
+async def translation_config(request: Request, user: Actor):
+    return TranslationConfig(enabled=bool(request.app.state.settings.google_translate_api_key))
+
+
+@router.post("/work-tasks/translate", response_model=TranslationResult)
+@timeout(15)
+async def translate_ticket(body: TranslationRequest, request: Request, user: Actor):
+    from app.services.ticket_translation import translate
+
+    return TranslationResult(text=await translate(body.text, request.app.state.settings))
+
+
+@router.post("/work-tasks/merge", response_model=WorkTaskBundle)
+async def merge_work_tasks(body: WorkTaskMerge, request: Request, user: Supervisor):
+    return await request.app.state.work_tasks.merge(body, user)
+
+
+@router.get("/work-tasks/{id}", response_model=WorkTaskItem)
+async def work_task_detail(id: Identifier, request: Request, user: Actor):
+    return await request.app.state.work_tasks.detail(id, user)

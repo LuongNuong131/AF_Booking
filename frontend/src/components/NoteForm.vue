@@ -7,8 +7,10 @@ import type { RequestFailure } from '../api/errors'
 import { api } from '../api/client'
 import { useShortcuts } from '../composables/useShortcuts'
 import RequestStatus from './RequestStatus.vue'
+import StagedImages from './StagedImages.vue'
 const { t } = useI18n()
 const props = defineProps<{
+  images?: File[]
   statusCode: string
   note: string
   statuses: Status[]
@@ -23,6 +25,7 @@ const props = defineProps<{
   draftPending?: boolean
 }>()
 const emit = defineEmits<{
+  'update:images': [files: File[]]
   'update:statusCode': [value: string]
   'update:note': [value: string]
   save: []
@@ -116,6 +119,7 @@ function selectStatus(code: string) {
           type="button"
           :aria-pressed="statusCode === status.code"
           :class="{ selected: statusCode === status.code }"
+          :disabled="pending"
           @click="selectStatus(status.code)"
         >
           <span>{{ statusLabel(status) }}</span
@@ -173,6 +177,7 @@ function selectStatus(code: string) {
       :aria-label="t('bookingUi.note')"
       :aria-required="selected?.note_required"
       :value="note"
+      :disabled="pending"
       maxlength="5000"
       rows="4"
       :placeholder="t('bookingUi.notePlaceholder')"
@@ -187,8 +192,8 @@ function selectStatus(code: string) {
     <p v-if="draftFailed" class="field-error" role="alert">
       {{ t('bookingUi.draftFailed') }}
     </p>
+    <StagedImages :model-value="images ?? []" :disabled="pending" @update:model-value="emit('update:images', $event)" />
     <slot name="fields" />
-    <p class="input-hint">{{ t('noteImageUi.afterSave') }}</p>
     <p v-if="!online" class="booking-warning offline-save" role="status">
       {{ t('network_offline') }}
     </p>
@@ -205,9 +210,10 @@ function selectStatus(code: string) {
         ><slot name="task-action" />
       </div>
       <button
-        v-if="hasDraft || statusCode || note"
+        v-if="hasDraft || statusCode || note || images?.length"
         type="button"
         class="text-button discard-draft"
+        :disabled="pending"
         @click="emit('discard')"
       >
         {{ t('bookingUi.discardDraft') }}

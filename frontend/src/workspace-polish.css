@@ -71,3 +71,19 @@
 .request-loading { display: flex; align-items: center; gap: 9px; margin: 12px 0; color: var(--muted); font-size: 12px; }
 .request-spinner { display: inline-block; width: 14px; height: 14px; flex-shrink: 0; border: 2px solid var(--line); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .request-spinner { animation: none; } }
+
+.booking-ticket-panel input, .booking-ticket-panel select, .ticket-copy textarea, .ticket-translation textarea { width: 100%; min-width: 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; }
+.ticket-actions, .ticket-merge-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.ticket-merge-toolbar, .ticket-detail { margin-block: 20px; padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
+.ticket-detail h3, .ticket-card-title { overflow-wrap: anywhere; }
+.ticket-card-title { font-size: 15px; line-height: 1.6; }
+.ticket-card-title button { text-align: start; }
+.ticket-select { display: flex; gap: 8px; align-items: center; margin-top: 16px; font-size: 12px; }
+.ticket-select input { width: 20px; height: 20px; }
+.ticket-excerpt { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.ticket-translation, .staged-images { padding-block: 12px; border-top: 1px solid var(--line); }
+.ticket-translation summary, .staged-images summary { cursor: pointer; font-size: 13px; font-weight: 650; }
+.ticket-translation .field-label { display: grid; gap: 8px; margin-block: 12px; }
+.staged-images .note-image-grid img { max-width: 100%; max-height: 180px; object-fit: contain; }
+.ticket-detail .note-image-grid img { max-height: 320px; object-fit: contain; }
+.ticket-copy { margin-block: 16px; }

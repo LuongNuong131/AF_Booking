@@ -17,7 +17,7 @@ class BodyLimitMiddleware:
             return await self.app(scope, receive, send)
         max_bytes = self.max_bytes
         if scope.get("method") == "POST" and re.fullmatch(
-            r"/api/v1/notes/[0-9]+/attachments", scope["path"]
+            r"/api/v1/(?:notes|work-tasks)/[0-9]+/attachments", scope["path"]
         ):
             max_bytes = 5 * 1024 * 1024
         length = Headers(scope=scope).get("content-length")

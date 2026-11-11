@@ -325,6 +325,12 @@ export type TaskEdit = { "remind_date"?: string | null; "remind_time"?: string |
 
 export type TaskStatus = "pending" | "done" | "cancelled"
 
+export type TranslationConfig = { "enabled": boolean }
+
+export type TranslationRequest = { "text": string }
+
+export type TranslationResult = { "text": string }
+
 export type TrashItem = { "id": number; "resource": string; "record_id": string; "label": string; "deleted_by": number; "reason": string; "created_at": string }
 
 export type TrendPoint = { "date": string; "count": number }
@@ -339,10 +345,14 @@ export type WebSocketClientFrame = LockCommandFrame | HeartbeatFrame
 
 export type WebSocketServerFrame = BookingUpdatedFrame | LockChangedFrame | LockSnapshotFrame | NotificationNewFrame | TaskDueFrame | ForceLogoutFrame | HeartbeatFrame | CatalogFrame | SystemHealthFrame
 
-export type WorkTaskCreate = { "message": string; "client_request_id": string }
+export type WorkTaskBundle = { "title": string; "message": string; "booking_keys": Array<string>; "attachments": Array<Attachment> }
+
+export type WorkTaskCreate = { "issue_type"?: "contract" | "cannot_send_rejection_letters" | null; "message": string; "client_request_id": string }
 
 export type WorkTaskHandle = { "handling_note"?: string | null }
 
-export type WorkTaskItem = { "booking_key": string; "display_key": string; "id": number; "supplier_name": string; "creator": AgentSummary; "message": string; "status": string; "created_at": string; "handled_by": AgentSummary | null; "handled_at": string | null; "handling_note": string | null }
+export type WorkTaskItem = { "booking_key": string; "display_key": string; "issue_type"?: "contract" | "cannot_send_rejection_letters" | null; "title": string; "attachments"?: Array<Attachment>; "id": number; "supplier_name": string; "creator": AgentSummary; "message": string; "status": string; "created_at": string; "handled_by": AgentSummary | null; "handled_at": string | null; "handling_note": string | null }
+
+export type WorkTaskMerge = { "ids": Array<number> }
 
 export const ERROR_CODES = ["PASSWORD_CHANGE_REQUIRED", "PAYLOAD_TOO_LARGE", "UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "BOOKING_EXISTS", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]
