@@ -38,6 +38,40 @@
     "final_unit_run": {
       "passed": 221,
       "skipped": 205
+    },
+    "suggestion_fallback_regression": {
+      "date": "2026-11-11",
+      "change": "Keep the unique booking_key index for bounded fallback suggestions when recycled-record filters are active.",
+      "test_criteria": "Existing 50,000-booking integrity/latency/query-plan checks retained.",
+      "database_version": "8.4.13",
+      "fixture": {
+        "bookings": 50000,
+        "notes": 50000,
+        "folders": 2000,
+        "mismatches": 250
+      },
+      "report_seconds": 6.789,
+      "baseline_lookup": {
+        "samples": 30,
+        "p50_ms": 9.013,
+        "p95_ms": 26.727,
+        "p99_ms": 98.014
+      },
+      "during_scan_lookup": {
+        "samples": 164,
+        "p50_ms": 12.904,
+        "p95_ms": 41.717,
+        "p99_ms": 149.372
+      },
+      "suggestion_fallback_ms": 66.314,
+      "booking_access": [
+        {
+          "table": "bookings",
+          "type": "eq_ref",
+          "key": "booking_key",
+          "rows": 1
+        }
+      ]
     }
   },
   "frontend": {
