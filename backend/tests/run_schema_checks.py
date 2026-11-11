@@ -115,6 +115,8 @@ def main() -> None:
             "auth",
             "booking",
             "folder",
+            "folder-assignments",
+            "assignment-browser",
             "realtime",
             "frontend",
             "tasks",
@@ -222,6 +224,8 @@ def main() -> None:
                 "auth": "tests/test_auth_database.py",
                 "booking": "tests/test_booking_database.py",
                 "folder": "tests/test_folder_database.py",
+                "folder-assignments": "tests/test_folder_assignments_database.py",
+                "assignment-browser": "tests/test_frontend_database.py",
                 "realtime": "tests/test_realtime_database.py",
                 "frontend": "tests/test_frontend_database.py",
                 "tasks": "tests/test_tasks_database.py",
@@ -243,6 +247,8 @@ def main() -> None:
             if args.suite == "booking":
                 test_command.append("tests/test_booking_creation_database.py")
                 test_command.append("tests/test_workflow_database.py")
+            if args.suite == "assignment-browser":
+                test_command.extend(["-k", "folder-assignments"])
             test_command.extend(["-q", "-x"])
             if args.suite not in {"schema", "search-performance", "integrity-performance", "load"}:
                 test_command.append(f"--junitxml={args.report.resolve()}")
@@ -277,7 +283,7 @@ def main() -> None:
         finally:
             # Remove only this runner's unique disposable container, even after a failed test.
             subprocess.run(
-                ["docker", "--host=unix:///var/run/docker.sock", "rm", "-f", name],
+                ["docker", "--host=unix:///var/run/docker.sock", "rm", "-f", "-v", name],
                 env=docker_env,
                 stdout=subprocess.DEVNULL,
                 check=False,

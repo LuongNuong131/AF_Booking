@@ -6,6 +6,7 @@ import { useRequest } from '../../composables/useRequest'
 import type { BookingImportResult } from '../../types/api.generated'
 import RequestStatus from '../../components/RequestStatus.vue'
 import MonthlyBookingPanel from '../../components/MonthlyBookingPanel.vue'
+import FolderAssignmentImport from '../../components/FolderAssignmentImport.vue'
 const { t } = useI18n()
 const data = ref(''), preview = ref<BookingImportResult | null>(null)
 const fileError = ref(false)
@@ -40,6 +41,7 @@ async function run(apply: boolean) {
 </script>
 <template>
   <div class="import-page">
+  <FolderAssignmentImport @imported="monthly?.refresh()" />
   <section class="admin-panel import-panel">
     <div class="import-heading">
     <h2>{{ t('importUi.title') }}</h2>

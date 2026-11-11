@@ -10,6 +10,7 @@ from app.api.v1.attachments import router as attachments_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.bookings import router as bookings_router
 from app.api.v1.collaboration import router as collaboration_router
+from app.api.v1.folder_assignments import router as folder_assignments_router
 from app.api.v1.folders import router as folders_router
 from app.api.v1.health import HealthResponse, database_health, health
 from app.api.v1.health import router as health_router
@@ -38,6 +39,7 @@ from app.services.booking_writes import BookingWrites
 from app.services.collaboration import CollaborationService
 from app.services.daily_reports import DailyReports
 from app.services.exports import ExportService
+from app.services.folder_assignments import FolderAssignments
 from app.services.folders import FolderService
 from app.services.integrity import IntegrityService
 from app.services.invoice_service import InvoiceService
@@ -110,6 +112,7 @@ def create_app(
         application.state.db_health_limiter = SearchLimiter(limit=10)
         application.state.snapshot_cache = cache
         application.state.key_index = index
+        application.state.folder_assignments = FolderAssignments(application.state)
         application.state.ws_manager = ws_manager
         ws_manager.health_status = application.state.telemetry.degraded
         application.state.lock_manager = ws_manager.locks
@@ -289,6 +292,7 @@ def create_app(
     application.include_router(bookings_router, prefix="/api/v1")
     application.include_router(notifications_router, prefix="/api/v1")
     application.include_router(folders_router, prefix="/api/v1")
+    application.include_router(folder_assignments_router, prefix="/api/v1")
     application.include_router(realtime_router, prefix="/api/v1")
     application.include_router(tasks_router, prefix="/api/v1")
     application.include_router(snippets_router, prefix="/api/v1")

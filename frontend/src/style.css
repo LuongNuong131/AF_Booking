@@ -3642,6 +3642,8 @@ kbd {
   right: 8px;
   z-index: 90;
   max-width: 90vw;
+  max-height: 60vh;
+  overflow: auto;
   font: 11px monospace;
   background: var(--surface);
   color: var(--muted);

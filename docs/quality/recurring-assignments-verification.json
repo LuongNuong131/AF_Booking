@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-11",
+  "scope": "Local verification using disposable databases and synthetic browser accounts",
+  "backend": {
+    "unit_suite": {"passed": 237, "skipped_database_or_browser_checks": 220},
+    "folder_assignment_unit_cases": 9,
+    "ruff_check": "passed",
+    "ruff_format": "passed",
+    "generated_contract_check": "passed"
+  },
+  "frontend": {
+    "existing_vitest_suite": {"files": 62, "tests": 280, "result": "passed"},
+    "bilingual_catalogue_check_after_copy_changes": "passed",
+    "eslint": "passed",
+    "typescript": "passed",
+    "production_build": "passed with test HTTPS API/WSS origins",
+    "security_configuration_checks": "passed"
+  },
+  "database": {
+    "mysql_8": {"assignment_business_cases": 5, "schema_migration_suite": "passed"},
+    "tidb_8_5": {"assignment_business_cases": 5, "schema_migration_suite": "passed"},
+    "transport": "Verified TLS for both engines",
+    "operator_workbook_tested_on_both_engines": true,
+    "operator_workbook": {"source_rows": 240, "equivalent_duplicates": 3, "expanded_multi_station_rows": 2, "unique_bookings_and_folders": 239, "hotel": 124, "transportation": 92, "unclassified": 23, "unassigned_pending_confirmation": 6},
+    "confirmed_usernames": {"Tran": "HuyenTran", "Thang": "XuanThang"}
+  },
+  "browser": {
+    "suite": "assignment-browser",
+    "engine": "Chromium with real Vue/FastAPI/WebSocket/TLS MySQL",
+    "result": "passed",
+    "widths": [320, 375, 768, 1440],
+    "flows": ["Admin uploads XLSX", "Username mapping", "Preview then apply", "My tasks and all assignments", "Folder default classification", "Multiple months in one folder", "Another user opens assigned booking", "No horizontal document overflow"]
+  },
+  "production": {"deployed": false, "data_imported": false, "required": ["Deploy matching backend/frontend and migration 0017", "Admin uploads original workbook at /admin/import"]}
+}

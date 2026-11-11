@@ -1,5 +1,12 @@
 # Project state
 
+## Implemented: Recurring folder assignments
+
+- Workspace has My tasks with region/station supplier folders, all-month navigation, personal/all/unassigned/review scopes and server pagination. Responsibility stays on the folder when monthly bookings roll over or another user handles a booking.
+- Admin XLSX preview/import reads the Merged sheet, maps existing usernames (including confirmed Tran → HuyenTran and Thang → XuanThang), merges equivalent duplicates and expands explicit multiple stations. Uncertain owners and mixed service types remain reviewable. Reimports preserve saved assignments and history.
+- Admin/QC manage responsibility and all active users may classify folder defaults while retaining per-booking overrides. Fresh authorization, optimistic assignment versions, audit and cache/index/realtime invalidation are included. Migration head is 0017.
+- See [setup and import instructions](docs/recurring-folder-assignments-vi.md). The source workbook is uploaded by Admin after deployment; it is not stored in Git or imported to production by local verification.
+
 ## Implemented: Booking ticket history and note-search UX
 
 - Booking information includes paginated pending/handled ticket lists with counts, creator, attachment count, QC result and links to the correct ticket. Agent visibility remains limited to their own tickets; QC/Admin retain booking-wide access.

@@ -15,6 +15,12 @@ export type ApiError = { "code": ErrorCode; "message": string; "details"?: JsonV
 
 export type AssignmentDecline = { "reason": string }
 
+export type AssignmentImport = { "workbook": string; "agent_map"?: { [key: string]: string }; "apply"?: boolean }
+
+export type AssignmentImportResult = { "source_rows": number; "duplicate_rows": number; "new_bookings": number; "new_folders": number; "updated_folders": number; "preserved_folders": number; "applied": boolean; "agent_map": { [key: string]: string }; "rows": Array<AssignmentImportRow> }
+
+export type AssignmentImportRow = { "booking_key": string; "supplier_name": string; "station_code": string; "supplier_type": SupplierType; "source_agent": string | null; "username": string | null; "region": string | null; "review": string | null }
+
 export type AssignmentItem = { "booking_key": string; "display_key": string; "id": number; "note_id": number; "from_user": AgentSummary; "to_user": AgentSummary; "message": string | null; "status": "open" | "done" | "declined"; "created_at": string; "resolved_at": string | null; "decline_reason": string | null }
 
 export type Attachment = { "id": number; "file_name": string; "mime_type": string; "size_bytes": number }
@@ -82,6 +88,10 @@ export type EmptyData = {  }
 export type EndpointMetrics = { "requests": number; "errors": number; "error_rate": number; "p50_ms": number | null; "p95_ms": number | null; "p99_ms": number | null; "group": string }
 
 export type ErrorCode = "PASSWORD_CHANGE_REQUIRED" | "PAYLOAD_TOO_LARGE" | "UNAUTHORIZED" | "SESSION_REPLACED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION_ERROR" | "NOTE_REQUIRED" | "STATUS_INACTIVE" | "TASK_LIMIT_REACHED" | "NEW_BOOKING_NEEDS_CONFIRM" | "DUPLICATE_RECENT_NOTE" | "BOOKING_EXISTS" | "WATCH_LIMIT_REACHED" | "ASSIGNMENT_INVALID" | "INVALID_BOOKING_KEY" | "STATION_REQUIRED" | "STATION_MISMATCH" | "SUPPLIER_REQUIRED" | "VERSION_CONFLICT" | "INVOICE_REQUIRED" | "INVOICE_INVALID" | "INVOICE_STATE_CONFLICT" | "INVOICE_LIMIT_REACHED" | "RATE_LIMITED" | "REQUEST_TIMEOUT" | "SERVICE_BUSY" | "INTERNAL"
+
+export type FolderAssignmentItem = { "group_id": number; "folder": FolderCard; "assigned_to": AgentSummary | null; "region": string | null; "source_agent": string | null; "review": string | null; "metadata": { [key: string]: string }; "version": number }
+
+export type FolderAssignmentPatch = { "assigned_to"?: number | null; "region"?: string | null; "review"?: string | null; "supplier_type"?: SupplierType | null; "expected_version": number; "expected_supplier_type"?: SupplierType | null }
 
 export type FolderCard = { "cw_number": string; "supplier_name": string; "supplier_type": SupplierType; "recurring_enabled"?: boolean; "station_code": string; "booking_count": number; "open_count": number; "stale_count"?: number; "last_activity_at": string; "latest": FolderLatest | null }
 

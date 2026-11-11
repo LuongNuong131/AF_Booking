@@ -9,6 +9,7 @@ import MyBookings from '../components/MyBookings.vue'
 import CollaborationList from '../components/CollaborationList.vue'
 import { useCollaborationStore } from '../stores/collaboration'
 import CreateBookingDialog from '../components/CreateBookingDialog.vue'
+import FolderAssignments from '../components/FolderAssignments.vue'
 const { t } = useI18n(),
   store = useBookingsStore(),
   tasks = useTasksStore(),
@@ -57,6 +58,7 @@ watch(
         </button>
       </div>
     </header>
+    <FolderAssignments @open="open" />
     <div class="booking-workspace-grid">
       <BookingWorkspace ref="workspace" :initial-key="initialKey" /><MyBookings
         :show-tasks="tasks.rightTab !== 'bookings'"

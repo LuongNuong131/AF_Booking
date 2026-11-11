@@ -109,6 +109,14 @@ class BookingGroup(Timestamps, Base):
         mysql.BOOLEAN, default=True, server_default=text("1")
     )
     recurring_through_period: Mapped[str | None] = mapped_column(ascii_char(4))
+    assigned_to: Mapped[int | None] = mapped_column(mysql.BIGINT(unsigned=True), index=True)
+    assignment_region: Mapped[str | None] = mapped_column(mysql.VARCHAR(100))
+    assignment_source_agent: Mapped[str | None] = mapped_column(mysql.VARCHAR(100))
+    assignment_review: Mapped[str | None] = mapped_column(mysql.VARCHAR(1000))
+    assignment_metadata: Mapped[dict | None] = mapped_column(mysql.JSON(none_as_null=True))
+    assignment_version: Mapped[int] = mapped_column(
+        mysql.INTEGER(unsigned=True), server_default=text("1"), default=1
+    )
 
     @validates("supplier_name")
     def update_normalized_name(self, attribute: str, value: str) -> str:

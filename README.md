@@ -381,3 +381,5 @@ Hosted resources, provider credentials, production origins, optional Sentry/VAPI
 <p align="center">
   Built for teams that need every booking update to be clear, accountable, and easy to act on.
 </p>
+
+Recurring station/supplier folder assignments and Excel import: [hướng dẫn phân công hằng tháng](docs/recurring-folder-assignments-vi.md).

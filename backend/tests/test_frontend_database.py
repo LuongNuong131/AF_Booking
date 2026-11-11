@@ -95,6 +95,7 @@ class BackendListener:
         "workflow.mjs",
         "ticket-admin.mjs",
         "management.mjs",
+        "folder-assignments.mjs",
     ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
@@ -186,6 +187,19 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
             )
             # The generated disposable password is inherited by this child only, never logged.
             browser_env = os.environ.copy()
+            if browser_script == "folder-assignments.mjs":
+                from test_folder_assignments import source_row, workbook_data
+
+                browser_env["BOOKING_E2E_ASSIGNMENT_WORKBOOK"] = workbook_data(
+                    source_row(),
+                    source_row(key="CW2154654-RDU-2610"),
+                    source_row(
+                        key="CW9997777-YUL-2609", station="YUL", agent="Tran", kind="HOTEL/GT"
+                    ),
+                    source_row(
+                        key="CW9997778-LAS-2609", station="LAS", agent="Unknown", status="Cần check"
+                    ),
+                )
             browser_env["BOOKING_E2E_PASSWORD"] = browser_account.password
             browser_env["BOOKING_E2E_API_URL"] = environment["VITE_API_URL"]
             browser_env["BOOKING_E2E_ARTIFACTS"] = os.environ.get(
