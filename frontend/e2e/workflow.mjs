@@ -8,6 +8,7 @@ const errors = [], contexts = [], KEY = 'CW2154654-RDU-2609'
 async function login(username) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: 'reduce' })
   contexts.push(context)
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: 'http://localhost:5173' })
   const page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
   await expect(async () => { await page.goto('http://localhost:5173/login'); await expect(page.locator('input[type=password]')).toBeVisible() }).toPass({ timeout: 15000 })
@@ -53,8 +54,10 @@ try {
   await qc.getByRole('button', { name: 'Open ticket', exact: true }).click()
   await expect(qc.locator('.ticket-detail h3').first()).toHaveText(`AF_Non-standard process_Contract issue - ${KEY}`)
   await expect(qc.locator('.ticket-detail img')).toHaveCount(2)
+  await qc.bringToFront()
   await qc.locator('.ticket-detail').getByRole('button', { name: 'Copy title + content', exact: true }).click()
   await expect(qc.locator('.ticket-copy')).toContainText('Copied.')
+  expect(await qc.evaluate(() => navigator.clipboard.readText())).toBe(`AF_Non-standard process_Contract issue - ${KEY}\n\nCustomer reports incorrect room details. Please confirm with the customer.`)
   await qc.locator('.ticket-detail').getByLabel('Customer follow-up / handling result (optional)', { exact: true }).fill('Contacted the customer and confirmed the correct room details.')
   await qc.getByRole('button', { name: 'Mark as handled', exact: true }).click()
   await expect(qc.locator('.ticket-card')).toHaveCount(0)
@@ -132,8 +135,10 @@ try {
   await expect(qc.locator('.ticket-bundle .ticket-message')).toHaveText(
     'Please check these invoice which cannot send the rejection letter on TIM Tool - we had to send manually the rejection letter via Billing Email section, and force it from the Parking tab to Rejection tab\n\n' + secondKey + '\n' + KEY,
   )
+  await qc.bringToFront()
   await qc.locator('.ticket-bundle').getByRole('button', { name: 'Copy content', exact: true }).click()
   await expect(qc.locator('.ticket-bundle .ticket-copy')).toContainText('Copied.')
+  expect(await qc.evaluate(() => navigator.clipboard.readText())).toBe(await qc.locator('.ticket-bundle .ticket-message').innerText())
   await qc.screenshot({ path: path.join(output, 'qc-combined-ticket.png'), fullPage: true })
   for (const page of [agent, qc]) {
     await page.setViewportSize({ width: 375, height: 844 })
