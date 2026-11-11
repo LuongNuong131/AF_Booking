@@ -585,7 +585,8 @@
     "invalidDates": "Chọn khoảng ngày hợp lệ theo múi giờ hồ sơ.",
     "integrity": "Tính toàn vẹn dữ liệu",
     "import": "Nhập booking",
-    "data": "Quản lý dữ liệu"
+    "data": "Quản lý dữ liệu",
+    "tickets": "Quản lý ticket"
   },
   "outboxUi": {
     "cannotQueue": "Hàng đợi đã đầy hoặc bộ nhớ trình duyệt không khả dụng. Giữ biểu mẫu mở và thử lại.",
@@ -1005,7 +1006,8 @@
       "type": "Loại thông báo",
       "note_id": "Ghi chú nguồn",
       "from_user_id": "Người giao",
-      "to_user_id": "Người nhận"
+      "to_user_id": "Người nhận",
+      "issue_type": "Loại lỗi"
     },
     "deleteSelected": "Xóa đã chọn ({count})",
     "bulkHint": "Chuyển {count} dữ liệu đã chọn vào thùng rác. Có thể khôi phục sau đó.",
@@ -1062,7 +1064,8 @@
       "has_invoice": "Có hóa đơn",
       "no_invoice": "Không có số hóa đơn"
     },
-    "invoiceDeclaration": "Khai báo hóa đơn"
+    "invoiceDeclaration": "Khai báo hóa đơn",
+    "excelCharts": "File Excel có dashboard biểu đồ có thể chỉnh sửa cùng các sheet báo cáo chi tiết."
   },
   "systemUi": {
     "controlRoom": "Trung tâm giám sát dịch vụ",
@@ -1174,5 +1177,13 @@
     "copied": "Đã copy.",
     "manualCopy": "Chọn nội dung dưới đây và copy thủ công",
     "skipPendingImages": "Giữ note đã lưu và bỏ ảnh chưa gửi"
+  },
+  "ticketAdmin": {
+    "title": "Quản lý ticket",
+    "intro": "Xem toàn bộ ticket, sửa dữ liệu test hoặc chuyển ticket vào thùng rác. Ticket đã xóa và hình ảnh có thể khôi phục từ thùng rác.",
+    "edit": "Sửa ticket",
+    "unclassified": "Ticket cũ / chưa phân loại",
+    "suggestTitle": "Dùng tiêu đề gợi ý",
+    "changed": "Ticket đã thay đổi trong lúc bạn sửa. Đóng form và mở lại ticket để xem bản mới nhất trước khi lưu."
   }
 }

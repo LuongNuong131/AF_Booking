@@ -351,8 +351,10 @@ export type WorkTaskCreate = { "issue_type"?: "contract" | "cannot_send_rejectio
 
 export type WorkTaskHandle = { "handling_note"?: string | null }
 
-export type WorkTaskItem = { "booking_key": string; "display_key": string; "issue_type"?: "contract" | "cannot_send_rejection_letters" | null; "title": string; "attachments"?: Array<Attachment>; "id": number; "supplier_name": string; "creator": AgentSummary; "message": string; "status": string; "created_at": string; "handled_by": AgentSummary | null; "handled_at": string | null; "handling_note": string | null }
+export type WorkTaskItem = { "booking_key": string; "display_key": string; "issue_type"?: "contract" | "cannot_send_rejection_letters" | null; "title": string; "edit_token": string; "attachments"?: Array<Attachment>; "id": number; "supplier_name": string; "creator": AgentSummary; "message": string; "status": string; "created_at": string; "handled_by": AgentSummary | null; "handled_at": string | null; "handling_note": string | null }
 
 export type WorkTaskMerge = { "ids": Array<number> }
+
+export type WorkTaskUpdate = { "expected_token": string; "title": string; "message": string; "issue_type"?: "contract" | "cannot_send_rejection_letters" | null; "status": "pending" | "handled"; "handling_note"?: string | null }
 
 export const ERROR_CODES = ["PASSWORD_CHANGE_REQUIRED", "PAYLOAD_TOO_LARGE", "UNAUTHORIZED", "SESSION_REPLACED", "FORBIDDEN", "NOT_FOUND", "VALIDATION_ERROR", "NOTE_REQUIRED", "STATUS_INACTIVE", "TASK_LIMIT_REACHED", "NEW_BOOKING_NEEDS_CONFIRM", "DUPLICATE_RECENT_NOTE", "BOOKING_EXISTS", "WATCH_LIMIT_REACHED", "ASSIGNMENT_INVALID", "INVALID_BOOKING_KEY", "STATION_REQUIRED", "STATION_MISMATCH", "SUPPLIER_REQUIRED", "VERSION_CONFLICT", "INVOICE_REQUIRED", "INVOICE_INVALID", "INVOICE_STATE_CONFLICT", "INVOICE_LIMIT_REACHED", "RATE_LIMITED", "REQUEST_TIMEOUT", "SERVICE_BUSY", "INTERNAL"] as const satisfies readonly ErrorCode[]

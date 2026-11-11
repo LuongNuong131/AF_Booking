@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from app.core.unit_of_work import transaction
 from app.models import Booking, BookingGroup, BookingInvoice, BookingNote, Status, User
 from app.services.audit import record_audit
+from app.services.report_charts import ActivityCharts, Metric, add_dashboard
 from app.services.reports import day_bounds
 from app.services.workflow_xlsx import professional_workbook
 from app.utils.booking_key import to_display
@@ -183,6 +184,7 @@ class ExportService:
                 stream(), media_type="text/csv; charset=utf-8", headers=headers
             )
         workbook = professional_workbook()
+        activity = ActivityCharts()
         sheet = workbook.create_sheet("Daily record")
         sheet.append(COLUMNS)
         file = tempfile.SpooledTemporaryFile(max_size=2 * 1024 * 1024, mode="w+b")
@@ -196,17 +198,40 @@ class ExportService:
             # write_only worksheets own a temporary XML file until save().
             # A cancelled DB stream never reaches save(), so close and remove it.
             if saving is None:
-                sheet.close()
-                writer = getattr(sheet, "_writer", None)
-                if writer is not None:
-                    writer.cleanup()
+                for partial_sheet in workbook:
+                    partial_sheet.close()
+                    writer = getattr(partial_sheet, "_writer", None)
+                    if writer is not None:
+                        writer.cleanup()
 
         try:
             async with asyncio.timeout(self.settings.export_timeout_seconds):
                 async for batch in self.rows(day, user_id, status, request):
                     for row in batch:
                         sheet.append(row)
+                        activity.add(
+                            agent=row[1], status=row[6], station=row[4], classification=row[5]
+                        )
                     await asyncio.sleep(0)
+                add_dashboard(
+                    workbook,
+                    title="AF BOOKING | DAILY UPDATE INSIGHTS",
+                    subtitle=(
+                        f"{day} · {self.settings.business_timezone} · "
+                        f"Agent: {user_id or 'All'} · Status: {status or 'All'}"
+                    ),
+                    metrics=[
+                        Metric("Updates exported", activity.updates),
+                        Metric("Agents represented", len(activity.agents)),
+                        Metric("Stations represented", len(activity.stations)),
+                    ],
+                    charts=activity.specs(),
+                    note=(
+                        "Each detail row is an update. Multiple updates to the same "
+                        "booking are counted separately. All applied export filters "
+                        "are retained."
+                    ),
+                )
                 saving = asyncio.create_task(asyncio.to_thread(workbook.save, file))
                 await asyncio.shield(saving)
                 file.seek(0)

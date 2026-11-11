@@ -20,6 +20,7 @@ from app.schemas.contracts import ErrorCode
 from app.schemas.report_center import ReportCenter, ReportRecord
 from app.services.audit import record_audit
 from app.services.exports import safe_cell
+from app.services.report_charts import ChartSpec, Metric, add_dashboard
 from app.services.reports import day_bounds
 from app.utils.booking_key import to_display
 
@@ -502,6 +503,75 @@ class ReportCenterService:
         overview.column_dimensions["B"].width = 30
         for col in "CDEF":
             overview.column_dimensions[col].width = 15
+
+        def chart_rows(key):
+            return [(r.label, r.bookings, r.updates, r.done) for r in getattr(report, key)]
+
+        dashboard = add_dashboard(
+            wb,
+            title="AF BOOKING | WORK INSIGHTS",
+            subtitle=(
+                f"{report.filters.scope.title()} · {report.requested_by} · "
+                f"{report.filters.date_from} — {report.filters.date_to} · {report.timezone}"
+            ),
+            metrics=[
+                Metric("Distinct bookings", report.bookings),
+                Metric("Updates written", report.updates),
+                Metric("Completed bookings", report.done),
+                Metric(
+                    "Completion rate",
+                    report.done / report.bookings if report.bookings else 0,
+                    "0.0%",
+                ),
+                Metric("Unclassified bookings", report.unclassified),
+                Metric("Missing invoice declaration", report.undeclared_invoices),
+            ],
+            charts=[
+                ChartSpec(
+                    "Daily activity trend",
+                    "line",
+                    ("Date", "Bookings", "Updates", "Done"),
+                    chart_rows("trend"),
+                ),
+                ChartSpec(
+                    "Work by agent",
+                    "bar",
+                    ("Agent", "Bookings", "Updates", "Done"),
+                    chart_rows("agents"),
+                ),
+                ChartSpec(
+                    "Final status distribution",
+                    "doughnut",
+                    ("Status", "Bookings"),
+                    [(r.label, r.bookings) for r in report.statuses],
+                ),
+                ChartSpec(
+                    "Booking completion",
+                    "doughnut",
+                    ("Outcome", "Bookings"),
+                    [("Done", report.done), ("In progress", report.bookings - report.done)],
+                ),
+                ChartSpec(
+                    "Bookings by station",
+                    "bar",
+                    ("Station", "Bookings"),
+                    [(r.label, r.bookings) for r in report.stations],
+                ),
+                ChartSpec(
+                    "Supplier classification",
+                    "doughnut",
+                    ("Classification", "Bookings"),
+                    [(r.label, r.bookings) for r in report.classifications],
+                ),
+            ],
+            note=(
+                "Same scope and filters as the detail sheets. Agent participation "
+                "can overlap across bookings. Top categories are shown; the "
+                "remainder is grouped as Other."
+            ),
+        )
+        wb.move_sheet(dashboard, offset=-wb.index(dashboard))
+        wb.active = 0
         wb.properties.creator = "AF Booking"
         wb.properties.title = "Booking Operations Report"
         wb.properties.subject = f"{report.filters.date_from} — {report.filters.date_to}"

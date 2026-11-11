@@ -285,6 +285,7 @@ async def test_report_scope_filters_exports_and_formula_protection(rig):
     assert r.status_code == 200, r.text[:100]
     wb = load_workbook(io.BytesIO(r.content))
     assert wb.sheetnames == [
+        "Visual dashboard",
         "Executive summary",
         "Booking detail",
         "Agent performance",
@@ -292,7 +293,12 @@ async def test_report_scope_filters_exports_and_formula_protection(rig):
         "Station breakdown",
         "Supplier classification",
         "Daily trend",
+        "Chart data",
     ]
+    assert len(wb["Visual dashboard"]._charts) == 6
+    assert wb["Chart data"].sheet_state == "hidden"
+    assert wb["Visual dashboard"]["B9"].value == data["bookings"]
+    assert wb["Visual dashboard"]["G9"].value == data["updates"]
     sheet = wb["Booking detail"]
     assert sheet.max_row == 2 and sheet.freeze_panes == "B2"
     assert sheet["J2"].data_type != "f" and sheet["J2"].value.startswith("'")
@@ -511,3 +517,39 @@ async def test_private_file_cleanup_retries_and_removes_completed_queue_rows(rig
     await cleanup_storage(rig.app.state)
     async with rig.app.state.engine.connect() as connection:
         assert await connection.scalar(select(StorageGarbage.id)) is None
+
+
+@pytest.mark.parametrize("actor,scope", [("agent", "mine"), ("qc", "team"), ("admin", "team")])
+async def test_excel_dashboard_uses_the_filtered_role_scoped_report(
+    rig, password_pair, actor, scope
+):
+    from zoneinfo import ZoneInfo
+
+    from test_workflow_database import qc_account
+
+    if actor == "qc":
+        await qc_account(rig, password_pair)
+    await rig.save(note="Agent visible work")
+    await rig.save(key="CW9997777-YUL-2610", user="other", note="Other private report work")
+    day = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh")).date().isoformat()
+    filters = dict(scope=scope, date_from=day, date_to=day)
+    report = (await rig.get("/reports/center", user=actor, **filters)).json()
+    response = await rig.get("/reports/center/export", user=actor, **filters)
+    assert response.status_code == 200
+    workbook = load_workbook(io.BytesIO(response.content))
+    try:
+        dashboard = workbook["Visual dashboard"]
+        assert workbook.active.title == "Visual dashboard" and len(dashboard._charts) == 6
+        assert dashboard["B9"].value == report["bookings"]
+        assert dashboard["G9"].value == report["updates"]
+        assert dashboard["L9"].value == report["done"]
+        assert workbook["Chart data"].sheet_state == "hidden"
+        detail_text = str(list(workbook["Booking detail"].values))
+        if actor == "agent":
+            assert "Other private report work" not in detail_text
+            assert "Other" not in str(list(workbook["Chart data"].values))
+        else:
+            assert "Other private report work" in detail_text
+        assert workbook["Booking detail"].max_row - 1 == report["bookings"]
+    finally:
+        workbook.close()

@@ -22,7 +22,7 @@ from app.services.reports import day_bounds
 from app.services.workflow_xlsx import WorkflowWorkbook
 from app.utils.booking_key import ParsedKey, parse, to_display
 from app.utils.text import clean_note
-from app.utils.ticket_text import REJECTION_MESSAGE, TITLES, ticket_title
+from app.utils.ticket_text import REJECTION_MESSAGE, TITLES, edit_token, ticket_title
 
 
 class WorkTasks:
@@ -70,6 +70,7 @@ class WorkTasks:
             message=task.message,
             title=task.title or ticket_title(task.issue_type, key),
             issue_type=task.issue_type,
+            edit_token=edit_token(task),
             status=task.status,
             created_at=task.created_at,
             handled_by={"id": task.handled_by, "full_name": handler} if task.handled_by else None,
@@ -98,6 +99,62 @@ class WorkTasks:
             ).one_or_none()
             if row is None:
                 raise ApiException(ErrorCode.NOT_FOUND)
+            return (await self.with_images(session, [self.dto(row)]))[0]
+
+    async def update(self, identifier, body, user, context):
+        async with transaction(self.engine, self.settings) as session:
+            live = await session.scalar(select(User).where(User.id == user.id).with_for_update())
+            AuthService.require_live_row(live, user)
+            if live.role != "admin":
+                raise ApiException(ErrorCode.FORBIDDEN)
+            task = await session.scalar(
+                select(BookingWorkTask)
+                .join(Booking, Booking.id == BookingWorkTask.booking_id)
+                .join(BookingGroup, BookingGroup.id == Booking.group_id)
+                .where(
+                    BookingWorkTask.id == identifier,
+                    Booking.deleted_at.is_(None),
+                    BookingGroup.deleted_at.is_(None),
+                )
+                .with_for_update()
+            )
+            if task is None:
+                raise ApiException(ErrorCode.NOT_FOUND)
+            if edit_token(task) != body.expected_token:
+                raise ApiException(
+                    ErrorCode.VERSION_CONFLICT,
+                    message=(
+                        "This ticket changed. Reopen it to review the latest version before saving."
+                    ),
+                )
+            before = {
+                name: getattr(task, name)
+                for name in ("title", "message", "issue_type", "status", "handling_note")
+            }
+            previous_status = task.status
+            task.title, task.message, task.issue_type = body.title, body.message, body.issue_type
+            task.status = body.status
+            if task.status == "handled":
+                if previous_status != "handled":
+                    task.handled_by, task.handled_at = user.id, datetime.now(UTC)
+                task.handling_note = clean_note(body.handling_note)
+            else:
+                task.handled_by = task.handled_at = task.handling_note = None
+            record_audit(
+                session,
+                "admin_ticket_updated",
+                actor_id=user.id,
+                context=context,
+                entity_type="work_task",
+                entity_id=str(task.id),
+                meta={"before": before, "after": {name: getattr(task, name) for name in before}},
+            )
+            await session.flush()
+            row = (
+                await session.execute(
+                    self.query(user, "all").where(BookingWorkTask.id == identifier)
+                )
+            ).one()
             return (await self.with_images(session, [self.dto(row)]))[0]
 
     async def merge(self, body, user):

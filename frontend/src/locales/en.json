@@ -585,7 +585,8 @@
     "invalidDates": "Choose a valid ordered date range in your profile timezone.",
     "integrity": "Data integrity",
     "import": "Import bookings",
-    "data": "Data management"
+    "data": "Data management",
+    "tickets": "Ticket management"
   },
   "outboxUi": {
     "cannotQueue": "The outbox is full or browser storage is unavailable. Keep this form open and try again.",
@@ -1005,7 +1006,8 @@
       "type": "Notification type",
       "note_id": "Source note",
       "from_user_id": "Assigned by",
-      "to_user_id": "Assigned to"
+      "to_user_id": "Assigned to",
+      "issue_type": "Issue type"
     },
     "deleteSelected": "Delete selected ({count})",
     "bulkHint": "Move the {count} selected records to the recycle bin. You can restore them later.",
@@ -1062,7 +1064,8 @@
       "has_invoice": "Has invoice",
       "no_invoice": "No invoice number"
     },
-    "invoiceDeclaration": "Invoice declaration"
+    "invoiceDeclaration": "Invoice declaration",
+    "excelCharts": "Excel includes a visual dashboard with editable charts and the detailed report sheets."
   },
   "systemUi": {
     "controlRoom": "Service control room",
@@ -1174,5 +1177,13 @@
     "copied": "Copied.",
     "manualCopy": "Select this text and copy it manually",
     "skipPendingImages": "Keep saved note and discard pending images"
+  },
+  "ticketAdmin": {
+    "title": "Ticket management",
+    "intro": "Review all tickets, edit test data, or move tickets to the recycle bin. Deleted tickets and their images can be restored from the recycle bin.",
+    "edit": "Edit ticket",
+    "unclassified": "Legacy / unclassified",
+    "suggestTitle": "Use suggested title",
+    "changed": "This ticket changed while you were editing. Close this form and reopen the ticket to review the latest version."
   }
 }

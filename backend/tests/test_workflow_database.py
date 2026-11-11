@@ -433,3 +433,153 @@ async def test_ticket_recycle_restore_and_purge_preserve_then_queue_images(rig):
             await connection.scalar(select(Attachment.id).where(Attachment.id == image_id)) is None
         )
         assert (await connection.scalar(select(StorageGarbage.storage_key))).startswith("tickets/")
+
+
+async def test_admin_ticket_edit_permissions_revision_handling_images_and_recycle(
+    rig, password_pair
+):
+    from test_management_database import entries, recycle
+
+    from app.models import AuditLog, Booking
+
+    await qc_account(rig, password_pair)
+    await rig.save()
+    created = (await structured_ticket(rig)).json()
+    identifier = created["id"]
+    endpoint = f"/api/v1/work-tasks/{identifier}"
+    rig.app.state.storage = MemoryStorage()
+    image = await rig.client.post(
+        f"{endpoint}/attachments",
+        headers={**rig.headers["agent"], "Content-Type": "image/png"},
+        params={"file_name": "test-evidence.png"},
+        content=PNG,
+    )
+    assert image.status_code == 201
+    body = {
+        "title": "AF_Non-standard process_Contract issue - " + KEY,
+        "message": "Please review the updated contract evidence.",
+        "issue_type": "contract",
+        "status": "pending",
+        "handling_note": None,
+        "expected_token": created["edit_token"],
+    }
+    for actor in ["agent", "qc"]:
+        assert (
+            await rig.client.patch(endpoint, headers=rig.headers[actor], json=body)
+        ).status_code == 403
+    updated = await rig.client.patch(endpoint, headers=rig.headers["admin"], json=body)
+    assert updated.status_code == 200, updated.text
+    updated = updated.json()
+    assert updated["title"] == body["title"] and updated["message"] == body["message"]
+    assert updated["issue_type"] == "contract"
+    assert [f["id"] for f in updated["attachments"]] == [image.json()["id"]]
+    assert updated["edit_token"] != created["edit_token"]
+    assert (
+        await rig.client.patch(endpoint, headers=rig.headers["admin"], json=body)
+    ).status_code == 409
+    invalid = {**body, "expected_token": updated["edit_token"], "message": "Không gửi được thư"}
+    assert (
+        await rig.client.patch(endpoint, headers=rig.headers["admin"], json=invalid)
+    ).status_code == 422
+    # A QC handling the ticket invalidates a stale admin edit and retains attribution.
+    handled = (
+        await rig.client.post(
+            f"{endpoint}/handle",
+            headers=rig.headers["qc"],
+            json={"handling_note": "Customer contacted"},
+        )
+    ).json()
+    assert (
+        await rig.client.patch(
+            endpoint,
+            headers=rig.headers["admin"],
+            json={**body, "expected_token": updated["edit_token"]},
+        )
+    ).status_code == 409
+    correction = await rig.client.patch(
+        endpoint,
+        headers=rig.headers["admin"],
+        json={
+            **body,
+            "expected_token": handled["edit_token"],
+            "status": "handled",
+            "handling_note": "Corrected follow-up result",
+        },
+    )
+    assert correction.status_code == 200, correction.text
+    assert correction.json()["handled_by"]["id"] == 7
+    assert correction.json()["handled_at"] == handled["handled_at"]
+    reopened = await rig.client.patch(
+        endpoint,
+        headers=rig.headers["admin"],
+        json={**body, "expected_token": correction.json()["edit_token"]},
+    )
+    assert reopened.status_code == 200, reopened.text
+    assert all(
+        reopened.json()[field] is None for field in ["handled_by", "handled_at", "handling_note"]
+    )
+    assert (await recycle(rig, "tickets", identifier)).status_code == 200
+    assert (await rig.get(f"/work-tasks/{identifier}", user="admin")).status_code == 404
+    trash = (await entries(rig))[0]
+    assert (
+        await rig.client.post(
+            f"/api/v1/admin/data/trash/{trash['id']}/restore", headers=rig.headers["admin"]
+        )
+    ).status_code == 200
+    restored = (await rig.get(f"/work-tasks/{identifier}", user="admin")).json()
+    assert restored["message"] == body["message"] and len(restored["attachments"]) == 1
+    async with rig.app.state.engine.connect() as connection:
+        assert (
+            await connection.scalar(select(Booking.version).where(Booking.booking_key == KEY)) == 1
+        )
+        assert (
+            await connection.scalar(
+                select(func.count())
+                .select_from(AuditLog)
+                .where(AuditLog.action == "admin_ticket_updated")
+            )
+            == 3
+        )
+
+
+async def test_general_admin_ticket_editor_keeps_canonical_types_and_handler_attribution(
+    rig, password_pair
+):
+    from app.models import Booking
+
+    await qc_account(rig, password_pair)
+    await rig.save()
+    async with rig.app.state.engine.connect() as connection:
+        booking_id = await connection.scalar(select(Booking.id).where(Booking.booking_key == KEY))
+    created = await rig.client.post(
+        "/api/v1/admin/data/tickets",
+        headers=rig.headers["admin"],
+        json={
+            "values": {
+                "booking_id": booking_id,
+                "message": "Please check this legacy test ticket.",
+                "status": "pending",
+                "issue_type": "",
+            }
+        },
+    )
+    assert created.status_code == 200, created.text
+    identifier = created.json()["id"]
+    details = (await rig.get(f"/work-tasks/{identifier}", user="admin")).json()
+    assert details["issue_type"] is None and details["title"] == KEY
+    handled = (
+        await rig.client.post(
+            f"/api/v1/work-tasks/{identifier}/handle",
+            headers=rig.headers["qc"],
+            json={"handling_note": "Reviewed by QC"},
+        )
+    ).json()
+    corrected = await rig.client.patch(
+        f"/api/v1/admin/data/tickets/{identifier}",
+        headers=rig.headers["admin"],
+        json={"values": {"message": "Corrected legacy test content.", "issue_type": None}},
+    )
+    assert corrected.status_code == 200, corrected.text
+    details = (await rig.get(f"/work-tasks/{identifier}", user="admin")).json()
+    assert details["handled_by"] == handled["handled_by"]
+    assert details["handled_at"] == handled["handled_at"]

@@ -87,3 +87,7 @@
 .staged-images .note-image-grid img { max-width: 100%; max-height: 180px; object-fit: contain; }
 .ticket-detail .note-image-grid img { max-height: 320px; object-fit: contain; }
 .ticket-copy { margin-block: 16px; }
+
+.admin-tickets-view { padding: 0; }
+.ticket-admin-actions { margin-block: 16px; }
+.ticket-edit-form input, .ticket-edit-form select, .ticket-edit-form textarea { width: 100%; min-width: 0; }

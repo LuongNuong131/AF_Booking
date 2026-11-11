@@ -710,3 +710,13 @@ Ticket responses include `title`, nullable `issue_type`, and `attachments` (safe
 `POST /work-tasks/merge` is QC/Admin-only, with `{ "ids": [1, 2] }` (2–100 positive IDs). It returns `{title, message, booking_keys, attachments}` for rejection-letter tickets, removing duplicate bookings in selection order and using the agreed TIM Tool template. It neither deletes nor handles source tickets. Missing IDs and mixed ticket types are rejected.
 
 `GET /work-tasks/translation/config` reports whether direct translation is configured. `POST /work-tasks/translate` accepts `{ "text": "Vietnamese description" }` (1–2000 characters), returning `{ "text": "English translation" }`. Both require authentication. `GOOGLE_TRANSLATE_API_KEY` enables the official Google Cloud Translation v2 endpoint; failures return a bounded service error without exposing provider details or secrets. The UI also offers an explicit Google Translate link and a review/apply step.
+
+### Administrator ticket editing
+
+`WorkTaskItem` now includes an opaque `edit_token`. `PATCH /work-tasks/{id}` is Admin-only and accepts `expected_token`, `title` (1–255 characters), required English `message` (1–2000 characters), nullable `issue_type`, `status` (`pending` / `handled`) and optional `handling_note`. The token covers ticket content and handling state; a stale token returns `VERSION_CONFLICT` without modifying the ticket. Existing QC handler/time attribution is preserved when correcting an already handled ticket; reopening clears handling fields. Edits retain attachments and create an audit record.
+
+Deletion/restoration use the existing Admin data/recycle endpoints. The dedicated UI is `/admin/tickets`. No database migration is required.
+
+### Excel visual dashboards
+
+Report-center XLSX downloads now open on a `Visual dashboard` sheet with native, editable Excel charts. Chart inputs are numeric snapshots in the hidden `Chart data` sheet and use exactly the report scope and filters. Top-category compaction preserves totals. Personal daily, team daily snapshot and streamed daily-record Excel exports also include dashboards; CSV formats are unchanged. Empty exports display an explicit empty state without fabricated chart series.

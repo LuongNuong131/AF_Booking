@@ -6,6 +6,7 @@ const { t } = useI18n(),
 const sections = [
   'users',
   'data',
+  'tickets',
   'audit',
   'bookings',
   'import',

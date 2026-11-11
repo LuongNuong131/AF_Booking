@@ -1,6 +1,7 @@
 """Agent-scoped daily work: one booking counts once, irrespective of note count."""
 
 import asyncio
+from collections import Counter
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -13,6 +14,7 @@ from app.schemas.contracts import ErrorCode
 from app.schemas.workflow import PersonalBookingRow, PersonalDailyReport
 from app.services.audit import record_audit
 from app.services.exports import date_text, safe_cell
+from app.services.report_charts import ChartSpec, Metric, add_dashboard, category_rows
 from app.services.reports import day_bounds
 from app.services.workflow_xlsx import WorkflowWorkbook
 from app.utils.booking_key import to_display
@@ -110,16 +112,13 @@ class PersonalReports:
         )
 
     async def export(self, day, user, context):
-        report = await self.get(day, user)
+        query = self.query(day, user.id)
+        zone = ZoneInfo(self.settings.business_timezone)
+        bookings = updates = done = 0
+        statuses, stations = Counter(), Counter()
         with WorkflowWorkbook() as document:
             workbook = document.workbook
             overview = workbook.create_sheet("Overview")
-            overview.append(["Date", str(day)])
-            overview.append(["Timezone", report.timezone])
-            overview.append(["Agent", safe_cell(user.full_name)])
-            overview.append(["Distinct bookings worked", report.booking_count])
-            overview.append(["Updates written", report.note_count])
-            overview.append(["Done in my final update", report.done_count])
             sheet = workbook.create_sheet("Bookings")
             sheet.append(
                 [
@@ -136,12 +135,17 @@ class PersonalReports:
                 self.engine, self.settings, seconds=self.settings.export_timeout_seconds
             ) as session:
                 result = await session.stream(
-                    self.query(day, user.id)
-                    .order_by(BookingNote.created_at, Booking.id)
-                    .execution_options(yield_per=200)
+                    query.order_by(BookingNote.created_at, Booking.id).execution_options(
+                        yield_per=200
+                    )
                 )
                 try:
                     async for r in result:
+                        bookings += 1
+                        updates += r.note_count
+                        done += bool(r.is_done)
+                        statuses[r.label] += 1
+                        stations[r.station_code] += 1
                         sheet.append(
                             [
                                 safe_cell(v)
@@ -152,7 +156,7 @@ class PersonalReports:
                                     r.note_count,
                                     r.label,
                                     r.note,
-                                    date_text(r.created_at, ZoneInfo(report.timezone)),
+                                    date_text(r.created_at, zone),
                                 )
                             ]
                         )
@@ -168,4 +172,48 @@ class PersonalReports:
                     entity_id=str(day),
                     meta={"agent_id": user.id},
                 )
+            for row in [
+                ("Date", str(day)),
+                ("Timezone", self.settings.business_timezone),
+                ("Agent", safe_cell(user.full_name)),
+                ("Distinct bookings worked", bookings),
+                ("Updates written", updates),
+                ("Done in my final update", done),
+            ]:
+                overview.append(row)
+            add_dashboard(
+                workbook,
+                title="AF BOOKING | MY DAILY INSIGHTS",
+                subtitle=f"{user.full_name} · {day} · {self.settings.business_timezone}",
+                metrics=[
+                    Metric("Distinct bookings", bookings),
+                    Metric("Updates written", updates),
+                    Metric("Completed bookings", done),
+                    Metric("Completion rate", done / bookings if bookings else 0, "0.0%"),
+                ],
+                charts=[
+                    ChartSpec(
+                        "My final booking status",
+                        "doughnut",
+                        ("Status", "Bookings"),
+                        category_rows(statuses),
+                    ),
+                    ChartSpec(
+                        "My bookings by station",
+                        "bar",
+                        ("Station", "Bookings"),
+                        category_rows(stations),
+                    ),
+                    ChartSpec(
+                        "My booking completion",
+                        "doughnut",
+                        ("Outcome", "Bookings"),
+                        [("Done", done), ("In progress", bookings - done)],
+                    ),
+                ],
+                note=(
+                    "Only your work for this day is included. Each booking is "
+                    "counted once; status and completion use your final update."
+                ),
+            )
             return await document.response(f"my-daily-report-{day}.xlsx")

@@ -17,14 +17,37 @@ import PageControls from '../components/PageControls.vue'
 import EmptyState from '../components/EmptyState.vue'
 import AttachmentGallery from '../components/AttachmentGallery.vue'
 import TicketCopy from '../components/TicketCopy.vue'
+import AdminTicketEditor from '../components/AdminTicketEditor.vue'
+import AdminDeleteButton from '../components/AdminDeleteButton.vue'
+const props = defineProps<{ management?: boolean }>()
 const { t } = useI18n(), route = useRoute(), auth = useAuthStore(), notifications = useNotificationsStore()
+const administrator = computed(() => auth.user?.role === 'admin')
+const managementMode = computed(() => !!props.management && administrator.value)
+const editingTicket = ref<WorkTaskItem | null>(null)
 const supervisor = computed(() => ['admin', 'qc'].includes(auth.user?.role ?? ''))
-const status = ref<'pending' | 'handled' | 'all'>(route.query.status === 'handled' ? 'handled' : 'pending'), day = ref(''), creator = ref(''),
+const status = ref<'pending' | 'handled' | 'all'>(route.query.status === 'handled' ? 'handled' : route.query.status === 'pending' ? 'pending' : managementMode.value ? 'all' : 'pending'), day = ref(''), creator = ref(''),
   bookingKey = ref(String(route.query.booking_key ?? '')), page = ref(1), handling = ref<number | null>(null),
   handlingNote = ref<Record<number, string>>({}), agents = ref<AgentSummary[]>([])
 const selected = ref<number[]>([]), detailId = ref<number | null>(null)
 const detail = useRequest(async ({ signal, timeoutMs }, id: number) => (await api.get<WorkTaskItem>(`/work-tasks/${id}`, { signal, timeout: timeoutMs })).data, { timeoutMs: timeouts.list })
 const merge = useRequest(async ({ signal, timeoutMs }, ids: number[]) => (await api.post<WorkTaskBundle>('/work-tasks/merge', { ids }, { signal, timeout: timeoutMs })).data, { timeoutMs: timeouts.task })
+async function ticketSaved(item: WorkTaskItem) {
+  editingTicket.value = null
+  if (detailId.value === item.id) detail.data.value = item
+  clearSelection()
+  await load()
+}
+async function ticketDeleted(id: number) {
+  if (detailId.value === id) closeDetail()
+  if (editingTicket.value?.id === id) editingTicket.value = null
+  clearSelection()
+  await load()
+  if (!request.data.value?.items.length && page.value > 1) { page.value--; await load() }
+}
+async function editTicket(id: number) {
+  await openTicket(id)
+  if (detail.state.value === 'success' && detail.data.value?.id === id) editingTicket.value = detail.data.value
+}
 async function openTicket(id: number) { detailId.value = id; await detail.run(id) }
 async function combine() { if (selected.value.length >= 2) { merge.data.value = undefined; await merge.run([...selected.value]) } }
 function clearSelection() { selected.value = []; merge.data.value = undefined; merge.cancel() }
@@ -62,8 +85,10 @@ onMounted(() => {
 })
 </script>
 <template>
-  <section class="page-shell tickets-view">
-    <header class="page-heading summary-heading"><div><h1>{{ t(supervisor ? 'workTaskUi.qcTitle' : 'workTaskUi.myTitle') }}</h1><p>{{ t('workTaskUi.intro') }}</p></div>
+  <section class="page-shell tickets-view" :class="{ 'admin-tickets-view': managementMode }">
+    <header class="page-heading summary-heading"><div><component :is="managementMode ? 'h2' : 'h1'">{{ t(managementMode ? 'ticketAdmin.title' : supervisor ? 'workTaskUi.qcTitle' : 'workTaskUi.myTitle') }}</component><p>{{ t(managementMode ? 'ticketAdmin.intro' : 'workTaskUi.intro') }}</p></div>
+      <RouterLink v-if="administrator && !managementMode" class="button" :to="{ name: 'admin-tickets' }">{{ t('ticketAdmin.title') }}</RouterLink>
+      <RouterLink v-if="managementMode" class="button" :to="{ name: 'admin-trash' }">{{ t('adminUi.trash') }}</RouterLink>
       <button v-if="supervisor" class="button primary" :disabled="exporting.pending.value" @click="download">{{ t('opsUi.downloadExcel') }}</button>
     </header>
     <form class="workflow-controls ticket-filters" @submit.prevent="load(true)">
@@ -98,6 +123,7 @@ onMounted(() => {
         <RouterLink class="table-booking-link" :to="{ name: 'booking', params: { key: detail.data.value.booking_key } }">{{ detail.data.value.display_key }}</RouterLink>
         <p>{{ detail.data.value.supplier_name }}</p>
         <p class="ticket-meta">{{ detail.data.value.creator.full_name }} · {{ formatDateTime(detail.data.value.created_at, auth.timezone) }} · {{ t(`workTaskUi.${detail.data.value.status}`) }}</p>
+        <div v-if="managementMode" class="ticket-admin-actions ticket-actions"><button type="button" class="button" @click="editingTicket = detail.data.value">{{ t('ticketAdmin.edit') }}</button><AdminDeleteButton resource="tickets" :identifier="detail.data.value.id" :label="detail.data.value.title" @deleted="ticketDeleted(detailId!)" /></div>
         <p class="ticket-message">{{ detail.data.value.message }}</p>
         <TicketCopy :title="detail.data.value.title" :message="detail.data.value.message" />
         <h3>{{ t('ticketCompose.images') }}</h3>
@@ -114,10 +140,11 @@ onMounted(() => {
         <h2 class="ticket-card-title"><button type="button" class="text-button" @click="openTicket(item.id)">{{ item.title }}</button></h2>
         <p class="ticket-supplier">{{ item.supplier_name }}</p><p class="ticket-message ticket-excerpt">{{ item.message }}</p>
         <p class="ticket-meta">{{ item.creator.full_name }} · {{ formatDateTime(item.created_at, auth.timezone) }} · {{ t('ticketCompose.imageCount', { count: item.attachments?.length ?? 0 }) }}</p>
-        <button type="button" class="button" @click="openTicket(item.id)">{{ t('ticketCompose.open') }}</button>
+        <div class="ticket-actions"><button type="button" class="button" @click="openTicket(item.id)">{{ t('ticketCompose.open') }}</button><template v-if="managementMode"><button type="button" class="button" @click="editTicket(item.id)">{{ t('ticketAdmin.edit') }}</button><AdminDeleteButton resource="tickets" :identifier="item.id" :label="item.title" @deleted="ticketDeleted(item.id)" /></template></div>
       </article>
     </div>
     <EmptyState v-else-if="request.state.value === 'success'" :title="t('workTaskUi.empty')" :description="t('workTaskUi.emptyHint')" />
+    <AdminTicketEditor v-if="managementMode && editingTicket" :key="editingTicket.id" :ticket="editingTicket" @saved="ticketSaved" @close="editingTicket = null" />
     <PageControls summary-key="workTaskUi.pageOf" :page="page" :size="20" :total="request.data.value?.total ?? 0" @change="changePage" />
   </section>
 </template>

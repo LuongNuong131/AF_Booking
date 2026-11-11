@@ -79,7 +79,8 @@ The product supports Agent, QC, and Admin roles, with authorization enforced on 
 - Role-aware Admin, QC, Reports, Profile, and system-health screens.
 - User, session, supplier, station, status, audit, trash, and integrity workflows.
 - Administrator business-data CRUD, recoverable deletions, dependency-aware permanent cleanup and queued private-file cleanup.
-- Scoped report center with detailed filters, agent participation and branded multi-sheet Excel/CSV exports.
+- Scoped report center with detailed filters, agent participation, editable Excel chart dashboards and branded multi-sheet Excel/CSV exports.
+- Dedicated Admin ticket management with full details/images, audited edits, concurrent-edit protection and recoverable deletion.
 - Detailed system control room with observed health, resource capacity, inventory and job diagnostics.
 - Invoice declarations, validation, search, reconciliation, exports, and repair tooling.
 - Daily CSV/XLSX reports with business-timezone boundaries.
@@ -311,6 +312,8 @@ High-level release flow:
 5. Configure the real API and WebSocket origins.
 6. Build with the real API URL; Vercel routes and exact CSP origins are generated automatically.
 7. Verify `/health`, `/api/v1/ready`, sign-in, role navigation, SPA fallback, and realtime status.
+
+For [Admin ticket management and Excel charts](docs/admin-tickets-excel-charts-vi.md), see the Vietnamese feature guide.
 
 For initial booking imports, English/Vietnamese switching, and a team acceptance checklist, see [docs/acceptance-test-vi.md](docs/acceptance-test-vi.md).
 For the CSV template, reviewed station/supplier corrections, day-25 monthly generation, and Render Free scheduling, see [docs/monthly-bookings-vi.md](docs/monthly-bookings-vi.md).

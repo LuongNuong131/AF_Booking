@@ -121,6 +121,7 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
             },
             children: [
               { path: 'data', name: 'admin-data', component: () => import('../views/admin/AdminData.vue') },
+              { path: 'tickets', name: 'admin-tickets', component: () => import('../views/TicketsView.vue'), props: { management: true } },
               { path: 'import', name: 'admin-import', component: () => import('../views/admin/AdminImport.vue') },
               { path: '', name: 'admin', redirect: { name: 'admin-users' } },
               {

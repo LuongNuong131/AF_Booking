@@ -58,6 +58,28 @@ class WorkTaskCreate(ContractModel):
         return value
 
 
+class WorkTaskUpdate(ContractModel):
+    expected_token: str = Field(pattern=r"^[0-9a-f]{64}$")
+    title: str = Field(min_length=1, max_length=255)
+    message: str = Field(min_length=1, max_length=2000)
+    issue_type: IssueType | None = None
+    status: Literal["pending", "handled"]
+    handling_note: str | None = Field(default=None, max_length=2000)
+
+    @field_validator("title")
+    @classmethod
+    def clean_title(cls, value):
+        value = (clean_note(value) or "").strip()
+        if not value:
+            raise ValueError("Enter a ticket title.")
+        return value
+
+    @field_validator("message")
+    @classmethod
+    def clean_message(cls, value):
+        return WorkTaskCreate.clean(value)
+
+
 class WorkTaskHandle(ContractModel):
     handling_note: str | None = Field(default=None, max_length=2000)
 
@@ -65,6 +87,7 @@ class WorkTaskHandle(ContractModel):
 class WorkTaskItem(BookingIdentity):
     issue_type: IssueType | None = None
     title: str
+    edit_token: str
     attachments: list[Attachment] = Field(default_factory=list)
     id: int
     supplier_name: str
@@ -123,6 +146,7 @@ WORKFLOW_MODELS = (
     TranslationResult,
     PersonalDailyReport,
     WorkTaskCreate,
+    WorkTaskUpdate,
     WorkTaskHandle,
     WorkTaskItem,
     AttachmentStorageInfo,

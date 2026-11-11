@@ -93,13 +93,14 @@ class BackendListener:
         "responsive.mjs",
         "creation.mjs",
         "workflow.mjs",
+        "ticket-admin.mjs",
         "management.mjs",
     ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
     rig, browser_account, tmp_path, browser_script
 ):
-    if browser_script == "workflow.mjs":
+    if browser_script in {"workflow.mjs", "ticket-admin.mjs"}:
         from test_workflow_database import MemoryStorage
 
         rig.app.state.storage = MemoryStorage()

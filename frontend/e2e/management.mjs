@@ -64,7 +64,7 @@ try {
   }
   await page.screenshot({ path: path.join(output, `${role}-report-desktop.png`), fullPage: true })
   const routes = ['/reports', '/reports/mine', `/summary/${key}`, '/summary', '/tickets']
-  if (role === 'admin') routes.push('/admin/data', '/admin/users', '/admin/bookings', '/admin/statuses', '/admin/trash', '/admin/system', '/admin/integrity')
+  if (role === 'admin') routes.push('/admin/tickets', '/admin/data', '/admin/users', '/admin/bookings', '/admin/statuses', '/admin/trash', '/admin/system', '/admin/integrity')
   for (const width of [320, 375, 768, 1024, 1440]) {
    await page.setViewportSize({ width, height: 1000 })
    for (const route of routes) {

@@ -42,6 +42,7 @@ from app.services.audit import record_audit
 from app.services.snapshot_values import apply_snapshot, note_snapshot
 from app.utils.invoice import normalize, validate
 from app.utils.text import clean_note
+from app.utils.ticket_text import ticket_title, validate_english
 
 
 def field(
@@ -140,6 +141,8 @@ SPECS = {
         "message",
         [
             field("booking_id", "number", True, readonly=True, reference="bookings"),
+            field("title", max_length=255),
+            field("issue_type", "select", False, ["", "contract", "cannot_send_rejection_letters"]),
             field("message", "textarea", True, max_length=2000),
             field("status", "select", True, ["pending", "handled"]),
             field("handling_note", "textarea", max_length=2000),
@@ -353,8 +356,15 @@ class Management:
                 and not parsed[f.name].strip()
             ):
                 raise ApiException(ErrorCode.VALIDATION_ERROR, message=f"{f.name} is required.")
-            if f.name in parsed and f.options and parsed[f.name] not in f.options:
+            if (
+                f.name in parsed
+                and f.options
+                and parsed[f.name] is not None
+                and parsed[f.name] not in f.options
+            ):
                 raise ApiException(ErrorCode.VALIDATION_ERROR, message=f"Invalid {f.name}.")
+        if resource == "tickets" and parsed.get("issue_type") == "":
+            parsed["issue_type"] = None
         return parsed
 
     async def save(self, resource, identifier, body, actor, context):
@@ -485,8 +495,20 @@ class Management:
                     if identifier is None:
                         row.created_by = actor.id
                         row.client_request_id = str(uuid4())
-                    row.handled_by = actor.id if row.status == "handled" else None
-                    row.handled_at = datetime.now(UTC) if row.status == "handled" else None
+                    try:
+                        validate_english(row.message)
+                    except ValueError as error:
+                        raise ApiException(ErrorCode.VALIDATION_ERROR, message=str(error)) from None
+                    book = await session.get(Booking, row.booking_id)
+                    if book is None or book.deleted_at is not None:
+                        raise ApiException(ErrorCode.NOT_FOUND)
+                    if not row.title or ("issue_type" in values and "title" not in values):
+                        row.title = ticket_title(row.issue_type, book.booking_key)
+                    if row.status == "handled":
+                        if row.handled_by is None:
+                            row.handled_by, row.handled_at = actor.id, datetime.now(UTC)
+                    else:
+                        row.handled_by = row.handled_at = row.handling_note = None
                 if resource == "assignments":
                     row.resolved_at = datetime.now(UTC) if row.status != "open" else None
                 if resource == "reminders":

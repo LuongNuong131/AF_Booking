@@ -126,7 +126,13 @@ async def test_daily_totals_excel_formula_and_stable_past_report(rig):
     file = await rig.get("/reports/daily/export", user="admin", date=str(day))
     assert file.status_code == 200, file.text if file.status_code != 200 else ""
     book = load_workbook(io.BytesIO(file.content), read_only=True)
-    assert book.sheetnames == ["Overview", "Daily record", "Stale"]
+    assert book.sheetnames == [
+        "Overview",
+        "Daily record",
+        "Stale",
+        "Visual dashboard",
+        "Chart data",
+    ]
     rows = list(book["Daily record"].values)
     assert rows[0] == (
         "Date",

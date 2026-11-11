@@ -25,3 +25,28 @@ def validate_english(value):
 
 def ticket_title(issue_type, key):
     return f"{TITLES[issue_type]} - {key}" if issue_type else key
+
+
+def edit_token(task):
+    """Optimistic edit lease covering content and handling changes, without a schema change."""
+    import hashlib
+    import json
+
+    fields = {
+        name: getattr(task, name)
+        for name in (
+            "id",
+            "title",
+            "message",
+            "issue_type",
+            "status",
+            "handled_by",
+            "handling_note",
+        )
+    }
+    fields["handled_at"] = (
+        task.handled_at.isoformat(timespec="milliseconds") if task.handled_at else None
+    )
+    return hashlib.sha256(
+        json.dumps(fields, sort_keys=True, ensure_ascii=False).encode()
+    ).hexdigest()

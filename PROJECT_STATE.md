@@ -296,3 +296,9 @@ Configuration is committed for Vercel frontend, Render backend, and TiDB Cloud d
 - Notes accept image selection and previews before saving. Submitted image batches persist in IndexedDB; the durable outbox checkpoints the saved note and resumes image uploads after network errors/reloads. A failed image batch can be discarded while keeping the saved note. Unsubmitted selected images remain in memory.
 - Existing ticket bodies remain readable. Legacy clients can continue to create unclassified tickets; those tickets cannot be included in structured rejection-letter bundles. Language validation is a Vietnamese-character/Latin-text guard, not comprehensive language identification.
 - Apply `alembic upgrade head` before API startup. Migration 0016 is additive except for making attachment `note_id` nullable. The current Render AF_Booking service follows `main` with commit auto-deploy and runs `alembic upgrade head` in its start command before uvicorn. Ticket images are retained across recycling and queued for private storage cleanup on permanent removal.
+
+## Administrator tickets and Excel dashboards
+
+- `/admin/tickets` gives Admin a dedicated all-status ticket list with full details/images, editable title/issue/message/status/handling outcome, and recoverable deletion. `PATCH /work-tasks/{id}` enforces Admin authorization and an optimistic content/handling token; edits are audited and do not modify booking notes or booking versions.
+- Report-center Excel opens on a branded Visual dashboard with six native chart views, filtered numeric source data and KPI cards. Personal daily, team snapshot and streamed daily-update Excel exports include matching dashboards. Detail tables and CSV data are retained; charts distinguish bookings from updates, preserve category totals and show truthful empty states.
+- Uses the existing openpyxl dependency and existing ticket/recycle schema. No new service, secret or migration is needed.

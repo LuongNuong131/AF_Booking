@@ -40,6 +40,7 @@ from app.services.exports import (
     invoice_numbers_query,
     safe_cell,
 )
+from app.services.report_charts import ChartSpec, Metric, add_dashboard
 from app.services.reports import day_bounds
 from app.services.workflow_xlsx import professional_workbook
 from app.utils.booking_key import to_display
@@ -577,6 +578,51 @@ class DailyReports:
                         if await request.is_disconnected():
                             raise asyncio.CancelledError
                         await asyncio.sleep(0)
+                add_dashboard(
+                    workbook,
+                    title="AF BOOKING | TEAM DAILY INSIGHTS",
+                    subtitle=f"{day} · {report.timezone}",
+                    metrics=[
+                        Metric("Updates written", report.note_count),
+                        Metric("New bookings", report.new_booking_count),
+                        Metric("Done updates", report.done_count),
+                        Metric("Overdue tasks", report.overdue_task_count),
+                    ],
+                    charts=[
+                        ChartSpec(
+                            "Team activity by agent",
+                            "bar",
+                            ("Agent", "Updates", "Done"),
+                            [(r.full_name, r.note_count, r.done_count) for r in report.agents],
+                            "Updates",
+                        ),
+                        ChartSpec(
+                            "Update status distribution",
+                            "doughnut",
+                            ("Status", "Updates"),
+                            [(r.label, r.count) for r in report.status_distribution],
+                        ),
+                        ChartSpec(
+                            "Activity by station and classification",
+                            "bar",
+                            ("Station / type", "Updates", "Done"),
+                            [
+                                (
+                                    f"{r.station_code} / {r.supplier_type}",
+                                    r.note_count,
+                                    r.done_count,
+                                )
+                                for r in report.stations
+                            ],
+                            "Updates",
+                        ),
+                    ],
+                    note=(
+                        "Charts summarize the same daily snapshot as the overview "
+                        "and detail sheets. Done counts follow the daily report's "
+                        "existing counting rules."
+                    ),
+                )
                 saving = asyncio.create_task(asyncio.to_thread(workbook.save, file))
                 await asyncio.shield(saving)
                 file.seek(0)
