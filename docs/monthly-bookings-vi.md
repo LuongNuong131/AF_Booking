@@ -28,7 +28,7 @@ CWXXXX-LAS-2610,Example Supplier,LAS,,false
   dấu ngoặc kép. Trong Excel chọn **CSV UTF-8 (Comma delimited)**.
 - `Station Code`: ba chữ cái. Danh sách `CPT - JNB` được tách thành hai booking.
 - `Supplier Type`: để trống (Unclassified), `hotel`, `transportation`,
-  hoặc `unclassified`. Nhân viên Admin/QC có thể phân loại sau.
+  hoặc `unclassified`. Agent, QC và Admin đều có thể dùng **Phân loại booking** ở từng dòng hoặc workspace để chọn Hotel/Transportation riêng cho booking đó.
 - `Recurring`: `true` (mặc định nếu thiếu cột/để trống) để sinh kỳ sau;
   `false` cho booking một lần. Chỉ áp dụng lúc tạo thư mục mới.
 

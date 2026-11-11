@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth'
 import { formatDateTime } from '../utils/dateTime'
 import type { BookingItem } from '../types/api.generated'
+import BookingClassificationEditor from './BookingClassificationEditor.vue'
 import TaskButton from './TaskButton.vue'
 import WatchButton from './WatchButton.vue'
 import { ref } from 'vue'
@@ -58,9 +59,9 @@ const { list, containerProps, scrollTo } = useVirtualList(toRef(props, 'rows'), 
   itemHeight: 100,
   overscan: 3,
 })
-const shown = computed(() =>
-  virtualized.value ? list.value.map((v) => v.data) : props.rows,
-)
+const classified = ref<Record<string, BookingItem>>({})
+function classifiedBooking(value: BookingItem) { classified.value[value.booking_key] = value }
+const shown = computed(() => (virtualized.value ? list.value.map((v) => v.data) : props.rows).map(row => classified.value[row.booking_key] ? { ...row, supplier: classified.value[row.booking_key]!.supplier, supplier_type: classified.value[row.booking_key]!.supplier_type } : row))
 const store = useBookingsStore()
 const prefetch = useRequest((ctx, key: string) => store.lookup(ctx, key), {
   timeoutMs: timeouts.lookup,
@@ -111,7 +112,7 @@ const columns = [
     >
       <div v-for="n in 6" :key="n" class="skeleton-line" />
     </div>
-    <table v-else-if="rows.length" class="booking-table">
+    <table v-else-if="rows.length" class="booking-table interactive-booking-table">
       <caption class="sr-only">
         {{
           t('bookingUi.bookingsTable')
@@ -122,6 +123,7 @@ const columns = [
           <th v-for="column in columns" :key="column" scope="col">
             {{ t(`bookingUi.${column}`) }}
           </th>
+          <th v-if="$slots.actions" scope="col">{{ t('adminUi.actions') }}</th>
         </tr>
       </thead>
       <tbody>
@@ -162,7 +164,7 @@ const columns = [
           </td>
           <td :data-label="t(`bookingUi.${columns[1]}`)">{{ row.supplier.name }}</td>
           <td :data-label="t(`bookingUi.${columns[2]}`)">{{ row.station_code }}</td>
-          <td :data-label="t(`bookingUi.${columns[3]}`)">{{ t(`supplier_types.${row.supplier.type}`) }}</td>
+          <td :data-label="t(`bookingUi.${columns[3]}`)"><span class="classification-cell-label">{{ t(`supplier_types.${row.supplier.type}`) }}</span><BookingClassificationEditor :booking-key="row.booking_key" :type="row.supplier.type" compact @updated="classifiedBooking" /></td>
           <td :data-label="t(`bookingUi.${columns[4]}`)">{{ row.period_label }}</td>
           <td :data-label="t(`bookingUi.${columns[5]}`)">
             <InvoiceBadge
@@ -185,6 +187,7 @@ const columns = [
               formatDateTime(row.updated_at, auth.timezone)
             }}</time>
           </td>
+          <td v-if="$slots.actions" :data-label="t('adminUi.actions')" @click.stop><slot name="actions" :row="row" /></td>
         </tr>
         <tr
           v-if="virtualized"

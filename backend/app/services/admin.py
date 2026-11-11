@@ -2,13 +2,22 @@
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import case, func, or_, select, update
+from sqlalchemy import case, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import aliased
 
 from app.core.errors import ApiException
 from app.core.unit_of_work import error_number, transaction
-from app.models import AuditLog, Booking, BookingGroup, BookingNote, Station, Status, User
+from app.models import (
+    AuditLog,
+    Booking,
+    BookingGroup,
+    BookingNote,
+    RecycleEntry,
+    Station,
+    Status,
+    User,
+)
 from app.schemas.admin import AdminNote, AdminStatus, AdminUser, AuditEntry, ProfileStats
 from app.schemas.contracts import ErrorCode, Page
 from app.schemas.realtime import BookingUpdatedData
@@ -79,7 +88,7 @@ class AdminService:
         )
 
     async def users(self, q, page, size):
-        condition = or_(
+        condition = User.deleted_at.is_(None) & or_(
             User.username.contains(q, autoescape=True), User.full_name.contains(q, autoescape=True)
         )
         async with self.tx() as session:
@@ -107,6 +116,7 @@ class AdminService:
                     username=body.username,
                     full_name=body.full_name,
                     role=body.role,
+                    is_active=body.is_active,
                     password_hash=encoded,
                     must_change_password=True,
                     settings=effective_settings(None, self.settings.business_timezone),
@@ -233,7 +243,12 @@ class AdminService:
         items = [
             AuditEntry(
                 id=r.AuditLog.id,
-                user={"id": r.AuditLog.user_id, "full_name": r.full_name} if r.full_name else None,
+                user={
+                    "id": r.AuditLog.user_id,
+                    "full_name": r.full_name or f"Deleted user #{r.AuditLog.user_id}",
+                }
+                if r.AuditLog.user_id is not None
+                else None,
                 action=r.AuditLog.action,
                 entity_type=r.AuditLog.entity_type,
                 entity_id=r.AuditLog.entity_id,
@@ -338,6 +353,24 @@ class AdminService:
                 note.deleted_at = None if restore else now_utc()
                 note.deleted_by = None if restore else actor.id
                 note.delete_reason = None if restore else reason
+                if restore:
+                    await session.execute(
+                        delete(RecycleEntry).where(
+                            RecycleEntry.resource == "notes",
+                            RecycleEntry.record_id == str(identifier),
+                        )
+                    )
+                else:
+                    session.add(
+                        RecycleEntry(
+                            resource="notes",
+                            record_id=str(identifier),
+                            label=(note.note or str(identifier))[:255],
+                            deleted_by=actor.id,
+                            reason=reason or "Administrative deletion",
+                            payload={},
+                        )
+                    )
                 await session.flush()
                 latest = (
                     await session.execute(
@@ -414,7 +447,11 @@ class AdminService:
     async def statuses(self):
         async with self.tx() as session:
             rows = (
-                await session.scalars(select(Status).order_by(Status.sort_order, Status.id))
+                await session.scalars(
+                    select(Status)
+                    .where(Status.deleted_at.is_(None))
+                    .order_by(Status.sort_order, Status.id)
+                )
             ).all()
         return [admin_status(row) for row in rows]
 

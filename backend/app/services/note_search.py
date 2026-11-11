@@ -89,7 +89,9 @@ class NoteSearch(ABC):
                         Booking.booking_key,
                         Booking.station_code,
                         BookingGroup.supplier_name,
-                        BookingGroup.supplier_type,
+                        func.coalesce(Booking.classification, BookingGroup.supplier_type).label(
+                            "supplier_type"
+                        ),
                         BookingNote.id,
                         BookingNote.note,
                         BookingNote.position_label,

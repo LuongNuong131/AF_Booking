@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../../components/EmptyState.vue'
 import { ref, onScopeDispose } from 'vue'
 import { useFoldersStore } from '../../stores/folders'
 import { ElDialog } from 'element-plus'
@@ -115,7 +116,8 @@ async function closeFolder() {
         :state="list.request.state.value"
         :error="list.request.error.value"
         @retry="list.load" />
-      <div class="folder-card-grid summary-folder-grid">
+    <EmptyState v-if="list.request.state.value === 'success' && !list.items.value.length" :title="t('common.noRecords')" :description="t('common.noRecordsHint')" />
+      <div v-if="list.items.value.length" class="folder-card-grid summary-folder-grid">
         <FolderCard
           v-for="folder in list.items.value"
           :key="folder.cw_number + folder.station_code"

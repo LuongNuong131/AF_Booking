@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import EmptyState from '../components/EmptyState.vue'
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -136,7 +137,7 @@ onMounted(() => {
         >
         <p class="search-note-text"><NoteHighlight :text="row.note ?? ''" :query="submitted" /></p>
       </article>
-      <p v-if="!request.data.value.items.length" class="muted">{{ t('opsUi.noNotes') }}</p>
+      <EmptyState v-if="!request.data.value.items.length" :title="t('opsUi.noNotes')" :description="t('common.noRecordsHint')" />
       <PageControls
         :page="page"
         :size="20"
@@ -144,5 +145,6 @@ onMounted(() => {
         summary-key="opsUi.searchPage"
         @change="changePage"
     /></template>
+    <EmptyState v-else-if="request.state.value === 'idle'" :title="t('opsUi.noteSearch')" :description="t('opsUi.noteSearchHint')" />
   </section>
 </template>

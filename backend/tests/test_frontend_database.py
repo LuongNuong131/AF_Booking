@@ -93,6 +93,7 @@ class BackendListener:
         "responsive.mjs",
         "creation.mjs",
         "workflow.mjs",
+        "management.mjs",
     ],
 )
 async def test_browser_login_roles_theme_notifications_reconnect_and_replacement(
@@ -197,7 +198,7 @@ async def test_browser_login_roles_theme_notifications_reconnect_and_replacement
                 stdout=asyncio.subprocess.PIPE,
             )
             completed = False
-            async with asyncio.timeout(150):
+            async with asyncio.timeout(240 if browser_script == "management.mjs" else 150):
                 while line := await browser.stdout.readline():
                     event = json.loads(line)
                     if event.get("action") == "system_sample":

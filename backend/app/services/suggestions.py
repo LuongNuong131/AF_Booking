@@ -93,6 +93,10 @@ class Suggestions:
             .outerjoin(Status, Status.id == Booking.last_status_id)
             .where(Booking.booking_key.in_(keys))
         )
+        if not self.index.usable:
+            # The derived candidate set has at most 250 keys. Keep unique-key probes
+            # when soft-delete predicates make TiDB prefer the low-selectivity index.
+            query = query.with_hint(Booking, "FORCE INDEX (booking_key)", "mysql")
 
         async def read(connection):
             rows = (await connection.execute(query)).all()

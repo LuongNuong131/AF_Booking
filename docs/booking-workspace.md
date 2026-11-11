@@ -9,6 +9,13 @@ summary, activity and note components. All visible copy is English, including er
 codes and the shared Prompt 1B messages. [frontend.md](frontend.md) covers setup and
 public API/WSS environment variables.
 
+## Supplier classification
+
+All active Agent, QC and Admin users can classify individual bookings from each
+booking row or its workspace. The per-booking override preserves drafts and operational
+history; other monthly bookings retain their own classifications. See [supplier classification and UI completion](supplier-classification-ui.md)
+for scope and verification.
+
 ## Home workflow
 
 1. Focus **Booking number** (automatic initially, or `/`). Paste a full/display key,

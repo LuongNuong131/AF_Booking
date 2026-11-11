@@ -95,7 +95,8 @@ try {
 
   for (const width of [375,768,1024,1440]) {
     await page.setViewportSize({width,height:900})
-    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1)
+    // Resize observers and a closing dialog can settle after setViewportSize resolves.
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width + 1)
   }
   await page.setViewportSize({width:375,height:844})
   dialog = await addDialog('CW9998800-RDU-2701')

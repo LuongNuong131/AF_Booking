@@ -100,7 +100,7 @@ class EmptyData(ContractModel):
 
 
 class CatalogData(ContractModel):
-    resource: Literal["statuses", "users"]
+    resource: Literal["statuses", "users", "suppliers"]
     snapshots_changed: bool = False
 
 

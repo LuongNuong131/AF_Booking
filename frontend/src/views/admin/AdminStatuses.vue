@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import AdminDeleteButton from '../../components/AdminDeleteButton.vue'
+import EmptyState from '../../components/EmptyState.vue'
 import { reactive, ref, onMounted } from 'vue'
 import { ElDialog } from 'element-plus'
 import { useI18n } from 'vue-i18n'
@@ -99,7 +101,8 @@ useViewRefresh(() => list.run())
     </header>
     <p class="muted">{{ t('adminUi.statusHint') }}</p>
     <RequestStatus :state="list.state.value" :error="list.error.value" @retry="list.run" />
-    <div class="admin-table-wrap">
+    <EmptyState v-if="list.state.value === 'success' && !list.data.value?.length" :title="t('common.noRecords')" :description="t('common.noRecordsHint')" />
+    <div v-if="list.data.value?.length" class="admin-table-wrap">
       <table class="admin-table">
         <thead>
           <tr>
@@ -127,6 +130,7 @@ useViewRefresh(() => list.run())
               <button type="button" class="text-button" @click="open(status)">
                 {{ t('adminUi.edit') }}
               </button>
+              <AdminDeleteButton resource="statuses" :identifier="status.id" :label="status.label" @deleted="list.run" />
             </td>
           </tr>
         </tbody>

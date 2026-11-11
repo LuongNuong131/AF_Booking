@@ -54,6 +54,7 @@ class Scheduler:
             try:
                 async with asyncio.timeout(job.timeout):
                     await job.callback()
+                    state["last_error"] = None
             except asyncio.CancelledError:
                 raise
             except Exception as exc:

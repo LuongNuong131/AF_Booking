@@ -1,0 +1,153 @@
+{
+  "date": "2026-11-10",
+  "parent_commit": "d9e48320d16da811298b5df5adf4dab6b3eeda04",
+  "scope": [
+    "individual booking classification for Agent/QC/Admin",
+    "12-resource administrator CRUD",
+    "recoverable deletion and reviewed permanent cleanup",
+    "scoped report center and professional exports",
+    "observed system control room and integrity explanation"
+  ],
+  "backend": {
+    "full_mysql_run": {
+      "passed": 399,
+      "initial_timing_test_failures": 2,
+      "skipped": 4
+    },
+    "timing_test_corrections": [
+      "Measure handler cancellation independently of lazy route compilation.",
+      "Await the websocket delivery event rather than assuming a fixed 90 ms scheduling delay."
+    ],
+    "post_correction_management_health_realtime_run": {
+      "passed": 32,
+      "failed": 0
+    },
+    "additional_legacy_note_restore_regression": {
+      "passed": 1,
+      "failed": 0
+    },
+    "distinct_backend_cases_verified": 401,
+    "service_line_coverage_percent": 91.04,
+    "coverage_gate_percent": 80,
+    "affected_database_suite_passed": 81,
+    "database": "disposable MySQL 8.4, verified local TLS, synthetic data",
+    "ruff_check": "passed",
+    "ruff_format": "passed",
+    "generated_contract_check": "passed",
+    "alembic_metadata_check": "passed",
+    "final_unit_run": {
+      "passed": 221,
+      "skipped": 205
+    },
+    "suggestion_fallback_regression": {
+      "date": "2026-11-11",
+      "change": "Keep the unique booking_key index for bounded fallback suggestions when recycled-record filters are active.",
+      "test_criteria": "Existing 50,000-booking integrity/latency/query-plan checks retained.",
+      "database_version": "8.4.13",
+      "fixture": {
+        "bookings": 50000,
+        "notes": 50000,
+        "folders": 2000,
+        "mismatches": 250
+      },
+      "report_seconds": 6.789,
+      "baseline_lookup": {
+        "samples": 30,
+        "p50_ms": 9.013,
+        "p95_ms": 26.727,
+        "p99_ms": 98.014
+      },
+      "during_scan_lookup": {
+        "samples": 164,
+        "p50_ms": 12.904,
+        "p95_ms": 41.717,
+        "p99_ms": 149.372
+      },
+      "suggestion_fallback_ms": 66.314,
+      "booking_access": [
+        {
+          "table": "bookings",
+          "type": "eq_ref",
+          "key": "booking_key",
+          "rows": 1
+        }
+      ],
+      "tidb_ci_run": "https://github.com/LuongNuong131/AF_Booking/actions/runs/42937757847",
+      "tidb_ci_result": "All database-schema (tidb) steps passed, including the unchanged 50,000-booking query-plan/latency benchmark."
+    }
+  },
+  "frontend": {
+    "full_vitest_files": 56,
+    "full_vitest_passed": 262,
+    "lint": "passed",
+    "security_configuration": "passed",
+    "typecheck": "passed",
+    "production_build": "passed",
+    "final_realtime_routing_draft_regression": {
+      "files": 4,
+      "passed": 20
+    },
+    "creation_responsive_regression": {
+      "passed": 1,
+      "widths": [
+        375,
+        768,
+        1024,
+        1440
+      ],
+      "assertion": "Poll for layout stabilization after resize; retain the viewport + 1px overflow limit."
+    }
+  },
+  "browser": {
+    "engine": "Chromium",
+    "real_api": true,
+    "suites_passed": [
+      "smoke",
+      "admin",
+      "operations",
+      "invoices",
+      "workflow",
+      "management"
+    ],
+    "roles": [
+      "agent",
+      "qc",
+      "admin"
+    ],
+    "widths": [
+      320,
+      375,
+      768,
+      1024,
+      1440
+    ],
+    "management_route_width_combinations": 110,
+    "management_page_errors": [],
+    "management_document_overflow_failures": 0,
+    "checks": [
+      "Per-row and workspace classification; unclassified imports; sibling records unchanged.",
+      "Unsaved note draft preserved.",
+      "Report Excel download; monthly invoice and QC-ticket export regression.",
+      "Admin user create, recycle, restore and Empty recycle bin through the UI.",
+      "Literal DELETE required before reviewed permanent deletion.",
+      "Legacy note deletion restored through the unified bin.",
+      "Vietnamese/dark mode and responsive report/system/management screens."
+    ],
+    "metrics_file": "management-responsive.json",
+    "management_api_interception": false,
+    "other_suites": "Real API with existing network-fault injection checks where applicable."
+  },
+  "deployment": {
+    "production_changed": false,
+    "migration_required": "0015",
+    "migration_command": "alembic upgrade head",
+    "github_ci": "Fresh CI requested after account email verification; the original startup-failure run had no jobs and cannot be retried.",
+    "original_ci_run": "https://github.com/LuongNuong131/AF_Booking/actions/runs/42838707028"
+  },
+  "limitations": [
+    "TiDB was not exercised locally in this follow-up.",
+    "External object storage was verified with a retrying test double; live provider credentials were not used.",
+    "Backend diagnostics are process-local rolling observations under the documented single-instance deployment model.",
+    "Screenshots and sample exported workbooks remain local and are excluded from the code publication."
+  ]
+}

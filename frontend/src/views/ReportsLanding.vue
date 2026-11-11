@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { useAuthStore } from '../stores/auth'
-import ReportsView from './ReportsView.vue'
-import MyDailyReportView from './MyDailyReportView.vue'
-const auth = useAuthStore()
+import ReportCenterView from './ReportCenterView.vue'
 </script>
-<template><MyDailyReportView v-if="auth.user?.role === 'agent'" /><ReportsView v-else /></template>
+<template><ReportCenterView /></template>

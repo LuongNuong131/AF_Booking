@@ -29,6 +29,12 @@ it('validates catalogue invalidations without granting arbitrary event types', (
   expect(
     parseServerFrame({
       event: 'catalog.updated',
+      data: { resource: 'suppliers', snapshots_changed: true },
+    }),
+  ).not.toBeNull()
+  expect(
+    parseServerFrame({
+      event: 'catalog.updated',
       data: { resource: 'statuses', snapshots_changed: true },
     }),
   ).not.toBeNull()

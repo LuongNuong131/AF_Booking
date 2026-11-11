@@ -13,7 +13,9 @@ function retry() {
   failed.value = false
   generation.value++
 }
-watch(() => props.resetKey, retry)
+watch(() => props.resetKey, () => {
+  if (failed.value) retry()
+})
 </script>
 <template>
   <section v-if="failed" class="boundary-card" role="alert">

@@ -200,7 +200,10 @@ async def test_booking_broadcast_coalesces_per_key_and_retains_newest_version():
             await manager.broadcast("booking.updated", {"booking_key": key, "version": version})
         await asyncio.sleep(0.04)
         assert not any(m["event"] == "booking.updated" for m in socket.messages)
-        await asyncio.sleep(0.09)
+        async with asyncio.timeout(1):
+            while sum(m["event"] == "booking.updated" for m in socket.messages) < 2:
+                socket.sent.clear()
+                await socket.sent.wait()
         updates = [m["data"] for m in socket.messages if m["event"] == "booking.updated"]
         assert len(updates) == 2
         assert next(m for m in updates if m["booking_key"] == KEY)["version"] == 4

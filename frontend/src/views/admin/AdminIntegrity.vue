@@ -77,6 +77,7 @@ onScopeDispose(() => clearInterval(timer))
         {{ t('guardUi.run') }}
       </button>
     </header>
+    <aside class="integrity-explainer"><h3>{{ t('integrityHelp.title') }}</h3><p>{{ t('integrityHelp.description') }}</p><div><article><strong>1 · {{ t('integrityHelp.scan') }}</strong><p>{{ t('integrityHelp.scanHint') }}</p></article><article><strong>2 · {{ t('integrityHelp.review') }}</strong><p>{{ t('integrityHelp.reviewHint') }}</p></article><article><strong>3 · {{ t('integrityHelp.repair') }}</strong><p>{{ t('integrityHelp.repairHint') }}</p></article></div><p class="muted">{{ t('integrityHelp.example') }}</p></aside>
     <button
       type="button"
       class="text-button"

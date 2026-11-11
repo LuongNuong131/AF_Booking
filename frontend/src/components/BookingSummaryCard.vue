@@ -12,6 +12,7 @@ import StatusTag from './StatusTag.vue'
 import LockBadge from './LockBadge.vue'
 import DoneWarning from './DoneWarning.vue'
 import InvoicePanel from './InvoicePanel.vue'
+import BookingClassificationEditor from './BookingClassificationEditor.vue'
 import SupplierEditor from './SupplierEditor.vue'
 defineEmits<{ supplierUpdated: [] }>()
 const { t } = useI18n(),
@@ -35,6 +36,7 @@ const identity = computed(() =>
       ><StatusTag v-if="booking.snapshot?.last_status" :status="booking.snapshot.last_status" />
     </header>
     <h2 v-if="booking.group">{{ booking.group.supplier_name }}</h2>
+    <BookingClassificationEditor v-if="booking.exists && booking.booking_key && booking.snapshot" :booking-key="booking.booking_key" :type="booking.snapshot.supplier.type" @updated="$emit('supplierUpdated')" />
     <SupplierEditor
       v-if="booking.group"
       :cw="folderKey(booking.group)"
@@ -44,7 +46,7 @@ const identity = computed(() =>
       @updated="$emit('supplierUpdated')"
     />
     <div class="summary-metadata">
-      <span v-if="booking.group">{{ t(`supplier_types.${booking.group.supplier_type}`) }}</span
+      <span v-if="booking.group">{{ t(`supplier_types.${booking.snapshot?.supplier.type ?? booking.group.supplier_type}`) }}</span
       ><span>{{
         booking.snapshot?.station_code ||
         (identity && 'station_code' in identity

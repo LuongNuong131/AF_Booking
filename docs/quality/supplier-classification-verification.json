@@ -1,0 +1,6 @@
+{
+  "status": "superseded",
+  "reason": "The initial supplier-folder classification implementation was replaced by individual booking overrides and the expanded management/report center.",
+  "current_verification": "admin-report-center-verification.json",
+  "current_browser_metrics": "management-responsive.json"
+}

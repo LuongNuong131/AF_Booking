@@ -118,3 +118,35 @@ it('ends route loading after 20 seconds and refreshes after a minute hidden', as
   expect(ui.refreshReason).toBe('visible')
   stop()
 })
+
+it('shows loading feedback and only offers retry when the caller can handle it', async () => {
+  const wrapper = mount(RequestStatus, { props: { state: 'loading' }, global: { plugins: [i18n] } })
+  expect(wrapper.get('[role="status"]').text()).toContain('Loading')
+  await wrapper.setProps({ state: 'error', error: { code: 'UNKNOWN', message: '' } })
+  expect(wrapper.find('[role="alert"]').exists()).toBe(true)
+  expect(wrapper.find('button').exists()).toBe(false)
+  wrapper.unmount()
+  const retry = vi.fn()
+  const actionable = mount(RequestStatus, {
+    props: { state: 'error', error: { code: 'UNKNOWN', message: '' }, onRetry: retry },
+    global: { plugins: [i18n] },
+  })
+  await actionable.get('button').trigger('click')
+  expect(retry).toHaveBeenCalledOnce()
+  actionable.unmount()
+})
+
+it('preserves active form state when the URL changes without a render failure', async () => {
+  let mounts = 0
+  const Child = defineComponent({ setup() {
+    mounts++
+    const draft = ref('')
+    return () => h('input', { value: draft.value, onInput: (event: Event) => { draft.value = (event.target as HTMLInputElement).value } })
+  } })
+  const wrapper = mount(ErrorBoundary, { props: { resetKey: '/reports' }, slots: { default: () => h(Child) }, global: { plugins: [i18n] } })
+  await wrapper.get('input').setValue('Keep applied filters and my draft')
+  await wrapper.setProps({ resetKey: '/reports?scope=team' })
+  expect(mounts).toBe(1)
+  expect((wrapper.get('input').element as HTMLInputElement).value).toBe('Keep applied filters and my draft')
+  wrapper.unmount()
+})

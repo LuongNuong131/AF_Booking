@@ -7,13 +7,13 @@ import tempfile
 from zoneinfo import ZoneInfo
 
 from fastapi.responses import StreamingResponse
-from openpyxl import Workbook
 from sqlalchemy import func, select
 
 from app.core.unit_of_work import transaction
 from app.models import Booking, BookingGroup, BookingInvoice, BookingNote, Status, User
 from app.services.audit import record_audit
 from app.services.reports import day_bounds
+from app.services.workflow_xlsx import professional_workbook
 from app.utils.booking_key import to_display
 from app.utils.invoice import state_label
 
@@ -86,7 +86,9 @@ class ExportService:
                 Booking.booking_key,
                 BookingGroup.supplier_name,
                 Booking.station_code,
-                BookingGroup.supplier_type,
+                func.coalesce(Booking.classification, BookingGroup.supplier_type).label(
+                    "supplier_type"
+                ),
                 Status.label,
                 BookingNote.position_label,
                 BookingNote.note,
@@ -120,7 +122,9 @@ class ExportService:
                                 else r.booking_key,
                                 r.supplier_name,
                                 r.station_code,
-                                "Hotel" if r.supplier_type == "hotel" else "Transportation",
+                                {"hotel": "Hotel", "transportation": "Transportation"}.get(
+                                    r.supplier_type, "Unclassified"
+                                ),
                                 r.label,
                                 r.position_label,
                                 r.note,
@@ -178,7 +182,7 @@ class ExportService:
             return StreamingResponse(
                 stream(), media_type="text/csv; charset=utf-8", headers=headers
             )
-        workbook = Workbook(write_only=True)
+        workbook = professional_workbook()
         sheet = workbook.create_sheet("Daily record")
         sheet.append(COLUMNS)
         file = tempfile.SpooledTemporaryFile(max_size=2 * 1024 * 1024, mode="w+b")

@@ -121,7 +121,7 @@ try {
   const qc = await context(),
     qcPage = await qc.newPage()
   await login(qcPage, 'qc', '/reports')
-  await expect(qcPage).toHaveURL('http://localhost:5173/reports')
+  await expect(qcPage).toHaveURL(/localhost:5173\/reports(?:\?|$)/)
   await expect(qcPage.getByRole('link', { name: 'Reports', exact: true })).toBeVisible()
   await expect(qcPage.getByRole('link', { name: 'Admin', exact: true })).toHaveCount(0)
   await qc.close()

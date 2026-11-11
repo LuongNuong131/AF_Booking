@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { api } from '../../api/client'
 import { useRequest } from '../../composables/useRequest'
@@ -8,189 +8,32 @@ import { useSystemHealthStore } from '../../stores/systemHealth'
 import { useAuthStore } from '../../stores/auth'
 import { formatDateTime } from '../../utils/dateTime'
 import { timeouts } from '../../config/timeouts'
-import type { SystemHealth } from '../../types/api.generated'
+import type { SystemDetail, JsonValue } from '../../types/api.generated'
 import RequestStatus from '../../components/RequestStatus.vue'
-const { t } = useI18n(),
-  store = useSystemHealthStore(),
-  auth = useAuthStore()
-const request = useRequest(
-  async ({ signal, timeoutMs }) =>
-    (await api.get<SystemHealth>('/admin/system/health', { signal, timeout: timeoutMs })).data,
-  { timeoutMs: timeouts.list },
-)
-async function load() {
-  if (request.pending.value) return
-  const result = await request.run()
-  if (result) store.degraded = result.degraded
-}
-useVisibleInterval(load, 15000, request.cancel)
-const health = computed(() => request.data.value)
-const spark = computed(() => {
-  const values = health.value?.points.map((p) => p.p95_ms ?? 0) ?? [],
-    max = Math.max(500, ...values)
-  return values
-    .map((v, i) => `${(i * 600) / Math.max(1, values.length - 1)},${100 - (v / max) * 90}`)
-    .join(' ')
-})
+const { t } = useI18n(), store = useSystemHealthStore(), auth = useAuthStore(), paused = ref(false)
+const request = useRequest(async ctx => (await api.get<SystemDetail>('/admin/system/detail', { signal: ctx.signal, timeout: ctx.timeoutMs })).data, { timeoutMs: timeouts.list })
+async function load() { if (!request.pending.value) { const value = await request.run(); if (value) store.degraded = value.health.degraded || !value.database_available } }
+useVisibleInterval(() => { if (!paused.value) return load() }, 15000, request.cancel)
+const value = computed(() => request.data.value), health = computed(() => value.value?.health)
+const summary = computed(() => !value.value ? 'checking' : !value.value.database_available ? 'unavailable' : value.value.recommendations.length ? 'attention' : 'healthy')
+const bytes = (v: JsonValue | undefined) => { const n = Number(v); if (!n) return '—'; return n > 1073741824 ? `${(n/1073741824).toFixed(2)} GB` : `${(n/1048576).toFixed(1)} MB` }
+const duration = (n: number) => n < 60 ? `${Math.floor(n)}s` : n < 3600 ? `${Math.floor(n/60)}m ${Math.floor(n%60)}s` : `${Math.floor(n/86400)}d ${Math.floor(n%86400/3600)}h ${Math.floor(n%3600/60)}m`
+const points = computed(() => { const rows = health.value?.points ?? [], max = Math.max(100, ...rows.map(p => p.p95_ms ?? 0)); return rows.map((p, i) => `${24+i*952/Math.max(1,rows.length-1)},${180-(p.p95_ms ?? 0)/max*150}`).join(' ') })
+const diskPercent = computed(() => value.value ? Number(value.value.runtime.filesystem_used_bytes)/Number(value.value.runtime.filesystem_total_bytes)*100 : 0)
+const memoryPercent = computed(() => value.value?.runtime.container_memory_limit_bytes ? Number(value.value.runtime.container_memory_bytes)/Number(value.value.runtime.container_memory_limit_bytes)*100 : null)
+const time = (v: JsonValue | undefined) => typeof v === 'string' ? formatDateTime(v, auth.timezone) : '—'
 </script>
 <template>
-  <section class="admin-panel system-health">
-    <header class="admin-section-heading">
-      <div>
-        <h2>{{ t('opsUi.systemTitle') }}</h2>
-        <p class="muted">{{ t('opsUi.memoryOnly') }}</p>
-      </div>
-      <button type="button" class="button" :disabled="request.pending.value" @click="load">
-        {{ t('bookingUi.refresh') }}
-      </button>
-    </header>
-    <RequestStatus
-      :state="request.state.value"
-      :error="request.error.value"
-      @retry="load"
-    /><template v-if="health"
-      ><p v-if="health.degraded" class="booking-warning">{{ t('opsUi.degraded') }}</p>
-      <div class="report-metrics">
-        <article>
-          <span>{{ t('opsUi.requests') }}</span
-          ><strong>{{ health.total.requests }}</strong>
-        </article>
-        <article>
-          <span>{{ t('opsUi.errorRate') }}</span
-          ><strong>{{ (health.total.error_rate * 100).toFixed(1) }}%</strong>
-        </article>
-        <article>
-          <span>p95 · ms</span><strong>{{ health.total.p95_ms ?? '—' }}</strong>
-        </article>
-        <article>
-          <span>{{ t('opsUi.dbLatency') }}</span
-          ><strong>{{ health.db_latency_ms?.toFixed(1) ?? '—' }}</strong>
-        </article>
-      </div>
-      <p>
-        {{
-          t('opsUi.runtime', {
-            version: health.version,
-            uptime: Math.floor(health.uptime_seconds),
-            sockets: health.websocket_connections,
-            locks: health.soft_locks,
-          })
-        }}
-      </p>
-      <p>
-        {{
-          t('opsUi.pool', {
-            size: health.pool.size,
-            used: health.pool.checked_out,
-            overflow: health.pool.overflow,
-          })
-        }}
-      </p>
-      <div class="report-metrics">
-        <article>
-          <span>{{ t('opsUi.keyIndex') }}</span
-          ><strong>{{ health.key_index?.keys ?? 0 }}</strong>
-        </article>
-        <article>
-          <span>{{ t('opsUi.snapshotHitRate') }}</span
-          ><strong>{{
-            health.snapshot_cache?.hit_ratio == null
-              ? '—'
-              : (health.snapshot_cache.hit_ratio * 100).toFixed(1) + '%'
-          }}</strong>
-        </article>
-        <article>
-          <span>REQUEST_TIMEOUT</span
-          ><strong>{{ health.operational_errors?.counts?.REQUEST_TIMEOUT ?? 0 }}</strong>
-        </article>
-        <article>
-          <span>SERVICE_BUSY</span
-          ><strong>{{ health.operational_errors?.counts?.SERVICE_BUSY ?? 0 }}</strong>
-        </article>
-      </div>
-      <p class="muted">{{ t('opsUi.cacheScope') }}</p>
-      <svg
-        class="health-sparkline"
-        viewBox="0 0 600 110"
-        role="img"
-        :aria-label="t('opsUi.sparkline')"
-      >
-        <polyline fill="none" stroke="currentColor" stroke-width="2" :points="spark" />
-      </svg>
-      <p class="muted">{{ t('opsUi.histogramHint') }}</p>
-      <div class="booking-table-wrap">
-        <table class="booking-table">
-          <thead>
-            <tr>
-              <th>{{ t('opsUi.endpointGroup') }}</th>
-              <th>{{ t('opsUi.requests') }}</th>
-              <th>{{ t('opsUi.errorRate') }}</th>
-              <th>p50</th>
-              <th>p95</th>
-              <th>p99</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in health.groups" :key="row.group">
-              <td>{{ row.group }}</td>
-              <td>{{ row.requests }}</td>
-              <td>{{ (row.error_rate * 100).toFixed(1) }}%</td>
-              <td>{{ row.p50_ms ?? '—' }}</td>
-              <td>{{ row.p95_ms ?? '—' }}</td>
-              <td>{{ row.p99_ms ?? '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <h3>{{ t('opsUi.jobs') }}</h3>
-      <div class="booking-table-wrap">
-        <table class="booking-table">
-          <thead>
-            <tr>
-              <th>{{ t('opsUi.job') }}</th>
-              <th>{{ t('opsUi.lastRun') }}</th>
-              <th>{{ t('opsUi.duration') }}</th>
-              <th>{{ t('opsUi.lastError') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="job in health.jobs" :key="job.name">
-              <td>
-                {{ job.name }} <span v-if="job.running">· {{ t('opsUi.running') }}</span>
-              </td>
-              <td>
-                {{
-                  job.last_started_at ? formatDateTime(job.last_started_at, auth.timezone) : '—'
-                }}
-              </td>
-              <td>{{ job.duration_ms?.toFixed(1) ?? '—' }}</td>
-              <td>{{ job.last_error ?? '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <h3>{{ t('opsUi.slowQueries') }}</h3>
-      <p class="muted">{{ t('opsUi.fingerprintOnly') }}</p>
-      <div class="booking-table-wrap">
-        <table class="booking-table">
-          <thead>
-            <tr>
-              <th>{{ t('opsUi.fingerprint') }}</th>
-              <th>{{ t('opsUi.duration') }}</th>
-              <th>{{ t('opsUi.observed') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(row, i) in health.slow_queries" :key="i">
-              <td>
-                <code>{{ row.fingerprint.slice(0, 24) }}</code>
-              </td>
-              <td>{{ row.duration_ms.toFixed(1) }}</td>
-              <td>{{ formatDateTime(row.at, auth.timezone) }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div></template
-    >
+  <section class="system-console"><header class="system-console-header"><div><span class="report-kicker">AF BOOKING · {{ t('systemUi.controlRoom') }}</span><h2>{{ t('opsUi.systemTitle') }}</h2><p>{{ t('systemUi.intro') }}</p></div><div class="system-header-actions"><span class="system-overall" :class="summary"><i />{{ t(`systemUi.${summary}`) }}</span><button class="button" :aria-pressed="paused" @click="paused = !paused">{{ t(paused ? 'systemUi.resume' : 'systemUi.pause') }}</button><button class="button primary" :disabled="request.pending.value" @click="load">{{ t('bookingUi.refresh') }}</button></div></header><RequestStatus :state="request.state.value" :error="request.error.value" @retry="load" />
+    <template v-if="value && health"><div class="system-observed"><span>{{ t('systemUi.observed') }} {{ formatDateTime(health.generated_at, auth.timezone) }}</span><span>{{ t(paused ? 'systemUi.paused' : 'systemUi.interval') }}</span></div>
+      <div class="system-component-grid"><article v-for="component in value.components" :key="component.key"><span class="component-dot" :class="component.state" /><div><strong>{{ t(`systemUi.components.${component.key}`) }}</strong><small>{{ t(`systemUi.${component.state}`) }}</small></div></article></div>
+      <div class="report-kpis system-kpis"><article><span>{{ t('opsUi.requests') }}</span><strong>{{ health.total.requests.toLocaleString() }}</strong><small>{{ t('systemUi.window', { minutes: health.window_seconds / 60 }) }}</small></article><article><span>{{ t('opsUi.errorRate') }}</span><strong>{{ (health.total.error_rate*100).toFixed(2) }}%</strong><small>{{ health.total.errors }} {{ t('systemUi.errors') }}</small></article><article><span>{{ t('systemUi.responseP95') }}</span><strong>{{ health.total.p95_ms ?? '—' }} <small>ms</small></strong><small>{{ t('systemUi.approximate') }}</small></article><article><span>{{ t('opsUi.dbLatency') }}</span><strong>{{ health.db_latency_ms?.toFixed(1) ?? '—' }} <small>ms</small></strong><small>{{ t('systemUi.liveProbe') }}</small></article></div>
+      <div class="system-main-grid"><article class="report-section"><header><h3>{{ t('systemUi.responseHistory') }}</h3><span class="muted">p95 · ms</span></header><svg v-if="health.points.length > 1" class="report-trend" viewBox="0 0 1000 210" role="img" :aria-label="t('opsUi.sparkline')"><line x1="24" x2="976" y1="180" y2="180" stroke="var(--line)" /><polyline :points="points" fill="none" stroke="var(--primary)" stroke-width="3" /></svg><div v-else class="report-single-day"><strong>{{ health.points[0]?.p95_ms ?? '—' }}<small> ms</small></strong><span>{{ t('systemUi.waitingSamples') }}</span></div><p class="muted system-footnote">{{ t('opsUi.histogramHint') }}</p></article><article class="report-section"><header><h3>{{ t('systemUi.capacity') }}</h3></header><dl class="system-capacity"><div><dt>{{ t('systemUi.databasePool') }}</dt><dd>{{ health.pool.checked_out }} / {{ health.pool.size }}<progress :value="health.pool.checked_out" :max="health.pool.size || 1" /></dd></div><div><dt>{{ t('systemUi.containerMemory') }}</dt><dd>{{ bytes(value.runtime.container_memory_bytes) }} / {{ bytes(value.runtime.container_memory_limit_bytes) }}<progress v-if="memoryPercent !== null" :value="memoryPercent" max="100" /></dd></div><div><dt>{{ t('systemUi.filesystem') }}</dt><dd>{{ bytes(value.runtime.filesystem_free_bytes) }} {{ t('systemUi.free') }}<progress :value="diskPercent" max="100" /></dd></div></dl><p class="muted system-footnote">{{ t('systemUi.filesystemHint') }}</p></article></div>
+      <div class="system-main-grid"><article class="report-section"><header><h3>{{ t('systemUi.runtime') }}</h3></header><dl class="system-facts"><div><dt>{{ t('systemUi.version') }}</dt><dd>{{ health.version }}</dd></div><div><dt>{{ t('systemUi.uptime') }}</dt><dd>{{ duration(health.uptime_seconds) }}</dd></div><div><dt>Python</dt><dd>{{ value.runtime.python }}</dd></div><div><dt>{{ t('systemUi.processMemory') }}</dt><dd>{{ bytes(value.runtime.process_memory_bytes) }}</dd></div><div><dt>{{ t('systemUi.cpuTime') }}</dt><dd>{{ value.runtime.cpu_seconds }} s</dd></div><div><dt>{{ t('systemUi.asyncTasks') }}</dt><dd>{{ value.runtime.async_tasks }}</dd></div><div><dt>{{ t('systemUi.connections') }}</dt><dd>{{ health.websocket_connections }}</dd></div><div><dt>{{ t('systemUi.locks') }}</dt><dd>{{ health.soft_locks }}</dd></div><div><dt>{{ t('opsUi.keyIndex') }}</dt><dd>{{ health.key_index?.keys ?? 0 }}</dd></div><div><dt>{{ t('opsUi.snapshotHitRate') }}</dt><dd>{{ health.snapshot_cache?.hit_ratio == null ? '—' : `${(health.snapshot_cache.hit_ratio*100).toFixed(1)}%` }}</dd></div></dl></article><article class="report-section"><header><h3>{{ t('systemUi.inventory') }}</h3><RouterLink class="text-button" :to="{ name: 'admin-data' }">{{ t('dataUi.title') }}</RouterLink></header><div class="system-inventory"><div v-for="(count, resource) in value.inventory" :key="resource"><span>{{ t(`dataUi.resources.${resource}`) }}</span><strong>{{ count.toLocaleString() }}</strong></div></div></article></div>
+      <article class="report-section"><header><div><h3>{{ t('opsUi.jobs') }}</h3><p class="muted">{{ t('systemUi.jobHint') }}</p></div></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>{{ t('opsUi.job') }}</th><th>{{ t('dataUi.fields.status') }}</th><th>{{ t('opsUi.lastRun') }}</th><th>{{ t('opsUi.duration') }}</th><th>{{ t('systemUi.nextRun') }}</th><th>{{ t('opsUi.lastError') }}</th></tr></thead><tbody><tr v-for="job in value.jobs" :key="String(job.name)"><td>{{ String(job.name).replaceAll('_', ' ') }}</td><td><span class="system-job-state" :class="String(job.state)">{{ t(`systemUi.${job.state}`) }}</span></td><td>{{ time(job.last_started_at) }}</td><td>{{ job.duration_ms == null ? '—' : `${Number(job.duration_ms).toFixed(1)} ms` }}</td><td>{{ job.next_in_seconds == null ? '—' : duration(Number(job.next_in_seconds)) }}</td><td>{{ job.last_error ?? '—' }}</td></tr></tbody></table></div></article>
+      <article class="report-section"><header><h3>{{ t('opsUi.endpointGroup') }}</h3></header><div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>{{ t('opsUi.endpointGroup') }}</th><th>{{ t('opsUi.requests') }}</th><th>{{ t('opsUi.errorRate') }}</th><th>p50 · ms</th><th>p95 · ms</th><th>p99 · ms</th></tr></thead><tbody><tr v-for="row in health.groups" :key="row.group"><td>{{ row.group }}</td><td>{{ row.requests }}</td><td>{{ (row.error_rate*100).toFixed(2) }}%</td><td>{{ row.p50_ms ?? '—' }}</td><td>{{ row.p95_ms ?? '—' }}</td><td>{{ row.p99_ms ?? '—' }}</td></tr></tbody></table></div><p class="muted system-footnote">{{ t('opsUi.memoryOnly') }}</p></article>
+      <article class="report-section system-recommendations"><header><h3>{{ t('systemUi.actionable') }}</h3><RouterLink class="text-button" :to="{ name: 'admin-integrity' }">{{ t('guardUi.integrityTitle') }}</RouterLink></header><ul v-if="value.recommendations.length"><li v-for="item in value.recommendations" :key="item">{{ t(`systemUi.advice.${item}`) }}</li></ul><p v-else>{{ t('systemUi.noActions') }}</p><p v-if="value.latest_integrity" class="muted">{{ t('systemUi.lastIntegrity', { checked: value.latest_integrity.checked, mismatch: value.latest_integrity.mismatched, fixed: value.latest_integrity.fixed }) }}</p></article>
+      <details class="report-section system-slow-queries"><summary>{{ t('opsUi.slowQueries') }} ({{ health.slow_queries.length }})</summary><p class="muted">{{ t('opsUi.fingerprintOnly') }}</p><div v-if="health.slow_queries.length" class="admin-table-wrap"><table class="admin-table"><thead><tr><th>{{ t('opsUi.fingerprint') }}</th><th>{{ t('opsUi.duration') }}</th><th>{{ t('opsUi.observed') }}</th></tr></thead><tbody><tr v-for="(row, index) in health.slow_queries" :key="index"><td><code>{{ row.fingerprint }}</code></td><td>{{ row.duration_ms.toFixed(1) }} ms</td><td>{{ formatDateTime(row.at, auth.timezone) }}</td></tr></tbody></table></div></details>
+    </template>
   </section>
 </template>

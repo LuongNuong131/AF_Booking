@@ -11,6 +11,7 @@ import type {
   BookingUpdatedData,
   FolderCard,
   FolderDetail,
+  FolderPatch,
   GroupInfo,
   MonthRow,
   Page,
@@ -253,7 +254,7 @@ export const useFoldersStore = defineStore('folders', () => {
   async function rename(
     ctx: RequestContext,
     cw: string,
-    body: { supplier_name: string; supplier_type: FolderCard['supplier_type']; recurring_enabled?: boolean },
+    body: FolderPatch,
   ) {
     const generation = epoch
     const group = (

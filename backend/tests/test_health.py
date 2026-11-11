@@ -75,10 +75,12 @@ def test_cors_allows_only_the_configured_frontend() -> None:
 def test_slow_request_times_out_and_is_cancelled() -> None:
     application = create_app(settings(request_timeout_seconds=0.05))
     cancelled = False
+    started = None
 
     @application.get("/slow")
     async def slow(request: Request) -> dict[str, str]:
-        nonlocal cancelled
+        nonlocal cancelled, started
+        started = time.monotonic()
         try:
             await asyncio.sleep(5)
         finally:
@@ -86,8 +88,9 @@ def test_slow_request_times_out_and_is_cancelled() -> None:
         return {"status": "unexpected"}
 
     with TestClient(application) as client:
-        started = time.monotonic()
         response = client.get("/slow", headers={"Origin": "http://localhost:5173"})
+        # Measure endpoint cancellation independently of FastAPI's lazy route compilation.
+        assert started is not None
         assert time.monotonic() - started < 1
         assert response.status_code == 504
         assert response.json()["code"] == "REQUEST_TIMEOUT"

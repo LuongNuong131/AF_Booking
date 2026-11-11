@@ -59,6 +59,7 @@ The product supports Agent, QC, and Admin roles, with authorization enforced on 
 - Exact, partial, ambiguous, and station-assisted lookup.
 - Smart search across booking keys, CW numbers, stations, periods, and supplier names.
 - Supplier folders with station and monthly booking navigation.
+- Per-booking Hotel/Transportation classification for Agent, QC and Admin, with an audit trail.
 - Append-only notes with status, position, ownership, and optimistic version checks.
 - Activity timeline with cursor pagination.
 - Draft persistence, conflict review, duplicate-note protection, and offline outbox recovery.
@@ -77,6 +78,9 @@ The product supports Agent, QC, and Admin roles, with authorization enforced on 
 
 - Role-aware Admin, QC, Reports, Profile, and system-health screens.
 - User, session, supplier, station, status, audit, trash, and integrity workflows.
+- Administrator business-data CRUD, recoverable deletions, dependency-aware permanent cleanup and queued private-file cleanup.
+- Scoped report center with detailed filters, agent participation and branded multi-sheet Excel/CSV exports.
+- Detailed system control room with observed health, resource capacity, inventory and job diagnostics.
 - Invoice declarations, validation, search, reconciliation, exports, and repair tooling.
 - Daily CSV/XLSX reports with business-timezone boundaries.
 - Bounded request, database, WebSocket, and scheduler deadlines.

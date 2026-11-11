@@ -120,6 +120,7 @@ export function createAppRouter(pinia: Pinia, history: RouterHistory = createWeb
               roles: ['admin'],
             },
             children: [
+              { path: 'data', name: 'admin-data', component: () => import('../views/admin/AdminData.vue') },
               { path: 'import', name: 'admin-import', component: () => import('../views/admin/AdminImport.vue') },
               { path: '', name: 'admin', redirect: { name: 'admin-users' } },
               {
