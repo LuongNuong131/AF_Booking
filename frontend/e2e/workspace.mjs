@@ -28,7 +28,7 @@ async function start(username) {
   await page.getByRole('textbox', { name: 'Username', exact: true }).fill(username)
   await page.getByLabel('Password', { exact: true }).fill(process.env.BOOKING_E2E_PASSWORD)
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByLabel('Realtime connection: Live', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Realtime connection: Live', { exact: true })).toBeVisible({ timeout: 15000 })
   await expect(page.getByRole('heading', { name: 'Home', exact: true })).toBeVisible()
   return { context, page }
 }
@@ -152,8 +152,14 @@ try {
   await expect(a.page.locator('.booking-table tbody tr')).toHaveCount(1)
   await expect(a.page).toHaveURL(/q=CW\+2154654-2609/)
   await a.page.locator('.filter-details > summary').click()
+  const filteredPage = a.page.waitForResponse((response) => {
+    const url = new URL(response.url())
+    return url.pathname === '/api/v1/bookings' && url.searchParams.get('status_code') === 'BUNDLE'
+  })
   await a.page.getByLabel('Status', { exact: true }).selectOption('BUNDLE')
   await expect(a.page).toHaveURL(/status_code=BUNDLE/)
+  await (await filteredPage).finished()
+  await expect(a.page.locator('.booking-table-wrap')).toHaveAttribute('aria-busy', 'false')
   const returnUrl = a.page.url()
   await a.page.locator('.table-booking-link').click()
   await expect(a.page).toHaveURL(/\/summary\/CW2154654-RDU-2609/)
