@@ -71,7 +71,9 @@
           "key": "booking_key",
           "rows": 1
         }
-      ]
+      ],
+      "tidb_ci_run": "https://github.com/LuongNuong131/AF_Booking/actions/runs/42937757847",
+      "tidb_ci_result": "All database-schema (tidb) steps passed, including the unchanged 50,000-booking query-plan/latency benchmark."
     }
   },
   "frontend": {
@@ -84,6 +86,16 @@
     "final_realtime_routing_draft_regression": {
       "files": 4,
       "passed": 20
+    },
+    "creation_responsive_regression": {
+      "passed": 1,
+      "widths": [
+        375,
+        768,
+        1024,
+        1440
+      ],
+      "assertion": "Poll for layout stabilization after resize; retain the viewport + 1px overflow limit."
     }
   },
   "browser": {
