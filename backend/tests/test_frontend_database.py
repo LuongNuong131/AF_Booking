@@ -85,6 +85,7 @@ class BackendListener:
         "outbox.mjs",
         "safeguards.mjs",
         "collaboration.mjs",
+        "folder-follow.mjs",
         "operations.mjs",
         "invoices.mjs",
         "pwa.mjs",

@@ -14,6 +14,7 @@ import { useAuthStore } from '../stores/auth'
 import { formatDateTime } from '../utils/dateTime'
 import type { Page, AssignmentItem, BookingItem } from '../types/api.generated'
 import BookingTable from './BookingTable.vue'
+import FollowedFolders from './FollowedFolders.vue'
 import PageControls from './PageControls.vue'
 import RequestStatus from './RequestStatus.vue'
 import { ElDialog } from 'element-plus'
@@ -22,6 +23,7 @@ const props = defineProps<{ mode: 'assignments' | 'watching' }>(),
   store = useCollaborationStore(),
   tasks = useTasksStore(),
   auth = useAuthStore()
+const followView = ref<'bookings' | 'folders'>('folders')
 const page = ref(1),
   view = ref<'to_me' | 'from_me'>('to_me'),
   status = ref<'open' | 'done' | 'declined'>('open'),
@@ -43,7 +45,7 @@ const request = useRequest(
         },
       )
     ).data,
-  { timeoutMs: timeouts.list },
+  { timeoutMs: timeouts.list, retry: true },
 )
 const assignments = computed(() =>
     props.mode === 'assignments' ? ((request.data.value?.items ?? []) as AssignmentItem[]) : [],
@@ -81,6 +83,7 @@ const mutation = useRequest(
   { timeoutMs: timeouts.task },
 )
 async function load() {
+  if (props.mode === 'watching' && followView.value === 'folders') return
   await request.run()
 }
 function changePage(delta: number) {
@@ -111,6 +114,7 @@ watch([() => props.mode, view, status], () => {
   page.value = 1
   void load()
 })
+watch(followView, () => { page.value = 1; void load() })
 watch(page, load)
 watch(
   () => store.revision,
@@ -141,6 +145,12 @@ onMounted(load)
         </select></label
       >
     </div>
+    <div v-if="mode === 'watching'" class="task-list-toolbar follow-view-tabs">
+      <button v-for="tab in ['folders', 'bookings'] as const" :key="tab" type="button" class="button"
+        :aria-pressed="followView === tab" @click="followView = tab">{{ t(`followUi.${tab}`) }}</button>
+    </div>
+    <FollowedFolders v-if="mode === 'watching' && followView === 'folders'" />
+    <template v-else>
     <RequestStatus
       :state="request.state.value"
       :error="request.error.value"
@@ -236,5 +246,6 @@ onMounted(load)
         </button>
       </form></ElDialog
     >
+    </template>
   </section>
 </template>

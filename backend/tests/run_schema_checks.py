@@ -122,6 +122,8 @@ def main() -> None:
             "management",
             "safeguards",
             "collaboration",
+            "folder-follow",
+            "folder-follow-browser",
             "operations",
             "invoices",
             "security",
@@ -229,6 +231,8 @@ def main() -> None:
                 "management": "tests/test_management_database.py",
                 "safeguards": "tests/test_safeguards_database.py",
                 "collaboration": "tests/test_collaboration_database.py",
+                "folder-follow": "tests/test_folder_follow_database.py",
+                "folder-follow-browser": "tests/test_frontend_database.py",
                 "operations": "tests/test_operations_database.py",
                 "invoices": "tests/test_invoices_database.py",
                 "security": "tests/test_hardening_database.py",
@@ -243,6 +247,8 @@ def main() -> None:
             if args.suite == "booking":
                 test_command.append("tests/test_booking_creation_database.py")
                 test_command.append("tests/test_workflow_database.py")
+            if args.suite == "folder-follow-browser":
+                test_command.extend(["-k", "folder-follow.mjs or collaboration.mjs"])
             test_command.extend(["-q", "-x"])
             if args.suite not in {"schema", "search-performance", "integrity-performance", "load"}:
                 test_command.append(f"--junitxml={args.report.resolve()}")
@@ -277,7 +283,7 @@ def main() -> None:
         finally:
             # Remove only this runner's unique disposable container, even after a failed test.
             subprocess.run(
-                ["docker", "--host=unix:///var/run/docker.sock", "rm", "-f", name],
+                ["docker", "--host=unix:///var/run/docker.sock", "rm", "-f", "-v", name],
                 env=docker_env,
                 stdout=subprocess.DEVNULL,
                 check=False,

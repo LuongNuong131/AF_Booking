@@ -309,6 +309,16 @@ class BookingWatcher(CreatedAt, Base):
     user_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
 
 
+class FolderFollower(CreatedAt, Base):
+    __tablename__ = "folder_followers"
+    __table_args__ = (
+        Index("ix_folder_followers_user_created", "user_id", "created_at", "group_id"),
+        TABLE_OPTIONS,
+    )
+    group_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+    user_id: Mapped[int] = mapped_column(mysql.BIGINT(unsigned=True), primary_key=True)
+
+
 class BookingAssignment(CreatedAt, Base):
     __tablename__ = "booking_assignments"
     __table_args__ = (

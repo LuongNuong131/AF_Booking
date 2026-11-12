@@ -9,14 +9,24 @@ from sqlalchemy.orm import aliased
 
 from app.core.errors import ApiException
 from app.core.unit_of_work import transaction
-from app.models import Booking, BookingAssignment, BookingWatcher, Notification, User
-from app.schemas.collaboration import AssignmentItem, WatchState
+from app.models import (
+    Booking,
+    BookingAssignment,
+    BookingGroup,
+    BookingWatcher,
+    FolderFollower,
+    Notification,
+    User,
+)
+from app.schemas.collaboration import AssignmentItem, FolderFollowState, WatchState
 from app.schemas.contracts import AgentSummary, ErrorCode, Page
 from app.schemas.realtime import NotificationNewData
 from app.services.audit import record_audit
 from app.services.auth import AuthService
+from app.services.folders import folder_cards
 from app.services.search_limiter import SearchLimiter
 from app.utils.booking_key import ParsedKey, parse, to_display
+from app.utils.folder_key import folder_parts
 
 
 def utcnow():
@@ -110,6 +120,81 @@ class CollaborationService:
                 await session.delete(existing)
         return WatchState(watching=enabled)
 
+    async def folder(self, session, key, *, lock=False):
+        cw, station = folder_parts(key)
+        query = select(BookingGroup).where(BookingGroup.cw_number == cw)
+        if station:
+            query = query.where(BookingGroup.station_code == station)
+        query = query.order_by(BookingGroup.id).limit(2)
+        if lock:
+            query = query.with_for_update()
+        groups = (await session.scalars(query)).all()
+        if not groups:
+            raise ApiException(ErrorCode.NOT_FOUND)
+        if len(groups) > 1:
+            raise ApiException(ErrorCode.VALIDATION_ERROR, message="Choose a station folder.")
+        return groups[0]
+
+    async def follow_folder(self, key, user, enabled=None):
+        async with self.tx() as session:
+            if enabled is not None:
+                live = await session.scalar(
+                    select(User).where(User.id == user.id).with_for_update()
+                )
+                AuthService.require_live_row(live, user)
+            group = await self.folder(session, key, lock=enabled is not None)
+            existing = await session.get(FolderFollower, (group.id, user.id))
+            if enabled is None:
+                return FolderFollowState(following=existing is not None)
+            if enabled and existing is None:
+                count = await session.scalar(
+                    select(func.count())
+                    .select_from(FolderFollower)
+                    .where(FolderFollower.user_id == user.id)
+                )
+                if count >= 200:
+                    raise ApiException(
+                        ErrorCode.WATCH_LIMIT_REACHED, message="You can follow up to 200 folders."
+                    )
+                session.add(FolderFollower(group_id=group.id, user_id=user.id))
+            elif not enabled and existing is not None:
+                await session.delete(existing)
+            if (enabled and existing is None) or (not enabled and existing is not None):
+                record_audit(
+                    session,
+                    "folder_followed" if enabled else "folder_unfollowed",
+                    actor_id=user.id,
+                    entity_type="booking_group",
+                    entity_id=str(group.id),
+                )
+        return FolderFollowState(following=enabled)
+
+    async def following_folders(self, user, page, size):
+        async with self.tx() as session:
+            query = (
+                select(FolderFollower.group_id)
+                .join(BookingGroup, BookingGroup.id == FolderFollower.group_id)
+                .where(FolderFollower.user_id == user.id)
+            )
+            total = await session.scalar(select(func.count()).select_from(query.subquery()))
+            ids = list(
+                (
+                    await session.scalars(
+                        query.order_by(
+                            FolderFollower.created_at.desc(), FolderFollower.group_id.desc()
+                        )
+                        .offset((page - 1) * size)
+                        .limit(size)
+                    )
+                ).all()
+            )
+            return Page(
+                items=await folder_cards(session, ids, self.settings.stale_hours_default),
+                total=total,
+                page=page,
+                size=size,
+            )
+
     async def note_effects(self, session, book, note, live, body, previous_agent, now):
         """Called while the actor and booking are locked, in the note transaction."""
         assignment = None
@@ -169,11 +254,15 @@ class CollaborationService:
                 # never prevent an otherwise valid operational note from committing.
                 if count < 200:
                     session.add(BookingWatcher(booking_id=book.id, user_id=live.id, created_at=now))
+        subscribers = (
+            select(BookingWatcher.user_id.label("user_id"))
+            .where(BookingWatcher.booking_id == book.id)
+            .union(select(FolderFollower.user_id).where(FolderFollower.group_id == book.group_id))
+            .subquery()
+        )
         watchers = (
             await session.scalars(
-                select(BookingWatcher.user_id).where(
-                    BookingWatcher.booking_id == book.id, BookingWatcher.user_id != live.id
-                )
+                select(subscribers.c.user_id).where(subscribers.c.user_id != live.id)
             )
         ).all()
         recipient_types = {}

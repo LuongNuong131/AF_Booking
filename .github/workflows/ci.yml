@@ -92,6 +92,7 @@ jobs:
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite security --report /tmp/security-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite invoices --report /tmp/invoices-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite collaboration --report /tmp/collaboration-report.xml
+      - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite folder-follow --report /tmp/folder-follow-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite safeguards --report /tmp/safeguards-report.xml
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite integrity-performance --report /tmp/integrity-performance.json
       - run: python tests/run_schema_checks.py --engine ${{ matrix.engine }} --suite realtime --report /tmp/realtime-report.xml

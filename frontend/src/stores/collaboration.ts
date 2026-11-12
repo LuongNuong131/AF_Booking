@@ -6,13 +6,14 @@ import { useAuthStore } from './auth'
 import { useUiStore } from './ui'
 import { errorMessage } from '../api/request-error'
 import { timeouts } from '../config/timeouts'
-import type { WatchState } from '../types/api.generated'
+import type { FolderFollowState, WatchState } from '../types/api.generated'
 
 export const useCollaborationStore = defineStore('collaboration', () => {
   const watched = ref<Record<string, boolean>>({}),
     pending = ref<string[]>([]),
     assignedCount = ref(0),
     revision = ref(0)
+  const followingFolders = ref<Record<string, boolean>>({}), folderPending = ref<string[]>([])
   const owned = new Set<() => void>(),
     auth = useAuthStore(),
     ui = useUiStore()
@@ -81,6 +82,34 @@ export const useCollaborationStore = defineStore('collaboration', () => {
       }
     }
   }
+  function seedFolder(key: string, following: boolean) {
+    if (!(key in followingFolders.value)) followingFolders.value = { ...followingFolders.value, [key]: following }
+  }
+  async function folderFollow(key: string, enabled?: boolean, force = false) {
+    if (folderPending.value.includes(key)) return false
+    if (enabled === undefined && !force && key in followingFolders.value) return true
+    const epoch = auth.epoch
+    folderPending.value.push(key)
+    const request = useRequest(async ({ signal, timeoutMs }) =>
+      (await api.request<FolderFollowState>({ url: `/folders/${key}/follow`,
+        method: enabled === undefined ? 'GET' : enabled ? 'PUT' : 'DELETE', signal, timeout: timeoutMs })).data,
+      { timeoutMs: timeouts.task, retry: enabled === undefined })
+    owned.add(request.cancel)
+    try {
+      const result = await request.run()
+      if (epoch !== auth.epoch) return false
+      if (result) {
+        followingFolders.value = { ...followingFolders.value, [key]: result.following }
+        if (enabled !== undefined) revision.value++
+        return true
+      }
+      if (request.error.value) ui.notify(errorMessage(request.error.value), 'error')
+      return false
+    } finally {
+      owned.delete(request.cancel)
+      if (epoch === auth.epoch) folderPending.value = folderPending.value.filter(k => k !== key)
+    }
+  }
   async function acceptNote(
     key: string,
     watching: boolean | undefined,
@@ -141,11 +170,14 @@ export const useCollaborationStore = defineStore('collaboration', () => {
     owned.clear()
     countRequest.cancel()
     watched.value = {}
+    followingFolders.value = {}
+    folderPending.value = []
     pending.value = []
     assignedCount.value = 0
     revision.value++
   }
   return {
+    followingFolders, folderPending, folderFollow, seedFolder,
     watched,
     pending,
     assignedCount,

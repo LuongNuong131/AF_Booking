@@ -24,6 +24,7 @@ from app.models import (
     BookingWatcher,
     BookingWorkTask,
     DailyReport,
+    FolderFollower,
     NoteSnippet,
     Notification,
     PushSubscription,
@@ -906,6 +907,7 @@ class Management:
                         BookingAssignment.from_user_id,
                         BookingAssignment.to_user_id,
                         BookingWatcher.user_id,
+                        FolderFollower.user_id,
                         NoteSnippet.user_id,
                         PushSubscription.user_id,
                     ]
@@ -923,6 +925,7 @@ class Management:
                             Notification,
                             BookingAssignment,
                             BookingWatcher,
+                            FolderFollower,
                             NoteSnippet,
                             PushSubscription,
                         ]
@@ -935,6 +938,8 @@ class Management:
                         condition.append(BookingNote.id.not_in(selected_notes))
                     if cls is Booking:
                         condition.append(Booking.id.not_in(booking_ids))
+                    if cls is FolderFollower:
+                        condition.append(FolderFollower.group_id.not_in(group_ids))
                     if cls is BookingGroup:
                         condition.append(BookingGroup.id.not_in(group_ids))
                     n = await session.scalar(
@@ -1043,6 +1048,9 @@ class Management:
                     await session.execute(delete(cls).where(cls.booking_id.in_(booking_ids)))
                 await session.execute(delete(Booking).where(Booking.id.in_(booking_ids)))
             if group_ids:
+                await session.execute(
+                    delete(FolderFollower).where(FolderFollower.group_id.in_(group_ids))
+                )
                 await session.execute(delete(BookingGroup).where(BookingGroup.id.in_(group_ids)))
             if station_ids:
                 await session.execute(delete(Station).where(Station.code.in_(station_ids)))

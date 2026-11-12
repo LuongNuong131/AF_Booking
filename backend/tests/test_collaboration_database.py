@@ -41,7 +41,13 @@ async def test_watch_merge_one_query_batch_and_takeover_dedup(rig):
     admin = (await rig.get("/notifications", user="admin")).json()["items"]
     assert len(admin) == 1 and admin[0]["merged_count"] == 3
     assert sum(s.startswith("insert into notifications") for s in statements) == 3
-    assert sum(s.startswith("select booking_watchers.user_id") for s in statements) == 3
+    assert (
+        sum(
+            "from booking_watchers" in s and "union" in s and s.startswith("select")
+            for s in statements
+        )
+        == 3
+    )
     # Reading frees the unique unread slot; next update creates a new row.
     await mutation(rig, "POST", f"/notifications/{admin[0]['id']}/read", "admin")
     await rig.save(user="other", version=4)

@@ -11,6 +11,7 @@ from app.models.entities import (
     BookingWatcher,
     BookingWorkTask,
     DailyReport,
+    FolderFollower,
     IntegrityRun,
     NoteSnippet,
     Notification,
@@ -42,6 +43,7 @@ __all__ = [
     "Status",
     "User",
     "DailyReport",
+    "FolderFollower",
     "PushSubscription",
     "RecycleEntry",
 ]

@@ -9,6 +9,10 @@ class WatchState(ContractModel):
     watching: bool
 
 
+class FolderFollowState(ContractModel):
+    following: bool
+
+
 class AssignmentItem(BookingIdentity):
     id: int
     note_id: int
@@ -32,4 +36,4 @@ class AssignmentDecline(ContractModel):
         return value.strip()
 
 
-COLLABORATION_MODELS = (WatchState, AssignmentItem, AssignmentDecline)
+COLLABORATION_MODELS = (WatchState, FolderFollowState, AssignmentItem, AssignmentDecline)

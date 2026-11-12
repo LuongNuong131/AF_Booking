@@ -228,7 +228,7 @@
     "palette": "Command palette",
     "move": "Move through the focused list",
     "openRow": "Open selected booking",
-    "watch": "Watch / unwatch selected booking",
+    "watch": "Follow / unfollow selected booking",
     "rowTask": "Task for selected booking",
     "page": "Previous / next page",
     "invoiceFocus": "Focus invoice input",
@@ -645,9 +645,9 @@
     "schedule": "Nightly check at {time} ({zone})."
   },
   "collabUi": {
-    "watch": "Watch booking",
-    "unwatch": "Unwatch booking",
-    "watching": "Watching",
+    "watch": "Follow booking",
+    "unwatch": "Unfollow booking",
+    "watching": "Following",
     "assignments": "Assignments",
     "assignedTab": "Assigned to me",
     "assignLabel": "Ask someone to handle this booking",
@@ -669,7 +669,7 @@
     "reason": "Reason",
     "declineTitle": "Decline assignment",
     "emptyAssignments": "No assignments in this view.",
-    "autoWatch": "Automatically watch bookings I add notes to",
+    "autoWatch": "Automatically follow bookings I add notes to",
     "palette": "Command palette",
     "paletteSearch": "Search commands",
     "palettePlaceholder": "Type a booking number or command…",
@@ -690,7 +690,7 @@
     "command_task": "Set a task for the open booking",
     "merged": "{count} updates",
     "notificationPage": "Page {page} of {pages} · {total} notification(s)",
-    "autoWatchHint": "Auto-watch stops at 200 bookings. Notes still save.",
+    "autoWatchHint": "Automatic following stops at 200 bookings. Notes still save.",
     "assignmentPage": "Page {page} of {pages} · {total} assignment(s)"
   },
   "opsUi": {
@@ -964,7 +964,7 @@
       "booking_tasks": "Reminders",
       "booking_work_tasks": "QC tickets",
       "booking_assignments": "Assignments",
-      "booking_watchers": "Booking watches",
+      "booking_watchers": "Booking follows",
       "assignments": "Assignments",
       "storage_cleanup": "Pending file cleanup"
     },
@@ -1227,5 +1227,15 @@
     "refresh": "Refresh",
     "emptyPending": "No tickets awaiting QC for this booking.",
     "emptyHandled": "No handled tickets for this booking yet."
+  },
+  "followUi": {
+    "follow": "Follow folder",
+    "unfollow": "Unfollow folder",
+    "hint": "Follow this folder once to receive updates for all its months, including new months.",
+    "folders": "Folders",
+    "bookings": "Bookings",
+    "empty": "No followed folders yet. Open a folder or booking and select Follow folder.",
+    "heading": "Followed folders",
+    "page": "Page {page} of {pages} · {total} folder(s)"
   }
 }

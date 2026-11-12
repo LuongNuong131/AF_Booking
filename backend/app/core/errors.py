@@ -61,7 +61,7 @@ DEFAULT_MESSAGES: dict[ErrorCode, str] = {
     ErrorCode.NEW_BOOKING_NEEDS_CONFIRM: "Please confirm that this is a new booking.",
     ErrorCode.DUPLICATE_RECENT_NOTE: "You recently sent an identical note.",
     ErrorCode.BOOKING_EXISTS: "This booking already exists. Open it to continue.",
-    ErrorCode.WATCH_LIMIT_REACHED: "The watched booking limit has been reached.",
+    ErrorCode.WATCH_LIMIT_REACHED: "You can follow up to 200 bookings.",
     ErrorCode.ASSIGNMENT_INVALID: "This assignment is invalid.",
     ErrorCode.INVALID_BOOKING_KEY: "Invalid booking number. Expected format: CW 1234567-YUL-2608.",
     ErrorCode.STATION_REQUIRED: (

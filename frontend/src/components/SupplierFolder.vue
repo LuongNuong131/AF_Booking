@@ -9,6 +9,8 @@ import { timeouts } from '../config/timeouts'
 import { build_key } from '../utils/bookingKey'
 import { zonedToday } from '../utils/summaryFilters'
 import FolderCard from './FolderCard.vue'
+import FolderFollowButton from './FolderFollowButton.vue'
+import { folderKey } from '../utils/folderKey'
 import BookingMonthList from './BookingMonthList.vue'
 import SupplierEditor from './SupplierEditor.vue'
 import RequestStatus from './RequestStatus.vue'
@@ -57,7 +59,7 @@ function newMonth() {
       <div v-for="n in 3" :key="n" class="skeleton-line" />
     </div>
     <template v-if="value"
-      ><FolderCard :folder="value.folder" :selectable="false" /><SupplierEditor
+      ><FolderCard :folder="value.folder" :selectable="false" /><FolderFollowButton :folder-key="folderKey(value.folder)" /><p class="muted">{{ t('followUi.hint') }}</p><SupplierEditor
         :cw="cw"
         :name="value.folder.supplier_name"
         :type="value.folder.supplier_type"

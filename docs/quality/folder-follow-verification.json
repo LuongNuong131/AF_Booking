@@ -1,0 +1,17 @@
+{
+  "date": "2026-11-12",
+  "feature": "Follow current and future monthly bookings by supplier/station folder",
+  "backend_units": "228 passed; database/browser cases require their disposable runners",
+  "frontend_units": "280 existing tests passed; 11 targeted collaboration, folder-button and bilingual tests passed after adding 4 new cases",
+  "tidb_tls": {
+    "folder_follow_business_tests": 4,
+    "existing_collaboration_tests": 8,
+    "schema_migration_suite": "passed",
+    "chromium_scenarios": ["existing three-user collaboration", "follow folder from detail", "reload persisted subscription", "independent booking follow", "future month notification without a new follow", "deduplicated recipients", "folder list navigation", "unfollow folder retains booking follow"],
+    "chromium_result": "2 passed",
+    "responsive_widths": [320, 375, 768, 1440]
+  },
+  "checks": ["Ruff lint and formatting", "generated contract types", "ESLint", "strict TypeScript", "production build with real API/WSS origins", "frontend security configuration checks"],
+  "migration": "0017_folder_followers creates an additive table and preserves booking_watchers",
+  "deployment": "Push to main is authorized; verify Render live commit and Vercel production after push"
+}

@@ -6,8 +6,13 @@ from app.core.bounds import Identifier, KeyPath
 from app.core.deps import get_current_user
 from app.core.timeouts import DeadlineRoute
 from app.schemas.bookings import BookingItem
-from app.schemas.collaboration import AssignmentDecline, AssignmentItem, WatchState
-from app.schemas.contracts import Page
+from app.schemas.collaboration import (
+    AssignmentDecline,
+    AssignmentItem,
+    FolderFollowState,
+    WatchState,
+)
+from app.schemas.contracts import FolderCard, Page
 from app.services.audit import AuditContext
 from app.services.session_cache import CurrentUser
 
@@ -56,3 +61,25 @@ async def decline(id: Identifier, body: AssignmentDecline, request: Request, use
     return await request.app.state.collaboration.resolve(
         id, user, body.reason, AuditContext.from_request(request)
     )
+
+
+@router.get("/folders/{cw}/follow", response_model=FolderFollowState)
+async def folder_follow_state(cw: KeyPath, request: Request, user: UserDep):
+    return await request.app.state.collaboration.follow_folder(cw, user)
+
+
+@router.put("/folders/{cw}/follow", response_model=FolderFollowState)
+async def follow_folder(cw: KeyPath, request: Request, user: UserDep):
+    return await request.app.state.collaboration.follow_folder(cw, user, True)
+
+
+@router.delete("/folders/{cw}/follow", response_model=FolderFollowState)
+async def unfollow_folder(cw: KeyPath, request: Request, user: UserDep):
+    return await request.app.state.collaboration.follow_folder(cw, user, False)
+
+
+@router.get("/following/folders", response_model=Page[FolderCard])
+async def following_folders(
+    request: Request, user: UserDep, page: PageNumber = 1, size: PageSize = 10
+):
+    return await request.app.state.collaboration.following_folders(user, page, size)

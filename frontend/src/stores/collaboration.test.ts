@@ -43,3 +43,31 @@ it('deduplicates clicks and keeps previous state when the server refuses the ope
   expect(store.watched[KEY]).toBe(false)
   expect(store.pending).toEqual([])
 })
+it('follows folders independently of booking subscriptions and keeps state on failure', async () => {
+  const send = vi.spyOn(api, 'request').mockResolvedValue({ data: { following: true } })
+  const store = useCollaborationStore()
+  store.seed(KEY, true)
+  expect(await store.folderFollow('CW2154654-RDU', true)).toBe(true)
+  expect(send).toHaveBeenCalledWith(expect.objectContaining({ url: '/folders/CW2154654-RDU/follow', method: 'PUT' }))
+  expect(store.followingFolders['CW2154654-RDU']).toBe(true)
+  expect(store.watched[KEY]).toBe(true)
+  send.mockRejectedValueOnce({ isAxiosError: true, response: { status: 503, data: { code: 'SERVICE_BUSY' } } })
+  expect(await store.folderFollow('CW2154654-RDU', false)).toBe(false)
+  expect(store.followingFolders['CW2154654-RDU']).toBe(true)
+  store.reset()
+  expect(store.followingFolders).toEqual({})
+  expect(store.folderPending).toEqual([])
+})
+it('blocks duplicate folder requests and discards replies from a replaced session', async () => {
+  let reply!: (value: unknown) => void
+  const send = vi.spyOn(api, 'request').mockReturnValue(new Promise(resolve => { reply = resolve }) as ReturnType<typeof api.request>)
+  const store = useCollaborationStore()
+  const first = store.folderFollow('CW2154654-RDU', true)
+  expect(await store.folderFollow('CW2154654-RDU', true)).toBe(false)
+  useAuthStore().epoch++
+  store.reset()
+  reply({ data: { following: true } })
+  await first
+  expect(send).toHaveBeenCalledOnce()
+  expect(store.followingFolders).toEqual({})
+})

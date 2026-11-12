@@ -1227,5 +1227,15 @@
     "refresh": "Làm mới",
     "emptyPending": "Booking này chưa có ticket đang chờ QC.",
     "emptyHandled": "Booking này chưa có ticket đã được xử lý."
+  },
+  "followUi": {
+    "follow": "Theo dõi folder",
+    "unfollow": "Bỏ theo dõi folder",
+    "hint": "Theo dõi folder một lần để nhận cập nhật cho mọi tháng, kể cả các tháng mới.",
+    "folders": "Folder",
+    "bookings": "Booking",
+    "empty": "Chưa theo dõi folder nào. Mở folder hoặc booking rồi chọn Theo dõi folder.",
+    "heading": "Folder đang theo dõi",
+    "page": "Trang {page}/{pages} · {total} folder"
   }
 }

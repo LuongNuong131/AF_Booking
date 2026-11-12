@@ -25,6 +25,7 @@ import BookingTimeline from './BookingTimeline.vue'
 import NoteForm from './NoteForm.vue'
 import InvoicePanel from './InvoicePanel.vue'
 import WatchButton from './WatchButton.vue'
+import FolderFollowButton from './FolderFollowButton.vue'
 import AssigneePicker from './AssigneePicker.vue'
 import RequestStatus from './RequestStatus.vue'
 import BaseIcon from './BaseIcon.vue'
@@ -490,6 +491,7 @@ defineExpose({
           :booking-key="w.key"
           :watching="w.snapshot?.my_watching"
         />
+        <FolderFollowButton v-if="w.current?.exists && w.key" :folder-key="w.key.slice(0, -5)" />
         <BookingTicketHistory v-if="w.key && w.current?.exists" :key="`tickets-${w.key}`" ref="ticketHistory" :booking-key="w.key" @create="ticketPanel?.open()" />
         <BookingTicketPanel v-if="w.key && w.current?.exists" :key="w.key" ref="ticketPanel" :booking-key="w.key" @created="ticketHistory?.showCreated()" />
         <BookingTimeline

@@ -1,5 +1,12 @@
 # Project state
 
+## Implemented: Follow supplier folders across months
+
+- Follow folder subscribes to all current/future monthly bookings in one CW/station folder. Explicit booking follows remain independent, and the interface uses Follow instead of Watch. Workspace Following has paginated Folder and Booking lists.
+- Notification recipients are the deduplicated union of booking and folder subscriptions. Self-updates stay silent, takeover wins over follow updates, and unread per-booking notification merging is retained.
+- Migration 0017 adds folder_followers without altering existing booking_watchers. Folder subscriptions have their own 200 limit, private session-safe state, audit, trash/restore visibility and purge handling. The abandoned recurring-assignment proposal is not included.
+- See [folder follow instructions](docs/folder-follow-vi.md).
+
 ## Implemented: Booking ticket history and note-search UX
 
 - Booking information includes paginated pending/handled ticket lists with counts, creator, attachment count, QC result and links to the correct ticket. Agent visibility remains limited to their own tickets; QC/Admin retain booking-wide access.

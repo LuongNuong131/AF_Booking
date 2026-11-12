@@ -87,6 +87,8 @@ export type FolderCard = { "cw_number": string; "supplier_name": string; "suppli
 
 export type FolderDetail = { "folder": FolderCard; "months": Array<MonthRow> }
 
+export type FolderFollowState = { "following": boolean }
+
 export type FolderLatest = { "booking_key": string; "display_key": string; "period_label": string; "status": StatusSummary | null; "agent": AgentSummary | null }
 
 export type FolderPatch = { "supplier_name"?: string | null; "supplier_type"?: SupplierType | null; "recurring_enabled"?: boolean | null }
