@@ -278,13 +278,6 @@ AF Booking is an actively developed internal product. Its core booking workspace
 
 The source of truth for what is implemented, what is intentionally out of scope and what still requires operator configuration is [`PROJECT_STATE.md`](./PROJECT_STATE.md). Keep that document in sync when extending the system; a polished interface should never hide an infrastructure boundary.
 
-## Related LuNu work
-
-AF Booking is part of the same product-minded workspace as:
-
-- [LuNu Music](https://github.com/LuongNuong131/LuNu_Music) — a premium personal music library and private media room.
-- [LuongNuong131](https://github.com/LuongNuong131) — the profile and broader project portfolio behind the LuNu identity.
-
 ---
 
 <div align="center">
